@@ -9,7 +9,21 @@ class Homepage extends StatefulWidget {
 }
 
 class _HomepageState extends State<Homepage> {
+  final ScrollController _scrollController = ScrollController();
   @override
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollController.animateTo(
+        300,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
@@ -150,112 +164,236 @@ class _HomepageState extends State<Homepage> {
               flex: 8, // ส่วนล่าง 80%
               child: Container(
                 color: Colors.white,
-                alignment: Alignment.topCenter, // ✅ ชิดบน
+                alignment: Alignment.topCenter,
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Column(
-                    mainAxisSize:
-                        MainAxisSize.min, // ✅ ให้ขนาดเล็กพอดี ไม่ขยายเต็ม
-                    children: [
-                      // 🔹 Carousel
-                      SizedBox(
-                        height: 200,
-                        child: CarouselSlider(
-                          options: CarouselOptions(
-                            height: 200,
-                            autoPlay: true,
-                            autoPlayInterval: const Duration(seconds: 10),
-                            enlargeCenterPage: true,
-                            viewportFraction: 0.88,
-                          ),
-                          items: [
-                            // ✅ Slide 1
-                            Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 6),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                color: Colors.deepPurple[200],
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'Slide 1',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    color: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: SingleChildScrollView(
+                    // ✅ เผื่อกรณีเนื้อหาเกินจอ
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start, // ✅ ชิดซ้ายทั้งหมด
+                      children: [
+                        // 🔹 Carousel
+                        SizedBox(
+                          height: 200,
+                          child: CarouselSlider(
+                            options: CarouselOptions(
+                              height: 200,
+                              autoPlay: true,
+                              autoPlayInterval: const Duration(seconds: 10),
+                              enlargeCenterPage: true,
+                              viewportFraction:
+                                  0.78, // ✅ ลดลงนิดให้เห็นขอบสองฝั่ง
+                              padEnds:
+                                  true, // ✅ เปิดกลับมาเพื่อ balance ระยะขอบซ้าย
+                            ),
+                            items: [
+                              Container(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  color: Colors.deepPurple[200],
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    'Slide 1',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            // ✅ Slide 2
-                            Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 6),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                color: Colors.deepPurple[400],
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'Slide 2',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    color: Colors.white,
+                              Container(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  color: Colors.deepPurple[400],
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    'Slide 2',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            // ✅ Slide 3
-                            Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 6),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                color: Colors.deepPurple[600],
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'Slide 3',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    color: Colors.white,
+                              Container(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  color: Colors.deepPurple[600],
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    'Slide 3',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(
-                        height: 16,
-                      ), // ระยะห่างเล็กน้อยระหว่างสไลด์กับปุ่ม
-                      // 🔹 ปุ่ม BROWSE ASSET
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          // TODO: เพิ่มฟังก์ชันเมื่อกดปุ่ม
-                          print("Browse Asset Clicked!");
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF6B45FF), // 💜 สีม่วง
-                          foregroundColor: Colors.white,
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 15,
-                            vertical: 12,
+                            ],
                           ),
                         ),
 
-                        label: const Text(
-                          "BROWSE ASSET",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
+                        const SizedBox(height: 16),
+
+                        // 🔹 ปุ่ม Browse Asset
+                        Center(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              print("Browse Asset Clicked!");
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF6B45FF),
+                              foregroundColor: Colors.white,
+                              elevation: 4,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(50),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 15,
+                                vertical: 12,
+                              ),
+                            ),
+                            child: const Text(
+                              "BROWSE ASSET",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+
+                        // 🔹 ข้อความ Recommend
+                        const Padding(
+                          padding: EdgeInsets.only(left: 20, top: 10),
+                          child: Text(
+                            "Recommend",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        // 🔹 แนวนอน 3 item เลื่อนได้
+                        SizedBox(
+                          height: 300,
+                          child: CarouselSlider(
+                            options: CarouselOptions(
+                              height: 300,
+                              enableInfiniteScroll: false,
+                              enlargeCenterPage: true,
+                              viewportFraction: 0.75,
+                              padEnds: true,
+                              autoPlay: false,
+                              initialPage: 1, // ✅ เริ่มที่ Item 2 (index 1)
+                            ),
+                            items: [
+                              // Item 1
+                              Container(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.deepPurple[100],
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    "Item 1",
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.deepPurple,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              // Item 2
+                              Container(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.deepPurple[300],
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    "Item 2",
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              // Item 3
+                              Container(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.deepPurple[500],
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.15),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    "Item 3",
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
