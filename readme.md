@@ -1,13 +1,23 @@
 # Mobile App Project
 
-โปรเจกต์นี้ประกอบด้วย **Flutter frontend** (`iot_zone/`) และ **Node.js + MySQL backend** (`server/`) สำหรับระบบ IoT Zone
+
+โปรเจกต์นี้เป็นส่วนหนึ่งของรายวิชา **Mobile Application Development** ประกอบด้วย **Flutter frontend** (`iot_zone/`) และ **Node.js + MySQL backend** (`server/`) สำหรับระบบ IoT Zone
+
+
+**รายชื่อผู้พัฒนา:**
+1. Pongsapat Pinijngam 6631501079 (PM)
+2. Parinthon Somphakdee 6631501074
+3. Narut Prasongsuthon 6631501062
+4. Pisit Nilthongkam 6631501085
+5. Withara Tangchai 6631501107
+
 
 ---
 
 ## โครงสร้างโปรเจกต์
 
 ```
-iot_project/
+Mobile_Project/
 │
 ├── iot_zone/      # Flutter frontend
 └── server/        # Node.js backend
@@ -18,8 +28,8 @@ iot_project/
 ## 1. Clone โปรเจกต์
 
 ```bash
-git clone <URL ของ GitHub>
-cd iot_project
+git clone <https://github.com/FRAmyZ010/IoTZone.git>
+cd Mobile_Project
 ```
 
 ---
