@@ -31,7 +31,7 @@ class _HomepageState extends State<Homepage> {
           children: [
             // 🔹 ส่วนบน 20% พร้อมรูปจาง + Gradient + โปรไฟล์
             Expanded(
-              flex: 2, // เทียบสัดส่วน 20%
+              flex: 30, // เทียบสัดส่วน 20%
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -59,10 +59,7 @@ class _HomepageState extends State<Homepage> {
                   ),
 
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 5,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -72,9 +69,9 @@ class _HomepageState extends State<Homepage> {
                           children: [
                             IconButton(
                               icon: const Icon(
-                                Icons.menu,
+                                Icons.more_horiz,
                                 color: Colors.white,
-                                size: 28,
+                                size: 40,
                               ),
                               padding:
                                   EdgeInsets.zero, // ✅ ตัด padding ของปุ่มออก
@@ -114,6 +111,7 @@ class _HomepageState extends State<Homepage> {
                                   'Student',
                                   style: TextStyle(
                                     fontSize: 14,
+                                    fontWeight: FontWeight.w600,
                                     color: Colors.white70,
                                   ),
                                 ),
@@ -121,37 +119,31 @@ class _HomepageState extends State<Homepage> {
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-
-                  // 🔹 โลโก้แอป (กลางล่าง)
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text: 'IoT',
-                              style: TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.cyanAccent[200],
+                        Padding(
+                          padding: const EdgeInsets.only(top: 5),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Image.asset(
+                                "asset/img/iot.png",
+                                width: 60,
+                                height: 60,
                               ),
-                            ),
-                            const TextSpan(
-                              text: 'Zone',
-                              style: TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                              Padding(
+                                padding: const EdgeInsets.only(left: 5),
+                                child: Text(
+                                  "Zone",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ],
@@ -161,7 +153,7 @@ class _HomepageState extends State<Homepage> {
             SizedBox(height: 20), // เว้นระยะห่างเล็กน้อย
             // 🔹 ส่วนล่าง 80%
             Expanded(
-              flex: 8, // ส่วนล่าง 80%
+              flex: 70, // ส่วนล่าง 80%
               child: Container(
                 color: Colors.white,
                 alignment: Alignment.topCenter,
