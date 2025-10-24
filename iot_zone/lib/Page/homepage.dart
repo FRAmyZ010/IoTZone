@@ -31,7 +31,7 @@ class _HomepageState extends State<Homepage> {
           children: [
             // 🔹 ส่วนบน 20% พร้อมรูปจาง + Gradient + โปรไฟล์
             Expanded(
-              flex: 30, // เทียบสัดส่วน 20%
+              flex: 28, // เทียบสัดส่วน 20%
               child: Stack(
                 fit: StackFit.expand,
                 children: [
