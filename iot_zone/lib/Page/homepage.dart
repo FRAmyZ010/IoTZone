@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -24,7 +25,7 @@ class _HomepageState extends State<Homepage> {
                   Opacity(
                     opacity: 0.5, // ทำให้รูปจางลง 50%
                     child: Image.asset(
-                      './asset/img/homepage-banner.jpg', // ✅ ลบ './' ออก
+                      './asset/img/homepage-banner.jpg',
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -36,8 +37,8 @@ class _HomepageState extends State<Homepage> {
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,
                         colors: [
-                          const Color(0xFF4D5DFF).withOpacity(1.0),
-                          const Color(0xFFC368FF).withOpacity(0.4),
+                          const Color(0xFF4D5DFF).withOpacity(0.9),
+                          const Color(0xFFC368FF).withOpacity(0.5),
                         ],
                       ),
                     ),
@@ -143,15 +144,118 @@ class _HomepageState extends State<Homepage> {
               ),
             ),
 
+            SizedBox(height: 20), // เว้นระยะห่างเล็กน้อย
             // 🔹 ส่วนล่าง 80%
             Expanded(
-              flex: 8,
+              flex: 8, // ส่วนล่าง 80%
               child: Container(
                 color: Colors.white,
-                child: const Center(
-                  child: Text(
-                    'ส่วนล่าง (80%)',
-                    style: TextStyle(fontSize: 20, color: Colors.deepPurple),
+                alignment: Alignment.topCenter, // ✅ ชิดบน
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Column(
+                    mainAxisSize:
+                        MainAxisSize.min, // ✅ ให้ขนาดเล็กพอดี ไม่ขยายเต็ม
+                    children: [
+                      // 🔹 Carousel
+                      SizedBox(
+                        height: 200,
+                        child: CarouselSlider(
+                          options: CarouselOptions(
+                            height: 200,
+                            autoPlay: true,
+                            autoPlayInterval: const Duration(seconds: 10),
+                            enlargeCenterPage: true,
+                            viewportFraction: 0.88,
+                          ),
+                          items: [
+                            // ✅ Slide 1
+                            Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 6),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                color: Colors.deepPurple[200],
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  'Slide 1',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // ✅ Slide 2
+                            Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 6),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                color: Colors.deepPurple[400],
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  'Slide 2',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // ✅ Slide 3
+                            Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 6),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                color: Colors.deepPurple[600],
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  'Slide 3',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(
+                        height: 16,
+                      ), // ระยะห่างเล็กน้อยระหว่างสไลด์กับปุ่ม
+                      // 🔹 ปุ่ม BROWSE ASSET
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          // TODO: เพิ่มฟังก์ชันเมื่อกดปุ่ม
+                          print("Browse Asset Clicked!");
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6B45FF), // 💜 สีม่วง
+                          foregroundColor: Colors.white,
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 15,
+                            vertical: 12,
+                          ),
+                        ),
+
+                        label: const Text(
+                          "BROWSE ASSET",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
