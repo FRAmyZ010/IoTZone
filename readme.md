@@ -28,8 +28,8 @@ Mobile_Project/
 ## 1. Clone โปรเจกต์
 
 ```bash
-git clone <https://github.com/FRAmyZ010/IoTZone.git>
-cd Mobile_Project
+git clone https://github.com/FRAmyZ010/IoTZone.git
+cd IoTZone
 ```
 
 ---
