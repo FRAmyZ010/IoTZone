@@ -10,7 +10,7 @@ class Homepage extends StatefulWidget {
 
 class _HomepageState extends State<Homepage> {
   final ScrollController _scrollController = ScrollController();
-  @override
+
   @override
   void initState() {
     super.initState();
@@ -24,6 +24,7 @@ class _HomepageState extends State<Homepage> {
     });
   }
 
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
@@ -31,20 +32,17 @@ class _HomepageState extends State<Homepage> {
           children: [
             // 🔹 ส่วนบน 20% พร้อมรูปจาง + Gradient + โปรไฟล์
             Expanded(
-              flex: 2, // เทียบสัดส่วน 20%
+              flex: 2,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // 🔹 รูปพื้นหลัง
                   Opacity(
-                    opacity: 0.5, // ทำให้รูปจางลง 50%
+                    opacity: 0.5,
                     child: Image.asset(
                       './asset/img/homepage-banner.jpg',
                       fit: BoxFit.cover,
                     ),
                   ),
-
-                  // 🔹 Gradient ไล่สีจากล่างเข้ม → บนอ่อน
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -57,7 +55,6 @@ class _HomepageState extends State<Homepage> {
                       ),
                     ),
                   ),
-
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,
@@ -66,7 +63,6 @@ class _HomepageState extends State<Homepage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // 🔹 แถวบน: ปุ่มเมนู (ขวาบน)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
@@ -76,18 +72,12 @@ class _HomepageState extends State<Homepage> {
                                 color: Colors.white,
                                 size: 28,
                               ),
-                              padding:
-                                  EdgeInsets.zero, // ✅ ตัด padding ของปุ่มออก
-                              constraints:
-                                  const BoxConstraints(), // ✅ ไม่เว้นพื้นที่รอบปุ่ม
-                              onPressed: () {
-                                // TODO: เพิ่มฟังก์ชันเมื่อกดปุ่มเมนู
-                              },
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () {},
                             ),
                           ],
                         ),
-
-                        // 🔹 แถวล่าง: โปรไฟล์ + ชื่อ + ตำแหน่ง (ติดกันเลย)
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -124,8 +114,6 @@ class _HomepageState extends State<Homepage> {
                       ],
                     ),
                   ),
-
-                  // 🔹 โลโก้แอป (กลางล่าง)
                   Align(
                     alignment: Alignment.bottomCenter,
                     child: Padding(
@@ -158,20 +146,19 @@ class _HomepageState extends State<Homepage> {
               ),
             ),
 
-            SizedBox(height: 20), // เว้นระยะห่างเล็กน้อย
-            // 🔹 ส่วนล่าง 80%
+            const SizedBox(height: 20),
+
+            // 🔹 ส่วนล่าง (Carousel + Recommend)
             Expanded(
-              flex: 8, // ส่วนล่าง 80%
+              flex: 8,
               child: Container(
                 color: Colors.white,
                 alignment: Alignment.topCenter,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: SingleChildScrollView(
-                    // ✅ เผื่อกรณีเนื้อหาเกินจอ
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start, // ✅ ชิดซ้ายทั้งหมด
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // 🔹 Carousel
                         SizedBox(
@@ -182,66 +169,13 @@ class _HomepageState extends State<Homepage> {
                               autoPlay: true,
                               autoPlayInterval: const Duration(seconds: 10),
                               enlargeCenterPage: true,
-                              viewportFraction:
-                                  0.78, // ✅ ลดลงนิดให้เห็นขอบสองฝั่ง
-                              padEnds:
-                                  true, // ✅ เปิดกลับมาเพื่อ balance ระยะขอบซ้าย
+                              viewportFraction: 0.78,
+                              padEnds: true,
                             ),
                             items: [
-                              Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16),
-                                  color: Colors.deepPurple[200],
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    'Slide 1',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16),
-                                  color: Colors.deepPurple[400],
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    'Slide 2',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16),
-                                  color: Colors.deepPurple[600],
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    'Slide 3',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ),
+                              _buildSlide('Slide 1', Colors.deepPurple[200]!),
+                              _buildSlide('Slide 2', Colors.deepPurple[400]!),
+                              _buildSlide('Slide 3', Colors.deepPurple[600]!),
                             ],
                           ),
                         ),
@@ -251,9 +185,7 @@ class _HomepageState extends State<Homepage> {
                         // 🔹 ปุ่ม Browse Asset
                         Center(
                           child: ElevatedButton(
-                            onPressed: () {
-                              print("Browse Asset Clicked!");
-                            },
+                            onPressed: () {},
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF6B45FF),
                               foregroundColor: Colors.white,
@@ -277,7 +209,7 @@ class _HomepageState extends State<Homepage> {
                           ),
                         ),
 
-                        // 🔹 ข้อความ Recommend
+                        // 🔹 Recommend
                         const Padding(
                           padding: EdgeInsets.only(left: 20, top: 10),
                           child: Text(
@@ -292,7 +224,7 @@ class _HomepageState extends State<Homepage> {
 
                         const SizedBox(height: 10),
 
-                        // 🔹 แนวนอน 3 item เลื่อนได้
+                        // 🔹 Carousel Recommend
                         SizedBox(
                           height: 300,
                           child: CarouselSlider(
@@ -303,91 +235,20 @@ class _HomepageState extends State<Homepage> {
                               viewportFraction: 0.75,
                               padEnds: true,
                               autoPlay: false,
-                              initialPage: 1, // ✅ เริ่มที่ Item 2 (index 1)
+                              initialPage: 1,
                             ),
                             items: [
-                              // Item 1
-                              Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.deepPurple[100],
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    "Item 1",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.deepPurple,
-                                    ),
-                                  ),
-                                ),
+                              _buildRecommend(
+                                'Item 1',
+                                Colors.deepPurple[100]!,
                               ),
-
-                              // Item 2
-                              Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.deepPurple[300],
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    "Item 2",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
+                              _buildRecommend(
+                                'Item 2',
+                                Colors.deepPurple[300]!,
                               ),
-
-                              // Item 3
-                              Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.deepPurple[500],
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.15),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    "Item 3",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
+                              _buildRecommend(
+                                'Item 3',
+                                Colors.deepPurple[500]!,
                               ),
                             ],
                           ),
@@ -399,6 +260,113 @@ class _HomepageState extends State<Homepage> {
               ),
             ),
           ],
+        ),
+      ),
+
+      // 🔹 Navigation Bar ด้านล่าง
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 70, vertical: 20),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // 💜 Gradient Border (พื้นหลัง)
+            Container(
+              height: 63,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(100),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF4D5DFF), Color(0xFFC368FF)],
+                ),
+              ),
+            ),
+
+            // ⚪ พื้นขาวข้างใน (ลดขนาดลงเล็กน้อย)
+            Container(
+              height: 54,
+              margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      onPressed: () => print("Home clicked"),
+                      icon: const Icon(
+                        Icons.home,
+                        size: 26,
+                        color: Colors.black,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => print("History clicked"),
+                      icon: const Icon(
+                        Icons.history,
+                        size: 26,
+                        color: Colors.black,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => print("Menu clicked"),
+                      icon: const Icon(
+                        Icons.list_alt,
+                        size: 26,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ✅ ฟังก์ชันย่อยสร้างสไลด์
+  Widget _buildSlide(String text, Color color) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Center(
+        child: Text(
+          text,
+          style: const TextStyle(fontSize: 20, color: Colors.white),
+        ),
+      ),
+    );
+  }
+
+  // ✅ ฟังก์ชันย่อยสร้าง Recommend item
+  Widget _buildRecommend(String text, Color color) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
       ),
     );
