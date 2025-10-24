@@ -29,7 +29,12 @@ Mobile_Project/
 
 ```bash
 git clone https://github.com/FRAmyZ010/IoTZone.git
-cd IoTZone
+cd IoTZone/iot_zone
+```
+
+### ติดตั้ง dependencies
+```bash
+flutter pub get
 ```
 
 ---
