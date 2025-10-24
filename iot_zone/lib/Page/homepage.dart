@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
+import 'Widgets/bottom_nav_bar.dart';
+
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
 
@@ -263,66 +265,21 @@ class _HomepageState extends State<Homepage> {
         ),
       ),
 
-      // 🔹 Navigation Bar ด้านล่าง
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 70, vertical: 20),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // 💜 Gradient Border (พื้นหลัง)
-            Container(
-              height: 63,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(100),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF4D5DFF), Color(0xFFC368FF)],
-                ),
-              ),
-            ),
+      bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: 0, // หน้าปัจจุบัน (Home)
+        onTap: (index) {
+          setState(() {
+            // index ที่เลือก (0 = Home, 1 = History, 2 = Menu)
+            print("Tapped index: $index");
+          });
 
-            // ⚪ พื้นขาวข้างใน (ลดขนาดลงเล็กน้อย)
-            Container(
-              height: 54,
-              margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(100),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      onPressed: () => print("Home clicked"),
-                      icon: const Icon(
-                        Icons.home,
-                        size: 26,
-                        color: Colors.black,
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => print("History clicked"),
-                      icon: const Icon(
-                        Icons.history,
-                        size: 26,
-                        color: Colors.black,
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => print("Menu clicked"),
-                      icon: const Icon(
-                        Icons.list_alt,
-                        size: 26,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+          // ✅ ตัวอย่างการลิงก์ไปหน้าอื่น
+          if (index == 1) {
+            Navigator.pushNamed(context, '/history');
+          } else if (index == 2) {
+            Navigator.pushNamed(context, '/menu');
+          }
+        },
       ),
     );
   }
