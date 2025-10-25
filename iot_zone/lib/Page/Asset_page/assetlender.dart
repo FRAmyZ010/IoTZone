@@ -28,7 +28,7 @@ class _AssetlenderState extends State<Assetlender> {
     {
       'name': 'Resistor',
       'status': 'Borrowed',
-      'statusColor': Colors.brown,
+      'statusColor': Colors.grey,
       'image':
           'https://cdn.sparkfun.com//assets/parts/1/1/3/8/8/11622-Resistor_1K-01.jpg',
     },
