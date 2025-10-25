@@ -65,7 +65,15 @@ flutter:
   assets:
     - ./asset/img/homepage-banner.jpg
     - ./asset/img/Icon_Profile.png
-    
+    - asset/img/LAB_ROOM.jpg
+    - asset/img/LAB_ROOM1.jpg
+    - asset/img/LAB_ROOM2.jpg
+    - asset/img/LAB_ROOM3.jpg
+    - asset/img/LAB_ROOM4.jpg
+    - asset/img/LAB_ROOM5.webp
+    - asset/img/LAB_ROOM6.webp
+    - asset/img/LAB_ROOM7.jpg
+
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
