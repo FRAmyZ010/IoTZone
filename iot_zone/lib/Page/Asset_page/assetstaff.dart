@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'asset_listmap/asset_model.dart';
 
 class AssetStaff extends StatefulWidget {
   const AssetStaff({super.key});
@@ -10,389 +11,200 @@ class AssetStaff extends StatefulWidget {
 class _AssetStaffState extends State<AssetStaff> {
   String selected = 'All';
 
-  // สมมุติข้อมูล Asset
-  final List<Map<String, dynamic>> assets = [
-    {
-      'name': 'SN74LS32N',
-      'status': 'Available',
-      'statusColor': Colors.green,
-      'image': 'asset/img/SN74LS32N.png',
-    },
-    {
-      'name': 'Multimeter',
-      'status': 'Disabled',
-      'statusColor': Colors.red,
-      'image':
-          'https://cdn.thewirecutter.com/wp-content/media/2022/07/multimeters-2048px-02656.jpg',
-    },
-    {
-      'name': 'Resistor',
-      'status': 'Borrowed',
-      'statusColor': Colors.brown,
-      'image':
-          'https://cdn.sparkfun.com//assets/parts/1/1/3/8/8/11622-Resistor_1K-01.jpg',
-    },
-    {
-      'name': 'Capacitor',
-      'status': 'Pending',
-      'statusColor': Colors.orange,
-      'image':
-          'https://www.electronicscomp.com/image/cache/catalog/capacitors/electrolytic/100uf-50v-electrolytic-capacitor-1000x1000.jpg',
-    },
+  // ✅ ตัวอย่างข้อมูล AssetModel
+  final List<AssetModel> assets = [
+    AssetModel(
+      id: 1,
+      type: 'Board',
+      name: 'SN74LS32N',
+      status: 'Available',
+      image: 'asset/img/SN74LS32N.png',
+      description:
+          'A quad 2-input OR gate IC commonly used in digital logic circuits.',
+      statusColorValue: Colors.green.value,
+    ),
+    AssetModel(
+      id: 2,
+      type: 'Tool',
+      name: 'Multimeter',
+      status: 'Disabled',
+      image: 'asset/img/Multimeter.png',
+      description:
+          'A measuring instrument combining voltage, current, and resistance functions.',
+      statusColorValue: Colors.red.value,
+    ),
+    AssetModel(
+      id: 3,
+      type: 'Component',
+      name: 'Resistor',
+      status: 'Borrowed',
+      image: 'asset/img/Resistor.png',
+      description: 'A passive component that limits current flow.',
+      statusColorValue: Colors.grey.value,
+    ),
+    AssetModel(
+      id: 4,
+      type: 'Component',
+      name: 'Capacitor',
+      status: 'Pending',
+      image: 'asset/img/Capacitor.png',
+      description: 'Stores and releases electrical energy.',
+      statusColorValue: Colors.orange.value,
+    ),
   ];
 
-  // ฟังก์ชันเปิด Dialog เพิ่ม Item
-  void _openAddItemDialog() {
-    final TextEditingController nameController = TextEditingController();
-    final TextEditingController descriptionController = TextEditingController();
-    String selectedType = 'Type';
+  // 🔹 ฟังก์ชันเปิด Dialog Add/Edit
+  void _openAssetDialog({AssetModel? asset}) {
+    final isEditing = asset != null;
+    final nameController = TextEditingController(
+      text: isEditing ? asset.name : '',
+    );
+    final descController = TextEditingController(
+      text: isEditing ? asset.description : '',
+    );
+    String selectedType = isEditing ? asset.type : 'Type';
 
     showDialog(
       context: context,
-      builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24), // ✅ ความโค้งขอบ Dialog
-          ),
-          elevation: 6,
-          backgroundColor: Colors.transparent, // ✅ ทำให้พื้นหลังโปร่งหน่อย
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24), // ✅ โค้งเนียนทั้งกล่อง
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              width: 350,
-              color: Colors.white,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  children: [
-                    // รูป Upload
-                    Container(
-                      height: 150,
-                      width: 150,
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: Colors.grey.shade400,
-                          width: 1,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  isEditing ? 'Edit Asset' : 'Add New Asset',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepPurple,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  height: 150,
+                  width: 150,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade400),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.image, size: 60, color: Colors.grey),
+                      SizedBox(height: 8),
+                      Text(
+                        'Upload',
+                        style: TextStyle(
+                          color: Colors.blueAccent,
+                          fontWeight: FontWeight.bold,
                         ),
-                        borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.image, size: 60, color: Colors.grey),
-                          SizedBox(height: 8),
-                          Text(
-                            'Upload',
-                            style: TextStyle(
-                              color: Colors.blueAccent,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: "Asset's name",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    const SizedBox(height: 16),
-
-                    // ช่องกรอกชื่อ
-                    TextField(
-                      decoration: InputDecoration(
-                        hintText: "Asset's name",
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(
-                            14,
-                          ), // ✅ โค้งช่องกรอก
-                        ),
-                      ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: selectedType,
+                  decoration: InputDecoration(
+                    labelText: 'Type',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    const SizedBox(height: 12),
-
-                    // Dropdown Type
-                    DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                        hintText: 'Type',
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      items: ['Type', 'Board', 'Module', 'Sensor', 'Tool']
+                  ),
+                  items:
+                      ['Type', 'Board', 'Module', 'Sensor', 'Tool', 'Component']
                           .map(
                             (e) => DropdownMenuItem(value: e, child: Text(e)),
                           )
                           .toList(),
-                      onChanged: (_) {},
-                    ),
-                    const SizedBox(height: 12),
-
-                    // ช่องคำอธิบาย
-                    TextField(
-                      maxLines: 2,
-                      decoration: InputDecoration(
-                        hintText: "Description",
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // ปุ่มยืนยัน / ยกเลิก
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                          ),
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text(
-                            'CONFIRM',
-                            style: TextStyle(
-                              color: Colors.white, // ✅ ข้อความสีขาว
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.redAccent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                          ),
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text(
-                            'CANCEL',
-                            style: TextStyle(
-                              color: Colors.white, // ✅ ข้อความสีขาว
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  onChanged: (value) {
+                    selectedType = value!;
+                  },
                 ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  //------------------------------------- ฟังก์ชันเพิ่ม edit ------------------------
-  // ✅ ฟังก์ชันเปิด Edit Dialog
-  void _openEditDialog(String assetName) {
-    final TextEditingController nameController = TextEditingController(
-      text: assetName,
-    );
-    final TextEditingController descriptionController = TextEditingController(
-      text: "Old description...",
-    );
-    String selectedType = 'Board';
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          elevation: 6,
-          backgroundColor: Colors.transparent,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              width: 350,
-              color: Colors.white,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descController,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    labelText: "Description",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    const Text(
-                      "Edit Asset",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                        color: Colors.deepPurple,
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              isEditing ? '✅ Changes saved' : '✅ Asset added',
+                            ),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.check, color: Colors.white),
+                      label: Text(isEditing ? 'SAVE' : 'CONFIRM'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 16),
-
-                    // ✅ ช่องกรอกชื่อ
-                    Column(
-                      children: [
-                        Container(
-                          height: 150,
-                          width: 150,
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: Colors.grey.shade400,
-                              width: 1,
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.image, size: 60, color: Colors.grey),
-                              SizedBox(height: 8),
-                              Text(
-                                'Upload',
-                                style: TextStyle(
-                                  color: Colors.blueAccent,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
+                    ElevatedButton.icon(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      label: const Text('CANCEL'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
                         ),
-                        const SizedBox(height: 20),
-                        TextField(
-                          controller: nameController,
-                          decoration: InputDecoration(
-                            labelText: "Asset's name",
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // ✅ Dropdown ประเภท
-                        DropdownButtonFormField<String>(
-                          value: selectedType,
-                          decoration: InputDecoration(
-                            labelText: 'Type',
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          items: ['Board', 'Module', 'Sensor', 'Tool']
-                              .map(
-                                (e) =>
-                                    DropdownMenuItem(value: e, child: Text(e)),
-                              )
-                              .toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              selectedType = value!;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 12),
-
-                        // ✅ ช่องคำอธิบาย
-                        TextField(
-                          controller: descriptionController,
-                          maxLines: 2,
-                          decoration: InputDecoration(
-                            labelText: "Description",
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-                    ),
-
-                    // ✅ ปุ่ม SAVE และ DISABLE
-                    Column(
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            // ✅ ใส่ logic บันทึกการแก้ไขตรงนี้
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("✅ Changes saved successfully!"),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.save, color: Colors.white),
-                          label: const Text(
-                            'SAVE CHANGE',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blueAccent,
-                            minimumSize: const Size(double.infinity, 45),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("❌ Item disabled"),
-                                backgroundColor: Colors.redAccent,
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.block, color: Colors.white),
-                          label: const Text(
-                            'DISABLE ITEM',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.redAccent,
-                            minimumSize: const Size(double.infinity, 45),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
-              ),
+              ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
   // ----------------------------- UI หลัก -----------------------------
   @override
   Widget build(BuildContext context) {
+    final filteredAssets = selected == 'All'
+        ? assets
+        : assets.where((a) => a.type == selected).toList();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           'Asset (Staff)',
           style: TextStyle(
-            fontSize: 22,
             fontWeight: FontWeight.bold,
+            fontSize: 22,
             color: Colors.white,
           ),
         ),
@@ -407,59 +219,62 @@ class _AssetStaffState extends State<AssetStaff> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 🔹 Filter buttons
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.2),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: ['All', 'Board', 'Module'].map((label) {
-                  final isSelected = selected == label;
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() => selected = label);
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFF8C6BFF)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.w400,
+            Align(
+              alignment: Alignment.center,
+              child: Container(
+                width: 320,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(25),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.2),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: ['All', 'Board', 'Module'].map((label) {
+                    final isSelected = selected == label;
+                    return GestureDetector(
+                      onTap: () => setState(() => selected = label),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
                           color: isSelected
-                              ? Colors.white
-                              : Colors.grey.shade800,
+                              ? const Color(0xFF8C6BFF)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.w400,
+                            color: isSelected
+                                ? Colors.white
+                                : Colors.grey.shade800,
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                }).toList(),
+                    );
+                  }).toList(),
+                ),
               ),
             ),
+
             const SizedBox(height: 20),
 
-            // 🔍 Search box + Add button
+            // 🔍 Search + Add button
             Row(
               children: [
                 Expanded(
@@ -480,16 +295,12 @@ class _AssetStaffState extends State<AssetStaff> {
                         ),
                       ],
                     ),
-                    child: Row(
+                    child: const Row(
                       children: [
-                        const SizedBox(width: 12),
-                        const Icon(
-                          Icons.search,
-                          color: Colors.black54,
-                          size: 22,
-                        ),
-                        const SizedBox(width: 8),
-                        const Expanded(
+                        SizedBox(width: 12),
+                        Icon(Icons.search, color: Colors.black54, size: 22),
+                        SizedBox(width: 8),
+                        Expanded(
                           child: TextField(
                             decoration: InputDecoration(
                               hintText: 'Search your item',
@@ -504,7 +315,7 @@ class _AssetStaffState extends State<AssetStaff> {
                 ),
                 const SizedBox(width: 10),
                 ElevatedButton(
-                  onPressed: _openAddItemDialog,
+                  onPressed: () => _openAssetDialog(),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     shape: RoundedRectangleBorder(
@@ -520,21 +331,22 @@ class _AssetStaffState extends State<AssetStaff> {
             ),
 
             const SizedBox(height: 20),
+
             const Text(
               "Asset List",
               style: TextStyle(
-                fontWeight: FontWeight.bold,
                 fontSize: 18,
+                fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
 
-            // ✅ GridView 2 คอลัมน์
+            // ✅ GridView
             Expanded(
               child: GridView.builder(
                 physics: const BouncingScrollPhysics(),
-                itemCount: assets.length,
+                itemCount: filteredAssets.length,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   mainAxisSpacing: 16,
@@ -542,7 +354,7 @@ class _AssetStaffState extends State<AssetStaff> {
                   childAspectRatio: 0.85,
                 ),
                 itemBuilder: (context, index) {
-                  final asset = assets[index];
+                  final asset = filteredAssets[index];
                   return Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -562,21 +374,15 @@ class _AssetStaffState extends State<AssetStaff> {
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(16),
                           ),
-                          child: asset['image'].toString().startsWith('http')
-                              ? Image.network(
-                                  asset['image'],
-                                  height: 90,
-                                  fit: BoxFit.cover,
-                                )
-                              : Image.asset(
-                                  asset['image'],
-                                  height: 90,
-                                  fit: BoxFit.cover,
-                                ),
+                          child: Image.asset(
+                            asset.image,
+                            height: 90,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          asset['name'],
+                          asset.name,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 16,
@@ -585,21 +391,15 @@ class _AssetStaffState extends State<AssetStaff> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          "Status: ${asset['status']}",
+                          "Status: ${asset.status}",
                           style: TextStyle(
-                            color: asset['statusColor'],
+                            color: asset.statusColor,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 6),
-
-                        // 🔹 ปุ่ม EDIT / DISABLE
+                        const SizedBox(height: 8),
                         ElevatedButton.icon(
-                          onPressed: () {
-                            _openEditDialog(
-                              asset['name'],
-                            ); // ✅ เรียก dialog เมื่อกดปุ่ม EDIT
-                          },
+                          onPressed: () => _openAssetDialog(asset: asset),
                           icon: const Icon(
                             Icons.edit,
                             size: 14,
@@ -610,9 +410,9 @@ class _AssetStaffState extends State<AssetStaff> {
                             style: TextStyle(color: Colors.white),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: Colors.blueAccent,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
+                              horizontal: 12,
                               vertical: 6,
                             ),
                             shape: RoundedRectangleBorder(

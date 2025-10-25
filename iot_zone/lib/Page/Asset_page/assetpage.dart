@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'showAssetDialog/showAssetDialog_student.dart';
+import 'asset_listmap/asset_model.dart';
 
 class Assetpage extends StatefulWidget {
   const Assetpage({super.key});
@@ -11,57 +12,58 @@ class Assetpage extends StatefulWidget {
 class _AssetpageState extends State<Assetpage> {
   String selected = 'All';
 
-  final List<Map<String, dynamic>> assets = [
-    {
-      'id': 1,
-      'type': 'Board',
-      'name': 'SN74LS32N',
-      'status': 'Available',
-      'statusColor': Colors.green,
-      'image': 'asset/img/SN74LS32N.png',
-      'description':
+  // ✅ ข้อมูลตัวอย่าง AssetModel
+  final List<AssetModel> assets = [
+    AssetModel(
+      id: 1,
+      type: 'Board',
+      name: 'SN74LS32N',
+      status: 'Available',
+      image: 'asset/img/SN74LS32N.png',
+      description:
           'A quad 2-input OR gate IC commonly used in digital logic circuits.',
-    },
-    {
-      'id': 2,
-      'type': 'Tool',
-      'name': 'Multimeter',
-      'status': 'Disabled',
-      'statusColor': Colors.red,
-      'image': 'asset/img/Multimeter.png',
-      'description':
+      statusColorValue: Colors.green.value,
+    ),
+    AssetModel(
+      id: 2,
+      type: 'Tool',
+      name: 'Multimeter',
+      status: 'Disabled',
+      image: 'asset/img/Multimeter.png',
+      description:
           'An electronic measuring instrument that combines several measurement functions like voltage, current, and resistance.',
-    },
-    {
-      'id': 3,
-      'type': 'Component',
-      'name': 'Resistor',
-      'status': 'Borrowed',
-      'statusColor': Colors.grey,
-      'image': 'asset/img/Resistor.png',
-      'description':
+      statusColorValue: Colors.red.value,
+    ),
+    AssetModel(
+      id: 3,
+      type: 'Component',
+      name: 'Resistor',
+      status: 'Borrowed',
+      image: 'asset/img/Resistor.png',
+      description:
           'A passive electrical component that limits or regulates the flow of electrical current in a circuit.',
-    },
-    {
-      'id': 4,
-      'type': 'Component',
-      'name': 'Capacitor',
-      'status': 'Pending',
-      'statusColor': Colors.orange,
-      'image': 'asset/img/Capacitor.png',
-      'description':
+      statusColorValue: Colors.grey.value,
+    ),
+    AssetModel(
+      id: 4,
+      type: 'Component',
+      name: 'Capacitor',
+      status: 'Pending',
+      image: 'asset/img/Capacitor.png',
+      description:
           'A component that stores and releases electrical energy, often used for filtering or timing applications.',
-    },
-    {
-      'id': 5,
-      'type': 'Module',
-      'name': 'Transistor',
-      'status': 'Available',
-      'statusColor': Colors.green,
-      'image': 'asset/img/Transistor.png',
-      'description':
+      statusColorValue: Colors.orange.value,
+    ),
+    AssetModel(
+      id: 5,
+      type: 'Module',
+      name: 'Transistor',
+      status: 'Available',
+      image: 'asset/img/Transistor.png',
+      description:
           'A semiconductor device used to amplify or switch electronic signals in circuits.',
-    },
+      statusColorValue: Colors.green.value,
+    ),
   ];
 
   @override
@@ -69,7 +71,7 @@ class _AssetpageState extends State<Assetpage> {
     // ✅ ฟิลเตอร์ข้อมูลตามปุ่มที่เลือก
     final filteredAssets = selected == 'All'
         ? assets
-        : assets.where((a) => a['type'] == selected).toList();
+        : assets.where((a) => a.type == selected).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -84,7 +86,6 @@ class _AssetpageState extends State<Assetpage> {
         backgroundColor: Colors.deepPurpleAccent,
         elevation: 0,
       ),
-
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
@@ -112,11 +113,7 @@ class _AssetpageState extends State<Assetpage> {
                   children: ['All', 'Board', 'Module'].map((label) {
                     final isSelected = selected == label;
                     return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selected = label;
-                        });
-                      },
+                      onTap: () => setState(() => selected = label),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.symmetric(
@@ -198,7 +195,7 @@ class _AssetpageState extends State<Assetpage> {
                 ),
                 itemBuilder: (context, index) {
                   final asset = filteredAssets[index];
-                  final isAvailable = asset['status'] == 'Available';
+                  final isAvailable = asset.status == 'Available';
 
                   return GestureDetector(
                     onTap: isAvailable
@@ -206,14 +203,14 @@ class _AssetpageState extends State<Assetpage> {
                             showDialog(
                               context: context,
                               builder: (context) =>
-                                  BorrowAssetDialog(asset: asset),
+                                  BorrowAssetDialog(asset: asset.toMap()),
                             );
                           }
                         : () {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  '${asset['name']} is currently not available.',
+                                  '${asset.name} is currently not available.',
                                   style: const TextStyle(color: Colors.white),
                                 ),
                                 backgroundColor: Colors.redAccent,
@@ -243,14 +240,14 @@ class _AssetpageState extends State<Assetpage> {
                                 top: Radius.circular(16),
                               ),
                               child: Image.asset(
-                                asset['image'],
+                                asset.image,
                                 height: 90,
                                 fit: BoxFit.cover,
                               ),
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              asset['name'],
+                              asset.name,
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 fontSize: 16,
@@ -259,9 +256,9 @@ class _AssetpageState extends State<Assetpage> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              asset['status'],
+                              asset.status,
                               style: TextStyle(
-                                color: asset['statusColor'],
+                                color: asset.statusColor,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
