@@ -53,6 +53,13 @@ Dependencies สำคัญ:
 - `bcrypt` → เข้ารหัสรหัสผ่าน
 - `nodemon` → รีสตาร์ท server อัตโนมัติเวลาแก้ไฟล์
 
+## วิธีสร้าง Branch
+ - เข้าไปใน branch main หรือ branch ที่ต้องการแตกกิ่งออกมา
+ - สร้างชื่อ Format ตามนี้ 
+ - {page}/{role}/{features}/{version}
+ - {ชื่อหน้า}/{ตำแหน่ง}/{ฟีทเจอร์ที่ทำ}/{เวอร์ชั่นของฟีทเจอร์ที่ทำ}
+ - Ex. homepage/staff/add-item/v.0.1
+
 
 
 ### 2.2 สร้างฐานข้อมูล MySQL
