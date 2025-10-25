@@ -8,47 +8,59 @@ class BorrowAssetDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       backgroundColor: Colors.white,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        width: 350,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 30, vertical: 60),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // 🔹 ชื่อหัวข้อ
+            // 🔹 ชื่ออุปกรณ์
             Text(
               asset['name'],
+              textAlign: TextAlign.center,
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 20,
+                fontSize: 22,
                 color: Colors.black87,
               ),
             ),
-            const SizedBox(height: 10),
+
+            const SizedBox(height: 14),
 
             // 🔹 รูปภาพ
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                asset['image'],
-                height: 150,
-                fit: BoxFit.contain,
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              padding: const EdgeInsets.all(10),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(
+                  asset['image'],
+                  height: 160,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
-            const SizedBox(height: 10),
 
-            // 🔹 ข้อความเตือนสีแดง
+            const SizedBox(height: 16),
+
+            // 🔹 ข้อความเตือน
             const Text(
-              '*You can only borrow 1 asset a day',
+              "*You can only borrow 1 asset a day",
               style: TextStyle(
                 color: Colors.red,
                 fontWeight: FontWeight.bold,
-                fontSize: 13,
+                fontSize: 13.5,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 10),
+
+            const SizedBox(height: 20),
 
             // 🔹 คำอธิบาย
             Align(
@@ -57,30 +69,33 @@ class BorrowAssetDialog extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Description :",
+                    "Description:",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
+                      fontSize: 15.5,
                       color: Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     asset['description'],
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                      height: 1.4,
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      color: Colors.grey.shade800,
+                      height: 1.5,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+
+            const SizedBox(height: 26),
 
             // 🔹 ปุ่ม Borrow / Cancel
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
+                // ✅ Borrow
                 ElevatedButton(
                   onPressed: () async {
                     final pickedDate = await showDatePicker(
@@ -91,10 +106,8 @@ class BorrowAssetDialog extends StatelessWidget {
                     );
 
                     if (pickedDate != null) {
-                      // ✅ ปิด dialog ก่อน
                       Navigator.of(context).pop();
 
-                      // ✅ แสดง SnackBar ในหน้า Asset
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
@@ -109,9 +122,10 @@ class BorrowAssetDialog extends StatelessWidget {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
+                    elevation: 3,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 28,
-                      vertical: 10,
+                      horizontal: 32,
+                      vertical: 12,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
@@ -123,16 +137,20 @@ class BorrowAssetDialog extends StatelessWidget {
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ),
+
+                // ❌ Cancel
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
+                    elevation: 3,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 28,
-                      vertical: 10,
+                      horizontal: 32,
+                      vertical: 12,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
@@ -144,6 +162,7 @@ class BorrowAssetDialog extends StatelessWidget {
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ),
