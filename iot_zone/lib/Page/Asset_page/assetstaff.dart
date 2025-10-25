@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'asset_listmap/asset_model.dart';
+import 'showAssetDialog/showAssetDialog_staff.dart';
 
 class AssetStaff extends StatefulWidget {
   const AssetStaff({super.key});
@@ -53,163 +54,42 @@ class _AssetStaffState extends State<AssetStaff> {
     ),
   ];
 
-  // 🔹 เปิด Dialog สำหรับ Add/Edit
-  void _openAssetDialog({AssetModel? asset}) {
-    final isEditing = asset != null;
-    final nameController = TextEditingController(
-      text: isEditing ? asset.name : '',
-    );
-    final descController = TextEditingController(
-      text: isEditing ? asset.description : '',
-    );
-    String selectedType = isEditing ? asset.type : 'Type';
-
-    showDialog(
+  // 🔹 ฟังก์ชันเปิด Dialog (เรียกไฟล์ ShowAssetDialogStaff)
+  void _openAssetDialog({AssetModel? asset}) async {
+    final result = await showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  isEditing ? 'Edit Asset' : 'Add New Asset',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.deepPurple,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  height: 150,
-                  width: 150,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade400),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.image, size: 60, color: Colors.grey),
-                      SizedBox(height: 8),
-                      Text(
-                        'Upload',
-                        style: TextStyle(
-                          color: Colors.blueAccent,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                    labelText: "Asset's name",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: selectedType,
-                  decoration: InputDecoration(
-                    labelText: 'Type',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  items:
-                      ['Type', 'Board', 'Module', 'Sensor', 'Tool', 'Component']
-                          .map(
-                            (e) => DropdownMenuItem(value: e, child: Text(e)),
-                          )
-                          .toList(),
-                  onChanged: (value) => selectedType = value!,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: descController,
-                  maxLines: 2,
-                  decoration: InputDecoration(
-                    labelText: "Description",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              isEditing ? '✅ Changes saved' : '✅ Asset added',
-                            ),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.check, color: Colors.white),
-                      label: Text(isEditing ? 'SAVE' : 'CONFIRM'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                      ),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      label: const Text('CANCEL'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      builder: (context) => ShowAssetDialogStaff(asset: asset),
     );
+
+    // ✅ ถ้ามีการ return ผลลัพธ์กลับมา (เพิ่ม/แก้ไข)
+    if (result is AssetModel) {
+      setState(() {
+        if (asset == null) {
+          // ➕ เพิ่มใหม่
+          assets.add(result);
+        } else {
+          // ✏️ แก้ข้อมูลเดิม
+          final index = assets.indexWhere((a) => a.id == asset.id);
+          if (index != -1) assets[index] = result;
+        }
+      });
+    }
   }
 
   // 🔹 ฟังก์ชันเปลี่ยนสถานะ Disabled / Available
   void _toggleStatus(AssetModel asset) {
     setState(() {
-      final updatedList = assets.map((a) {
+      assets = assets.map((a) {
         if (a.id == asset.id) {
-          if (a.status == 'Disabled') {
-            return a.copyWith(
-              status: 'Available',
-              statusColorValue: Colors.green.value,
-            );
-          } else {
-            return a.copyWith(
-              status: 'Disabled',
-              statusColorValue: Colors.red.value,
-            );
-          }
+          return a.copyWith(
+            status: a.status == 'Disabled' ? 'Available' : 'Disabled',
+            statusColorValue: a.status == 'Disabled'
+                ? Colors.green.value
+                : Colors.red.value,
+          );
         }
         return a;
       }).toList();
-
-      assets = updatedList;
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -248,6 +128,7 @@ class _AssetStaffState extends State<AssetStaff> {
         elevation: 0,
       ),
       backgroundColor: const Color(0xFFF9F6FF),
+
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
@@ -386,19 +267,23 @@ class _AssetStaffState extends State<AssetStaff> {
                   crossAxisCount: 2,
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
-                  childAspectRatio: 0.7, // 🔹 ลดค่าลง = กล่องสูงขึ้น
+                  childAspectRatio: 0.59, // 🔹 ลดค่าลง = กล่องสูงขึ้น
                 ),
                 itemBuilder: (context, index) {
                   final asset = filteredAssets[index];
                   return Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(18),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.grey.withOpacity(0.15),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
@@ -411,20 +296,20 @@ class _AssetStaffState extends State<AssetStaff> {
                           ),
                           child: Image.asset(
                             asset.image,
-                            height: 90,
+                            height: 110,
                             fit: BoxFit.cover,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         Text(
                           asset.name,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: 17,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Text(
                           "Status: ${asset.status}",
                           style: TextStyle(
@@ -432,9 +317,7 @@ class _AssetStaffState extends State<AssetStaff> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 8),
-
-                        // 🔹 ปุ่ม EDIT
+                        const SizedBox(height: 10),
                         ElevatedButton.icon(
                           onPressed: () => _openAssetDialog(asset: asset),
                           icon: const Icon(
@@ -449,18 +332,15 @@ class _AssetStaffState extends State<AssetStaff> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blueAccent,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
+                              horizontal: 16,
+                              vertical: 8,
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 6),
-
-                        // 🔹 ปุ่ม DISABLE / ENABLE
                         ElevatedButton.icon(
                           onPressed: () => _toggleStatus(asset),
                           icon: Icon(
@@ -479,8 +359,8 @@ class _AssetStaffState extends State<AssetStaff> {
                                 ? Colors.green
                                 : Colors.redAccent,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
+                              horizontal: 16,
+                              vertical: 8,
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
