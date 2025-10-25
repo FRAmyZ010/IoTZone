@@ -19,6 +19,7 @@ class AssetModel {
     required this.statusColorValue,
   });
 
+  // 🔹 ใช้สำหรับแปลงจาก Map → Object (เช่น จาก DB หรือ JSON)
   factory AssetModel.fromMap(Map<String, dynamic> map) {
     return AssetModel(
       id: map['id'] ?? 0,
@@ -31,6 +32,7 @@ class AssetModel {
     );
   }
 
+  // 🔹 ใช้สำหรับแปลงจาก Object → Map (เก็บลง DB)
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -43,5 +45,27 @@ class AssetModel {
     };
   }
 
+  // 🔹 getter แปลง int → Color
   Color get statusColor => Color(statusColorValue);
+
+  // 🔹 ใช้สำหรับ clone แล้วแก้บางค่า (เช่น toggle status)
+  AssetModel copyWith({
+    int? id,
+    String? type,
+    String? name,
+    String? status,
+    String? image,
+    String? description,
+    int? statusColorValue,
+  }) {
+    return AssetModel(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      name: name ?? this.name,
+      status: status ?? this.status,
+      image: image ?? this.image,
+      description: description ?? this.description,
+      statusColorValue: statusColorValue ?? this.statusColorValue,
+    );
+  }
 }

@@ -12,7 +12,7 @@ class _AssetStaffState extends State<AssetStaff> {
   String selected = 'All';
 
   // ✅ ตัวอย่างข้อมูล AssetModel
-  final List<AssetModel> assets = [
+  List<AssetModel> assets = [
     AssetModel(
       id: 1,
       type: 'Board',
@@ -53,7 +53,7 @@ class _AssetStaffState extends State<AssetStaff> {
     ),
   ];
 
-  // 🔹 ฟังก์ชันเปิด Dialog Add/Edit
+  // 🔹 เปิด Dialog สำหรับ Add/Edit
   void _openAssetDialog({AssetModel? asset}) {
     final isEditing = asset != null;
     final nameController = TextEditingController(
@@ -130,9 +130,7 @@ class _AssetStaffState extends State<AssetStaff> {
                             (e) => DropdownMenuItem(value: e, child: Text(e)),
                           )
                           .toList(),
-                  onChanged: (value) {
-                    selectedType = value!;
-                  },
+                  onChanged: (value) => selectedType = value!,
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -191,6 +189,44 @@ class _AssetStaffState extends State<AssetStaff> {
     );
   }
 
+  // 🔹 ฟังก์ชันเปลี่ยนสถานะ Disabled / Available
+  void _toggleStatus(AssetModel asset) {
+    setState(() {
+      final updatedList = assets.map((a) {
+        if (a.id == asset.id) {
+          if (a.status == 'Disabled') {
+            return a.copyWith(
+              status: 'Available',
+              statusColorValue: Colors.green.value,
+            );
+          } else {
+            return a.copyWith(
+              status: 'Disabled',
+              statusColorValue: Colors.red.value,
+            );
+          }
+        }
+        return a;
+      }).toList();
+
+      assets = updatedList;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          asset.status == 'Disabled'
+              ? '✅ ${asset.name} enabled'
+              : '❌ ${asset.name} disabled',
+        ),
+        backgroundColor: asset.status == 'Disabled'
+            ? Colors.green
+            : Colors.redAccent,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   // ----------------------------- UI หลัก -----------------------------
   @override
   Widget build(BuildContext context) {
@@ -212,7 +248,6 @@ class _AssetStaffState extends State<AssetStaff> {
         elevation: 0,
       ),
       backgroundColor: const Color(0xFFF9F6FF),
-
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
@@ -351,7 +386,7 @@ class _AssetStaffState extends State<AssetStaff> {
                   crossAxisCount: 2,
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
-                  childAspectRatio: 0.85,
+                  childAspectRatio: 0.7, // 🔹 ลดค่าลง = กล่องสูงขึ้น
                 ),
                 itemBuilder: (context, index) {
                   final asset = filteredAssets[index];
@@ -398,6 +433,8 @@ class _AssetStaffState extends State<AssetStaff> {
                           ),
                         ),
                         const SizedBox(height: 8),
+
+                        // 🔹 ปุ่ม EDIT
                         ElevatedButton.icon(
                           onPressed: () => _openAssetDialog(asset: asset),
                           icon: const Icon(
@@ -411,6 +448,36 @@ class _AssetStaffState extends State<AssetStaff> {
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blueAccent,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 6),
+
+                        // 🔹 ปุ่ม DISABLE / ENABLE
+                        ElevatedButton.icon(
+                          onPressed: () => _toggleStatus(asset),
+                          icon: Icon(
+                            asset.status == 'Disabled'
+                                ? Icons.refresh
+                                : Icons.block,
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                          label: Text(
+                            asset.status == 'Disabled' ? 'ENABLE' : 'DISABLE',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: asset.status == 'Disabled'
+                                ? Colors.green
+                                : Colors.redAccent,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 6,
