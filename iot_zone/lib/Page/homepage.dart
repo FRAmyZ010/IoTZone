@@ -7,6 +7,7 @@ import 'Widgets/buildTextContainer2/buildTextContainer_rigthtop.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_center.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_rigthtop.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_leftlow.dart';
+import 'package:iot_zone/Page/Asset_page/assetpage.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -196,12 +197,19 @@ class _HomepageState extends State<Homepage> {
                           ),
                         ),
 
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 20),
 
                         // 🔹 ปุ่ม Browse Asset
                         Center(
                           child: ElevatedButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const Assetpage(),
+                                ),
+                              );
+                            },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF6B45FF),
                               foregroundColor: Colors.white,
@@ -225,14 +233,12 @@ class _HomepageState extends State<Homepage> {
                           ),
                         ),
 
-                        const SizedBox(height: 10),
-
                         // 🔹 Carousel Recommend
                         SizedBox(
-                          height: 300,
+                          height: 250,
                           child: CarouselSlider(
                             options: CarouselOptions(
-                              height: 300,
+                              height: 200,
                               enableInfiniteScroll: false,
                               enlargeCenterPage: true,
                               viewportFraction: 0.75,
