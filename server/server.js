@@ -1,3 +1,4 @@
+// วิธีรันเซิร์ฟ nodemon --watch server.js
 
 const express = require('express');
 const db = require('./db.js'); 
@@ -18,5 +19,5 @@ app.get('/', (req, res) => {
 
 const PORT = 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
