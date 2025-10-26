@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'showAssetDialog/showAssetDialog_student.dart';
 import 'asset_listmap/asset_model.dart';
+import '../Widgets/bottom_nav_bar.dart';
 
 class Assetpage extends StatefulWidget {
   const Assetpage({super.key});
@@ -272,6 +273,22 @@ class _AssetpageState extends State<Assetpage> {
             ),
           ],
         ),
+      ),
+      bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: 0, // หน้าปัจจุบัน (Home)
+        onTap: (index) {
+          setState(() {
+            // index ที่เลือก (0 = Home, 1 = History, 2 = Menu)
+            print("Tapped index: $index");
+          });
+
+          // ✅ ตัวอย่างการลิงก์ไปหน้าอื่น
+          if (index == 1) {
+            Navigator.pushNamed(context, '/history');
+          } else if (index == 2) {
+            Navigator.pushNamed(context, '/menu');
+          }
+        },
       ),
     );
   }
