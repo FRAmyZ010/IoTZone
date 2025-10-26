@@ -31,6 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   carousel_slider: ^5.1.1
+  image_picker: ^1.0.4
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -82,6 +83,12 @@ flutter:
     - asset/img/LAB_ROOM6.webp
     - asset/img/LAB_ROOM7.jpg
     - asset/img/iot.png
+    - asset/icon/user.png
+    - asset/icon/switch.png
+    - asset/icon/padlock.png
+    - asset/icon/id-card.png
+    - asset/icon/phone.png
+    - asset/icon/gmail.png
 
 
   # An image asset can refer to one or more resolution-specific "variants", see
