@@ -81,6 +81,7 @@ flutter:
     - asset/img/LAB_ROOM5.webp
     - asset/img/LAB_ROOM6.webp
     - asset/img/LAB_ROOM7.jpg
+    - asset/img/iot.png
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

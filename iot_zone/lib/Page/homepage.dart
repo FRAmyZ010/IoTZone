@@ -39,7 +39,7 @@ class _HomepageState extends State<Homepage> {
           children: [
             // 🔹 ส่วนบน 20% พร้อมรูปจาง + Gradient + โปรไฟล์
             Expanded(
-              flex: 2,
+              flex: 25,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -151,7 +151,7 @@ class _HomepageState extends State<Homepage> {
 
             // 🔹 ส่วนล่าง (Carousel + Recommend)
             Expanded(
-              flex: 8,
+              flex: 75,
               child: Container(
                 color: Colors.white,
                 alignment: Alignment.topCenter,
