@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
+import 'Widgets/bottom_nav_bar.dart';
+import 'Widgets/buildTextContainer2/buildTextContainar_rigthlow.dart';
+import 'Widgets/buildTextContainer2/buildTextContainer_rigthtop.dart';
+import 'Widgets/buildTextContainer1/buildSlidehomepage_center.dart';
+import 'Widgets/buildTextContainer1/buildSlidehomepage_rigthtop.dart';
+import 'Widgets/buildTextContainer1/buildSlidehomepage_leftlow.dart';
+
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
 
@@ -10,7 +17,7 @@ class Homepage extends StatefulWidget {
 
 class _HomepageState extends State<Homepage> {
   final ScrollController _scrollController = ScrollController();
-  @override
+
   @override
   void initState() {
     super.initState();
@@ -24,6 +31,7 @@ class _HomepageState extends State<Homepage> {
     });
   }
 
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
@@ -31,20 +39,17 @@ class _HomepageState extends State<Homepage> {
           children: [
             // 🔹 ส่วนบน 20% พร้อมรูปจาง + Gradient + โปรไฟล์
             Expanded(
-              flex: 28, // เทียบสัดส่วน 20%
+              flex: 2,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // 🔹 รูปพื้นหลัง
                   Opacity(
-                    opacity: 0.5, // ทำให้รูปจางลง 50%
+                    opacity: 0.5,
                     child: Image.asset(
                       './asset/img/homepage-banner.jpg',
                       fit: BoxFit.cover,
                     ),
                   ),
-
-                  // 🔹 Gradient ไล่สีจากล่างเข้ม → บนอ่อน
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -57,13 +62,11 @@ class _HomepageState extends State<Homepage> {
                       ),
                     ),
                   ),
-
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // 🔹 แถวบน: ปุ่มเมนู (ขวาบน)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
@@ -73,18 +76,12 @@ class _HomepageState extends State<Homepage> {
                                 color: Colors.white,
                                 size: 40,
                               ),
-                              padding:
-                                  EdgeInsets.zero, // ✅ ตัด padding ของปุ่มออก
-                              constraints:
-                                  const BoxConstraints(), // ✅ ไม่เว้นพื้นที่รอบปุ่ม
-                              onPressed: () {
-                                // TODO: เพิ่มฟังก์ชันเมื่อกดปุ่มเมนู
-                              },
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () {},
                             ),
                           ],
                         ),
-
-                        // 🔹 แถวล่าง: โปรไฟล์ + ชื่อ + ตำแหน่ง (ติดกันเลย)
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -150,20 +147,19 @@ class _HomepageState extends State<Homepage> {
               ),
             ),
 
-            SizedBox(height: 20), // เว้นระยะห่างเล็กน้อย
-            // 🔹 ส่วนล่าง 80%
+            const SizedBox(height: 20),
+
+            // 🔹 ส่วนล่าง (Carousel + Recommend)
             Expanded(
-              flex: 70, // ส่วนล่าง 80%
+              flex: 8,
               child: Container(
                 color: Colors.white,
                 alignment: Alignment.topCenter,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: SingleChildScrollView(
-                    // ✅ เผื่อกรณีเนื้อหาเกินจอ
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start, // ✅ ชิดซ้ายทั้งหมด
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // 🔹 Carousel
                         SizedBox(
@@ -174,65 +170,27 @@ class _HomepageState extends State<Homepage> {
                               autoPlay: true,
                               autoPlayInterval: const Duration(seconds: 10),
                               enlargeCenterPage: true,
-                              viewportFraction:
-                                  0.78, // ✅ ลดลงนิดให้เห็นขอบสองฝั่ง
-                              padEnds:
-                                  true, // ✅ เปิดกลับมาเพื่อ balance ระยะขอบซ้าย
+                              viewportFraction: 0.78,
+                              padEnds: true,
                             ),
                             items: [
-                              Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16),
-                                  color: Colors.deepPurple[200],
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    'Slide 1',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
+                              BuildSlideHomepage(
+                                text:
+                                    '"Simplify your workflow. Amplify your efficiency."',
+                                color: Colors.deepPurple[200]!,
+                                imagePath: 'asset/img/LAB_ROOM7.jpg',
                               ),
-                              Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16),
-                                  color: Colors.deepPurple[400],
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    'Slide 2',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
+                              BuildslidehomepageRigthtop(
+                                text:
+                                    '"Empowering smart operations for smarter people."',
+                                color: Colors.deepPurple[400]!,
+                                imagePath: 'asset/img/LAB_ROOM5.webp',
                               ),
-                              Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16),
-                                  color: Colors.deepPurple[600],
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    'Slide 3',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
+                              Buildslidehomepageleftlow(
+                                text:
+                                    '"Control the chaos. Own your space. Welcome to the future of smart management."',
+                                color: Colors.deepPurple[600]!,
+                                imagePath: 'asset/img/LAB_ROOM6.webp',
                               ),
                             ],
                           ),
@@ -243,9 +201,7 @@ class _HomepageState extends State<Homepage> {
                         // 🔹 ปุ่ม Browse Asset
                         Center(
                           child: ElevatedButton(
-                            onPressed: () {
-                              print("Browse Asset Clicked!");
-                            },
+                            onPressed: () {},
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF6B45FF),
                               foregroundColor: Colors.white,
@@ -269,22 +225,9 @@ class _HomepageState extends State<Homepage> {
                           ),
                         ),
 
-                        // 🔹 ข้อความ Recommend
-                        const Padding(
-                          padding: EdgeInsets.only(left: 20, top: 10),
-                          child: Text(
-                            "Recommend",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-
                         const SizedBox(height: 10),
 
-                        // 🔹 แนวนอน 3 item เลื่อนได้
+                        // 🔹 Carousel Recommend
                         SizedBox(
                           height: 300,
                           child: CarouselSlider(
@@ -295,91 +238,26 @@ class _HomepageState extends State<Homepage> {
                               viewportFraction: 0.75,
                               padEnds: true,
                               autoPlay: false,
-                              initialPage: 1, // ✅ เริ่มที่ Item 2 (index 1)
+                              initialPage: 1,
                             ),
                             items: [
-                              // Item 1
-                              Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.deepPurple[100],
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    "Item 1",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.deepPurple,
-                                    ),
-                                  ),
-                                ),
+                              BuildTextContainerRightTop(
+                                text:
+                                    'Manage smarter Live easier All your tools sensors and modules. right at your fingertips Fast. Clean. Powerful.',
+                                color: Colors.deepPurple[100]!,
+                                imagePath: 'asset/img/LAB_ROOM.jpg',
                               ),
-
-                              // Item 2
-                              Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.deepPurple[300],
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    "Item 2",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
+                              BuildTextContainerRightLow(
+                                text:
+                                    '“Think ahead\nWork smarter.\nSAFEAREA — The next generation of asset management.”',
+                                color: Colors.deepPurple[100]!,
+                                imagePath: 'asset/img/LAB_ROOM2.jpg',
                               ),
-
-                              // Item 3
-                              Container(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.deepPurple[500],
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.15),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    "Item 3",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
+                              BuildTextContainerRightTop(
+                                text:
+                                    '“Power up your lab.\nManage smart.\n Borrow easy.\nYour tools, your control — anytime, anywhere.”',
+                                color: Colors.deepPurple[100]!,
+                                imagePath: 'asset/img/LAB_ROOM3.jpg',
                               ),
                             ],
                           ),
@@ -392,6 +270,23 @@ class _HomepageState extends State<Homepage> {
             ),
           ],
         ),
+      ),
+
+      bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: 0, // หน้าปัจจุบัน (Home)
+        onTap: (index) {
+          setState(() {
+            // index ที่เลือก (0 = Home, 1 = History, 2 = Menu)
+            print("Tapped index: $index");
+          });
+
+          // ✅ ตัวอย่างการลิงก์ไปหน้าอื่น
+          if (index == 1) {
+            Navigator.pushNamed(context, '/history');
+          } else if (index == 2) {
+            Navigator.pushNamed(context, '/menu');
+          }
+        },
       ),
     );
   }
