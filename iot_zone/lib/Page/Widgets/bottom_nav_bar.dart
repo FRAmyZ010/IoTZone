@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import '../homepage.dart'; //
 
-class CustomBottomNavBar extends StatelessWidget {
+class CustomBottomNavBar extends StatefulWidget {
   final int currentIndex;
   final Function(int) onTap;
 
@@ -11,14 +12,27 @@ class CustomBottomNavBar extends StatelessWidget {
   });
 
   @override
+  State<CustomBottomNavBar> createState() => _CustomBottomNavBarState();
+}
+
+class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.currentIndex;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 70, vertical: 20),
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // 💜 Gradient Border
-          Container(
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 400),
             height: 63,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(100),
@@ -27,8 +41,6 @@ class CustomBottomNavBar extends StatelessWidget {
               ),
             ),
           ),
-
-          // ⚪ พื้นขาว
           Container(
             height: 54,
             margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
@@ -41,9 +53,9 @@ class CustomBottomNavBar extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildIcon(Icons.home, 0, currentIndex, onTap),
-                  _buildIcon(Icons.history, 1, currentIndex, onTap),
-                  _buildIcon(Icons.list_alt, 2, currentIndex, onTap),
+                  _buildAnimatedIcon(Icons.home, 0),
+                  _buildAnimatedIcon(Icons.history, 1),
+                  _buildAnimatedIcon(Icons.list_alt, 2),
                 ],
               ),
             ),
@@ -53,19 +65,38 @@ class CustomBottomNavBar extends StatelessWidget {
     );
   }
 
-  Widget _buildIcon(
-    IconData icon,
-    int index,
-    int currentIndex,
-    Function(int) onTap,
-  ) {
-    final bool isActive = currentIndex == index;
-    return IconButton(
-      onPressed: () => onTap(index),
-      icon: Icon(
-        icon,
-        size: 26,
-        color: isActive ? const Color(0xFF6B45FF) : Colors.black,
+  Widget _buildAnimatedIcon(IconData icon, int index) {
+    final bool isActive = _selectedIndex == index;
+
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 200),
+      scale: isActive ? 1.2 : 1.0,
+      child: IconButton(
+        onPressed: () {
+          setState(() => _selectedIndex = index);
+
+          if (index == 0) {
+            // ✅ กลับไปหน้า Homepage
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const Homepage()),
+              (route) => false,
+            );
+          } else {
+            widget.onTap(index);
+          }
+        },
+        icon: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          transitionBuilder: (child, animation) =>
+              ScaleTransition(scale: animation, child: child),
+          child: Icon(
+            icon,
+            key: ValueKey(isActive),
+            size: 26,
+            color: isActive ? const Color(0xFF6B45FF) : Colors.black,
+          ),
+        ),
       ),
     );
   }
