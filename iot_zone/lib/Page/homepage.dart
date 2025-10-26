@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
 import 'Widgets/bottom_nav_bar.dart';
+import 'Widgets/buildTextContainer2/buildTextContainar_rigthlow.dart';
+import 'Widgets/buildTextContainer2/buildTextContainer_rigthtop.dart';
+import 'Widgets/buildTextContainer1/buildSlidehomepage_center.dart';
+import 'Widgets/buildTextContainer1/buildSlidehomepage_rigthtop.dart';
+import 'Widgets/buildTextContainer1/buildSlidehomepage_leftlow.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -175,9 +180,24 @@ class _HomepageState extends State<Homepage> {
                               padEnds: true,
                             ),
                             items: [
-                              _buildSlide('Slide 1', Colors.deepPurple[200]!),
-                              _buildSlide('Slide 2', Colors.deepPurple[400]!),
-                              _buildSlide('Slide 3', Colors.deepPurple[600]!),
+                              BuildSlideHomepage(
+                                text:
+                                    '"Simplify your workflow. Amplify your efficiency."',
+                                color: Colors.deepPurple[200]!,
+                                imagePath: 'asset/img/LAB_ROOM7.jpg',
+                              ),
+                              BuildslidehomepageRigthtop(
+                                text:
+                                    '"Empowering smart operations for smarter people."',
+                                color: Colors.deepPurple[400]!,
+                                imagePath: 'asset/img/LAB_ROOM5.webp',
+                              ),
+                              Buildslidehomepageleftlow(
+                                text:
+                                    '"Control the chaos. Own your space. Welcome to the future of smart management."',
+                                color: Colors.deepPurple[600]!,
+                                imagePath: 'asset/img/LAB_ROOM6.webp',
+                              ),
                             ],
                           ),
                         ),
@@ -211,19 +231,6 @@ class _HomepageState extends State<Homepage> {
                           ),
                         ),
 
-                        // 🔹 Recommend
-                        const Padding(
-                          padding: EdgeInsets.only(left: 20, top: 10),
-                          child: Text(
-                            "Recommend",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-
                         const SizedBox(height: 10),
 
                         // 🔹 Carousel Recommend
@@ -240,17 +247,23 @@ class _HomepageState extends State<Homepage> {
                               initialPage: 1,
                             ),
                             items: [
-                              _buildRecommend(
-                                'Item 1',
-                                Colors.deepPurple[100]!,
+                              BuildTextContainerRightTop(
+                                text:
+                                    'Manage smarter Live easier All your tools sensors and modules. right at your fingertips Fast. Clean. Powerful.',
+                                color: Colors.deepPurple[100]!,
+                                imagePath: 'asset/img/LAB_ROOM.jpg',
                               ),
-                              _buildRecommend(
-                                'Item 2',
-                                Colors.deepPurple[300]!,
+                              BuildTextContainerRightLow(
+                                text:
+                                    '“Think ahead\nWork smarter.\nSAFEAREA — The next generation of asset management.”',
+                                color: Colors.deepPurple[100]!,
+                                imagePath: 'asset/img/LAB_ROOM2.jpg',
                               ),
-                              _buildRecommend(
-                                'Item 3',
-                                Colors.deepPurple[500]!,
+                              BuildTextContainerRightTop(
+                                text:
+                                    '“Power up your lab.\nManage smart.\n Borrow easy.\nYour tools, your control — anytime, anywhere.”',
+                                color: Colors.deepPurple[100]!,
+                                imagePath: 'asset/img/LAB_ROOM3.jpg',
                               ),
                             ],
                           ),
@@ -280,51 +293,6 @@ class _HomepageState extends State<Homepage> {
             Navigator.pushNamed(context, '/menu');
           }
         },
-      ),
-    );
-  }
-
-  // ✅ ฟังก์ชันย่อยสร้างสไลด์
-  Widget _buildSlide(String text, Color color) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 6),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Center(
-        child: Text(
-          text,
-          style: const TextStyle(fontSize: 20, color: Colors.white),
-        ),
-      ),
-    );
-  }
-
-  // ✅ ฟังก์ชันย่อยสร้าง Recommend item
-  Widget _buildRecommend(String text, Color color) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 6),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.15),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Center(
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
       ),
     );
   }
