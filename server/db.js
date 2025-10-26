@@ -5,7 +5,7 @@ const connection = mysql.createConnection({
   host: 'localhost',
   user: 'root',
   password: '',
-  database: 'iot_zone_db'
+  database: 'iot_zone'
 });
 
 
