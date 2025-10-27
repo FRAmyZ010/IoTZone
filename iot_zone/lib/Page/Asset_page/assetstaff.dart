@@ -13,58 +13,50 @@ class AssetStaff extends StatefulWidget {
 }
 
 class _AssetStaffState extends State<AssetStaff> {
-  String selected = 'All';
+  final List<String> types = const [
+    'Type',
+    'Board',
+    'Module',
+    'Sensor',
+    'Tool',
+    'Component',
+    'Measurement',
+    'Logic',
+  ];
+  String selectedType = 'All';
+
   List<AssetModel> assets = [];
   bool isLoading = true;
   String? errorMessage;
 
-  // ✅ ฟังก์ชันช่วยเลือก image provider ให้รองรับทุกกรณี
   ImageProvider _buildImageProvider(String imagePath) {
-    if (imagePath.isEmpty) {
-      return const AssetImage('asset/img/no_image.png');
-    }
-
-    // กรณี path อยู่ใน asset/
-    if (imagePath.startsWith('asset/')) {
-      return AssetImage(imagePath);
-    }
-
-    // กรณีชื่อไฟล์สั้น เช่น "Resistor.png"
+    if (imagePath.isEmpty) return const AssetImage('asset/img/no_image.png');
+    if (imagePath.startsWith('asset/')) return AssetImage(imagePath);
     if (!imagePath.startsWith('/uploads/') && !imagePath.contains('http')) {
       return AssetImage('asset/img/$imagePath');
     }
-
-    // กรณีไฟล์จาก server
     if (imagePath.startsWith('/uploads/')) {
       return NetworkImage('http://10.0.2.2:3000$imagePath');
     }
-
-    // fallback
     return const AssetImage('asset/img/no_image.png');
   }
 
-  // 🔹 ดึงข้อมูลทั้งหมดจาก API
   Future<void> fetchAssets() async {
     try {
-      print('📡 Fetching assets from API...');
       final response = await http.get(Uri.parse('http://10.0.2.2:3000/assets'));
-
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         setState(() {
           assets = data.map((e) => AssetModel.fromMap(e)).toList();
           isLoading = false;
-          errorMessage = null;
         });
-        print('✅ Loaded ${assets.length} assets');
       } else {
         setState(() {
           isLoading = false;
-          errorMessage = 'Failed to fetch data (code ${response.statusCode})';
+          errorMessage = 'Failed to fetch data (${response.statusCode})';
         });
       }
     } catch (e) {
-      print('❌ Error: $e');
       setState(() {
         isLoading = false;
         errorMessage = 'Connection error: $e';
@@ -73,72 +65,55 @@ class _AssetStaffState extends State<AssetStaff> {
   }
 
   Future<void> updateStatusInAPI(int id, String newStatus) async {
-    int statusCode = 1;
-    if (newStatus == 'Available')
-      statusCode = 1;
-    else if (newStatus == 'Disabled')
-      statusCode = 2;
-    else if (newStatus == 'Pending')
-      statusCode = 3;
-    else if (newStatus == 'Borrowed')
-      statusCode = 4;
+    int statusCode = switch (newStatus) {
+      'Available' => 1,
+      'Disabled' => 2,
+      'Pending' => 3,
+      'Borrowed' => 4,
+      _ => 1,
+    };
 
-    final response = await http.patch(
+    await http.patch(
       Uri.parse('http://10.0.2.2:3000/assets/$id/status'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'status': statusCode}),
     );
-
-    if (response.statusCode == 200) {
-      print('✅ Status updated on server!');
-    } else {
-      print('❌ Failed to update status: ${response.statusCode}');
-    }
   }
 
   @override
   void initState() {
     super.initState();
-    fetchAssets(); // โหลดข้อมูลตอนเปิดหน้า
+    fetchAssets();
   }
 
-  // 🔹 เพิ่มข้อมูล
   Future<void> addAsset(AssetModel newAsset) async {
-    final response = await http.post(
+    await http.post(
       Uri.parse('http://10.0.2.2:3000/assets'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(newAsset.toMap()),
     );
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      fetchAssets();
-    }
+    fetchAssets();
   }
 
-  // 🔹 แก้ไขข้อมูล
   Future<void> updateAsset(AssetModel asset) async {
-    final response = await http.put(
+    await http.put(
       Uri.parse('http://10.0.2.2:3000/assets/${asset.id}'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(asset.toMap()),
     );
-    if (response.statusCode == 200) fetchAssets();
+    fetchAssets();
   }
 
-  // 🔹 ลบข้อมูล
   Future<void> deleteAsset(int id) async {
-    final response = await http.delete(
-      Uri.parse('http://10.0.2.2:3000/assets/$id'),
-    );
-    if (response.statusCode == 200) fetchAssets();
+    await http.delete(Uri.parse('http://10.0.2.2:3000/assets/$id'));
+    fetchAssets();
   }
 
-  // 🔹 เปิด Dialog เพิ่ม/แก้ไข
   void _openAssetDialog({AssetModel? asset}) async {
     final result = await showDialog(
       context: context,
       builder: (context) => ShowAssetDialogStaff(asset: asset),
     );
-
     if (result is AssetModel) {
       if (asset == null) {
         addAsset(result);
@@ -148,14 +123,10 @@ class _AssetStaffState extends State<AssetStaff> {
     }
   }
 
-  // 🔹 เปลี่ยนสถานะ
   void _toggleStatus(AssetModel asset) async {
     final newStatus = asset.status == 'Disabled' ? 'Available' : 'Disabled';
-
-    // ✅ อัปเดตในฐานข้อมูลจริง
     await updateStatusInAPI(asset.id, newStatus);
 
-    // ✅ อัปเดตในจอ
     setState(() {
       assets = assets.map((a) {
         if (a.id == asset.id) {
@@ -163,34 +134,19 @@ class _AssetStaffState extends State<AssetStaff> {
             status: newStatus,
             statusColorValue: newStatus == 'Available'
                 ? Colors.green.value
-                : Colors.red.value,
+                : Colors.redAccent.value,
           );
         }
         return a;
       }).toList();
     });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          newStatus == 'Available'
-              ? '✅ ${asset.name} enabled'
-              : '❌ ${asset.name} disabled',
-        ),
-        backgroundColor: newStatus == 'Available'
-            ? Colors.green
-            : Colors.redAccent,
-        duration: const Duration(seconds: 2),
-      ),
-    );
   }
 
-  // ----------------------------- UI หลัก -----------------------------
   @override
   Widget build(BuildContext context) {
-    final filteredAssets = selected == 'All'
+    final filteredAssets = selectedType == 'All'
         ? assets
-        : assets.where((a) => a.type == selected).toList();
+        : assets.where((a) => a.type == selectedType).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -203,106 +159,113 @@ class _AssetStaffState extends State<AssetStaff> {
           ),
         ),
         backgroundColor: Colors.deepPurpleAccent,
-        elevation: 0,
       ),
       backgroundColor: const Color(0xFFF9F6FF),
-
       body: RefreshIndicator(
         onRefresh: fetchAssets,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(
-                    color: Colors.deepPurpleAccent,
-                  ),
-                )
-              : errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error, color: Colors.red, size: 60),
-                      const SizedBox(height: 10),
-                      Text(
-                        errorMessage!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.black87,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      ElevatedButton.icon(
-                        onPressed: fetchAssets,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
-              : Column(
+        child: isLoading
+            ? const Center(
+                child: CircularProgressIndicator(
+                  color: Colors.deepPurpleAccent,
+                ),
+              )
+            : errorMessage != null
+            ? Center(
+                child: Text(
+                  errorMessage!,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              )
+            : Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 🔹 Filter buttons
-                    Align(
-                      alignment: Alignment.center,
-                      child: Container(
-                        width: 320,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(25),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.2),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
+                    // 🔹 Filter row
+                    Row(
+                      children: [
+                        OutlinedButton(
+                          onPressed: () => setState(() => selectedType = 'All'),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: selectedType == 'All'
+                                  ? const Color(0xFF8C6BFF)
+                                  : Colors.grey.shade300,
                             ),
-                          ],
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(22),
+                            ),
+                          ),
+                          child: Text(
+                            'All',
+                            style: TextStyle(
+                              color: selectedType == 'All'
+                                  ? const Color(0xFF8C6BFF)
+                                  : Colors.grey.shade800,
+                            ),
+                          ),
                         ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 6,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: ['All', 'Board', 'Module'].map((label) {
-                            final isSelected = selected == label;
-                            return GestureDetector(
-                              onTap: () => setState(() => selected = label),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? const Color(0xFF8C6BFF)
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  label,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.w400,
-                                    color: isSelected
-                                        ? Colors.white
-                                        : Colors.grey.shade800,
-                                  ),
-                                ),
+                        const SizedBox(width: 10),
+
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(
+                            height: 44,
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(
+                                color: Colors.grey.shade300,
+                                width: 1.2,
                               ),
-                            );
-                          }).toList(),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                isExpanded: true,
+                                value:
+                                    (selectedType != 'All' &&
+                                        selectedType != 'Type')
+                                    ? selectedType
+                                    : null,
+                                hint: const Text(
+                                  'Select Type',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                                items: types.map((t) {
+                                  return DropdownMenuItem<String>(
+                                    value: t,
+                                    child: Text(
+                                      t,
+                                      style: TextStyle(
+                                        color: t == 'Type'
+                                            ? Colors.grey
+                                            : Colors.black,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (v) {
+                                  if (v == null) return;
+                                  setState(
+                                    () => selectedType = (v == 'Type')
+                                        ? 'All'
+                                        : v,
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
+
                     const SizedBox(height: 20),
 
-                    // 🔍 Search + Add button
+                    // 🔍 Search + Add
                     Row(
                       children: [
                         Expanded(
@@ -311,39 +274,17 @@ class _AssetStaffState extends State<AssetStaff> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(25),
-                              border: Border.all(
-                                color: Colors.grey.shade300,
-                                width: 1.2,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.15),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
+                              border: Border.all(color: Colors.grey.shade300),
                             ),
-                            child: const Row(
-                              children: [
-                                SizedBox(width: 12),
-                                Icon(
-                                  Icons.search,
-                                  color: Colors.black54,
-                                  size: 22,
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 16),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  'Search your item',
+                                  style: TextStyle(color: Colors.black54),
                                 ),
-                                SizedBox(width: 8),
-                                Expanded(
-                                  child: TextField(
-                                    decoration: InputDecoration(
-                                      hintText: 'Search your item',
-                                      border: InputBorder.none,
-                                      hintStyle: TextStyle(
-                                        color: Colors.black54,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                           ),
                         ),
@@ -371,15 +312,12 @@ class _AssetStaffState extends State<AssetStaff> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
                       ),
                     ),
                     const SizedBox(height: 12),
 
-                    // ✅ GridView แสดงข้อมูลจริง
                     Expanded(
                       child: GridView.builder(
-                        physics: const BouncingScrollPhysics(),
                         itemCount: filteredAssets.length,
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
@@ -391,10 +329,6 @@ class _AssetStaffState extends State<AssetStaff> {
                         itemBuilder: (context, index) {
                           final asset = filteredAssets[index];
                           return Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 12,
-                              horizontal: 8,
-                            ),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(18),
@@ -402,7 +336,6 @@ class _AssetStaffState extends State<AssetStaff> {
                                 BoxShadow(
                                   color: Colors.grey.withOpacity(0.15),
                                   blurRadius: 10,
-                                  offset: const Offset(0, 4),
                                 ),
                               ],
                             ),
@@ -410,9 +343,7 @@ class _AssetStaffState extends State<AssetStaff> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 ClipRRect(
-                                  borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(16),
-                                  ),
+                                  borderRadius: BorderRadius.circular(16),
                                   child: Image(
                                     image: _buildImageProvider(asset.image),
                                     height: 110,
@@ -428,57 +359,31 @@ class _AssetStaffState extends State<AssetStaff> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                const SizedBox(height: 6),
                                 Text(
                                   "Status: ${asset.status}",
-                                  style: TextStyle(
-                                    color: asset.statusColor,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: TextStyle(color: asset.statusColor),
                                 ),
                                 const SizedBox(height: 10),
-                                ElevatedButton.icon(
+                                ElevatedButton(
                                   onPressed: () =>
                                       _openAssetDialog(asset: asset),
-                                  icon: const Icon(
-                                    Icons.edit,
-                                    size: 14,
-                                    color: Colors.white,
-                                  ),
-                                  label: const Text(
-                                    'EDIT',
-                                    style: TextStyle(color: Colors.white),
-                                  ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.blueAccent,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
                                   ),
+                                  child: const Text('EDIT'),
                                 ),
                                 const SizedBox(height: 6),
-                                ElevatedButton.icon(
+                                ElevatedButton(
                                   onPressed: () => _toggleStatus(asset),
-                                  icon: Icon(
-                                    asset.status == 'Disabled'
-                                        ? Icons.refresh
-                                        : Icons.block,
-                                    size: 14,
-                                    color: Colors.white,
-                                  ),
-                                  label: Text(
-                                    asset.status == 'Disabled'
-                                        ? 'ENABLE'
-                                        : 'DISABLE',
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: asset.status == 'Disabled'
                                         ? Colors.green
                                         : Colors.redAccent,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
+                                  ),
+                                  child: Text(
+                                    asset.status == 'Disabled'
+                                        ? 'ENABLE'
+                                        : 'DISABLE',
                                   ),
                                 ),
                               ],
@@ -489,7 +394,7 @@ class _AssetStaffState extends State<AssetStaff> {
                     ),
                   ],
                 ),
-        ),
+              ),
       ),
     );
   }
