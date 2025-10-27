@@ -24,6 +24,7 @@ class _AssetStaffState extends State<AssetStaff> {
     'Logic',
   ];
   String selectedType = 'All';
+  String ip = '192.168.1.125';
 
   List<AssetModel> assets = [];
   bool isLoading = true;
@@ -36,14 +37,14 @@ class _AssetStaffState extends State<AssetStaff> {
       return AssetImage('asset/img/$imagePath');
     }
     if (imagePath.startsWith('/uploads/')) {
-      return NetworkImage('http://10.0.2.2:3000$imagePath');
+      return NetworkImage('http://$ip:3000$imagePath');
     }
     return const AssetImage('asset/img/no_image.png');
   }
 
   Future<void> fetchAssets() async {
     try {
-      final response = await http.get(Uri.parse('http://10.0.2.2:3000/assets'));
+      final response = await http.get(Uri.parse('http://$ip:3000/assets'));
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         setState(() {
@@ -74,7 +75,7 @@ class _AssetStaffState extends State<AssetStaff> {
     };
 
     await http.patch(
-      Uri.parse('http://10.0.2.2:3000/assets/$id/status'),
+      Uri.parse('http://$ip:3000/assets/$id/status'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'status': statusCode}),
     );
@@ -88,7 +89,7 @@ class _AssetStaffState extends State<AssetStaff> {
 
   Future<void> addAsset(AssetModel newAsset) async {
     await http.post(
-      Uri.parse('http://10.0.2.2:3000/assets'),
+      Uri.parse('http://$ip:3000/assets'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(newAsset.toMap()),
     );
@@ -97,7 +98,7 @@ class _AssetStaffState extends State<AssetStaff> {
 
   Future<void> updateAsset(AssetModel asset) async {
     await http.put(
-      Uri.parse('http://10.0.2.2:3000/assets/${asset.id}'),
+      Uri.parse('http://$ip:3000/assets/${asset.id}'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(asset.toMap()),
     );
@@ -105,7 +106,7 @@ class _AssetStaffState extends State<AssetStaff> {
   }
 
   Future<void> deleteAsset(int id) async {
-    await http.delete(Uri.parse('http://10.0.2.2:3000/assets/$id'));
+    await http.delete(Uri.parse('http://$ip:3000/assets/$id'));
     fetchAssets();
   }
 

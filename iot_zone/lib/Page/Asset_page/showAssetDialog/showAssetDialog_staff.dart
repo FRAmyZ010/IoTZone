@@ -19,6 +19,7 @@ class _ShowAssetDialogStaffState extends State<ShowAssetDialogStaff> {
   late TextEditingController nameController;
   late TextEditingController descController;
   late String selectedType;
+  String ip = '192.168.1.125';
 
   @override
   void initState() {
@@ -43,7 +44,7 @@ class _ShowAssetDialogStaffState extends State<ShowAssetDialogStaff> {
   // ✅ ฟังก์ชันอัปโหลดรูปไป Server
   Future<String?> _uploadImage(File imageFile) async {
     try {
-      final uri = Uri.parse('http://10.0.2.2:3000/upload');
+      final uri = Uri.parse('http://$ip:3000/upload');
       final request = http.MultipartRequest('POST', uri);
       request.files.add(
         await http.MultipartFile.fromPath('image', imageFile.path),
@@ -88,7 +89,7 @@ class _ShowAssetDialogStaffState extends State<ShowAssetDialogStaff> {
 
     // ✅ ถ้ามาจาก server upload
     if (imagePath.startsWith('/uploads/')) {
-      return NetworkImage('http://10.0.2.2:3000$imagePath');
+      return NetworkImage('http://$ip:3000$imagePath');
     }
 
     // fallback
