@@ -43,6 +43,55 @@ app.post('/register',(req,res)=>{
     })
   })
 })
+////////-------- Get all assets -----------////////
+app.get('/assets', (req, res) => {
+  const sql = 'SELECT * FROM asset';
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('❌ Database error:', err);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+
+    try {
+      const formatted = results.map(row => ({
+        id: row.id,
+        name: row.asset_name || 'Unknown',
+        description: row.description || '',
+        type: row.type || 'Unknown',
+        status: mapStatus(row.status ?? 0),
+        image: `asset/img/${row.img || 'no_image.png'}`,
+        statusColorValue: getColor(row.status ?? 0),
+      }));
+
+      res.json(formatted);
+    } catch (err) {
+      console.error('❌ Format error:', err);
+      res.status(500).json({ message: 'Format error' });
+    }
+  });
+});
+
+// 🔹 แปลงสถานะตัวเลขเป็นข้อความ
+function mapStatus(code) {
+  switch (Number(code)) {
+    case 1: return 'Available';
+    case 2: return 'Disabled';
+    case 3: return 'Pending';
+    case 4: return 'Borrowed';
+    default: return 'Unknown';
+  }
+}
+
+// 🔹 กำหนดสีสถานะ
+function getColor(code) {
+  switch (Number(code)) {
+    case 1: return 0xFF00FF00; // เขียว
+    case 2: return 0xFFFF0000; // แดง
+    case 3: return 0xFFFFA500; // ส้ม
+    case 4: return 0xFF808080; // เทา
+    default: return 0xFF000000;
+  }
+}
 
 
 app.get('/', (req, res) => {
