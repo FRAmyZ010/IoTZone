@@ -26,7 +26,7 @@ class _AssetpageState extends State<Assetpage> {
     'Logic',
   ];
   String selectedType = 'All';
-  String ip = '192.168.1.125';
+  String ip = '192.168.145.1';
 
   late Future<List<AssetModel>> futureAssets;
 

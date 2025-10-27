@@ -24,7 +24,7 @@ class _AssetStaffState extends State<AssetStaff> {
     'Logic',
   ];
   String selectedType = 'All';
-  String ip = '192.168.1.125';
+  String ip = '192.168.145.1';
 
   List<AssetModel> assets = [];
   bool isLoading = true;

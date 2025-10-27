@@ -14,15 +14,13 @@ class BorrowAssetDialog extends StatefulWidget {
 class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
   DateTime? startDate;
   DateTime? endDate;
-  String ip = '192.168.1.125';
+  String ip = '192.168.145.1';
 
-  // ✅ โหลดภาพจาก server หรือ asset (สมส่วน + โค้ง + เงา + loading)
-  // ✅ โหลดภาพจาก asset หรือ server (แสดงสมส่วน)
+  // ✅ โหลดภาพแบบสมส่วน
   Widget _buildImage(String imagePath) {
     final borderRadius = BorderRadius.circular(16);
-
     return Container(
-      height: 120, // ✅ จำกัดความสูงสูงสุดของภาพใน card
+      height: 120,
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: borderRadius,
@@ -33,12 +31,12 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
         child: Align(
           alignment: Alignment.center,
           child: FittedBox(
-            fit: BoxFit.contain, // ✅ ปรับขนาดให้พอดีโดยไม่ครอปหรือบีบ
+            fit: BoxFit.contain,
             child:
                 imagePath.startsWith('/uploads/') || imagePath.contains('http')
                 ? Image.network(
                     'http://$ip:3000$imagePath',
-                    height: 100, // ✅ จำกัดขนาดภายในอีกชั้น
+                    height: 100,
                     width: 100,
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) => const Icon(
@@ -64,100 +62,200 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
     );
   }
 
-  // ✅ ฟังก์ชันเปิดปฏิทินเลือกวันยืม
+  // ✅ ปฏิทินพร้อมโชว์วันยืมและวันคืน
   void _openCalendarDialog() {
     showDialog(
       context: context,
       builder: (context) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
-          ),
           backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  "Choose borrow and return date",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Container(height: 2, color: Colors.blueAccent),
-                const SizedBox(height: 10),
-                SfDateRangePicker(
-                  selectionMode: DateRangePickerSelectionMode.range,
-                  startRangeSelectionColor: Colors.blue,
-                  endRangeSelectionColor: Colors.blue,
-                  rangeSelectionColor: Colors.blue.withOpacity(0.25),
-                  todayHighlightColor: Colors.blue,
-                  minDate: DateTime.now(),
-                  maxDate: DateTime.now().add(const Duration(days: 2)),
-                  onSelectionChanged:
-                      (DateRangePickerSelectionChangedArgs args) {
-                        if (args.value is PickerDateRange) {
-                          final PickerDateRange range = args.value;
-                          setState(() {
-                            startDate = range.startDate;
-                            endDate = range.endDate ?? range.startDate;
-                          });
-                        }
-                      },
-                ),
-                const SizedBox(height: 16),
-                if (startDate != null && endDate != null) ...[
-                  Text(
-                    "Borrow date : ${DateFormat('MMMM d, yyyy').format(startDate!)}",
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                  Text(
-                    "Return date : ${DateFormat('MMMM d, yyyy').format(endDate!)}",
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                ],
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () {
-                    if (startDate == null || endDate == null) {
-                      _showSelectAlert(context);
-                      return;
-                    }
-                    final diff = endDate!.difference(startDate!).inDays + 1;
-                    if (diff > 2) {
-                      _showLimitAlert(context);
-                      return;
-                    }
-
-                    Navigator.of(context).pop(); // ปิดปฏิทิน
-                    Navigator.of(context).pop(); // ปิด dialog หลัก
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          '✅ You borrowed "${widget.asset['name']}" '
-                          'from ${DateFormat('MMMM d, yyyy').format(startDate!)} '
-                          'to ${DateFormat('MMMM d, yyyy').format(endDate!)}',
-                          style: const TextStyle(color: Colors.white),
+            padding: const EdgeInsets.all(18),
+            child: StatefulBuilder(
+              builder: (context, setInnerState) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: const Text(
+                        "📅 Select Borrow & Return Date",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: Colors.deepPurpleAccent,
                         ),
-                        backgroundColor: Colors.green,
-                        duration: const Duration(seconds: 4),
                       ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
                     ),
-                  ),
-                  child: const Text("Confirm Borrow"),
-                ),
-              ],
+                    const Divider(
+                      color: Colors.deepPurpleAccent,
+                      thickness: 1.2,
+                    ),
+                    const SizedBox(height: 6),
+
+                    // ✅ แสดงวันยืมและวันคืนแบบสวยๆ
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.deepPurple.shade50,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      padding: const EdgeInsets.all(10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          Column(
+                            children: [
+                              const Text(
+                                "Borrow Date",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                startDate != null
+                                    ? DateFormat(
+                                        'MMM d, yyyy',
+                                      ).format(startDate!)
+                                    : '--',
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Icon(
+                            Icons.arrow_right_alt_rounded,
+                            color: Colors.deepPurpleAccent,
+                          ),
+                          Column(
+                            children: [
+                              const Text(
+                                "Return Date",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                endDate != null
+                                    ? DateFormat('MMM d, yyyy').format(endDate!)
+                                    : '--',
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // ✅ ปฏิทิน Syncfusion
+                    SfDateRangePicker(
+                      selectionMode: DateRangePickerSelectionMode.range,
+                      startRangeSelectionColor: Colors.deepPurpleAccent,
+                      endRangeSelectionColor: Colors.deepPurpleAccent,
+                      rangeSelectionColor: Colors.deepPurpleAccent.withOpacity(
+                        0.25,
+                      ),
+                      todayHighlightColor: Colors.deepPurpleAccent,
+                      minDate: DateTime.now(),
+                      maxDate: DateTime.now().add(const Duration(days: 2)),
+                      onSelectionChanged:
+                          (DateRangePickerSelectionChangedArgs args) {
+                            if (args.value is PickerDateRange) {
+                              final PickerDateRange range = args.value;
+                              setInnerState(() {
+                                startDate = range.startDate;
+                                endDate = range.endDate ?? range.startDate;
+                              });
+                            }
+                          },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // ✅ ปุ่ม confirm/cancel
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            if (startDate == null || endDate == null) {
+                              _showSelectAlert(context);
+                              return;
+                            }
+                            final diff =
+                                endDate!.difference(startDate!).inDays + 1;
+                            if (diff > 2) {
+                              _showLimitAlert(context);
+                              return;
+                            }
+
+                            Navigator.of(context).pop();
+                            Navigator.of(context).pop();
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  '✅ Borrowed "${widget.asset['name']}" '
+                                  'from ${DateFormat('MMM d').format(startDate!)} '
+                                  'to ${DateFormat('MMM d').format(endDate!)}',
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                                backgroundColor: Colors.green,
+                                duration: const Duration(seconds: 4),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.check, color: Colors.white),
+                          label: const Text(
+                            "Confirm",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 22,
+                              vertical: 10,
+                            ),
+                          ),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.close, color: Colors.white),
+                          label: const Text(
+                            "Cancel",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 22,
+                              vertical: 10,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         );
@@ -168,6 +266,7 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
   @override
   Widget build(BuildContext context) {
     final asset = widget.asset;
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       backgroundColor: Colors.white,
@@ -180,13 +279,17 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
           children: [
             Text(
               asset['name'] ?? "Unknown Asset",
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepPurpleAccent,
+              ),
             ),
             const SizedBox(height: 10),
             _buildImage(asset['image'] ?? ''),
             const SizedBox(height: 10),
             const Text(
-              "*You can only borrow 1 asset a day",
+              "*You can only borrow 1 asset per day",
               style: TextStyle(color: Colors.red, fontSize: 13),
             ),
             const SizedBox(height: 10),
@@ -202,7 +305,7 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
                 ElevatedButton(
                   onPressed: _openCalendarDialog,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    backgroundColor: Colors.deepPurpleAccent,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -222,7 +325,7 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
+                    backgroundColor: Colors.grey.shade600,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -247,6 +350,7 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
     );
   }
 
+  // ✅ Alert แสดงเมื่อเลือกเกิน 2 วัน
   void _showLimitAlert(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -260,6 +364,7 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
     );
   }
 
+  // ✅ Alert แสดงเมื่อยังไม่เลือกวัน
   void _showSelectAlert(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
