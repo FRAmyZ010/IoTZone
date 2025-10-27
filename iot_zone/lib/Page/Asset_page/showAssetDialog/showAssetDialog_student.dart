@@ -14,6 +14,7 @@ class BorrowAssetDialog extends StatefulWidget {
 class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
   DateTime? startDate;
   DateTime? endDate;
+  String ip = '192.168.1.125';
 
   // ✅ โหลดภาพจาก server หรือ asset (สมส่วน + โค้ง + เงา + loading)
   // ✅ โหลดภาพจาก asset หรือ server (แสดงสมส่วน)
@@ -36,7 +37,7 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
             child:
                 imagePath.startsWith('/uploads/') || imagePath.contains('http')
                 ? Image.network(
-                    'http://10.0.2.2:3000$imagePath',
+                    'http://$ip:3000$imagePath',
                     height: 100, // ✅ จำกัดขนาดภายในอีกชั้น
                     width: 100,
                     fit: BoxFit.contain,

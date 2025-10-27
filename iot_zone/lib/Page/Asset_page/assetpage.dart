@@ -26,6 +26,7 @@ class _AssetpageState extends State<Assetpage> {
     'Logic',
   ];
   String selectedType = 'All';
+  String ip = '192.168.1.125';
 
   late Future<List<AssetModel>> futureAssets;
 
@@ -37,7 +38,7 @@ class _AssetpageState extends State<Assetpage> {
 
   // ✅ ดึงข้อมูลจาก API
   Future<List<AssetModel>> fetchAssets() async {
-    final response = await http.get(Uri.parse('http://10.0.2.2:3000/assets'));
+    final response = await http.get(Uri.parse('http://$ip:3000/assets'));
     if (response.statusCode == 200) {
       final List<dynamic> jsonData = json.decode(response.body);
       return jsonData.map((item) => AssetModel.fromMap(item)).toList();
@@ -48,7 +49,7 @@ class _AssetpageState extends State<Assetpage> {
 
   // ✅ โหลดภาพแบบสมส่วน (ไม่โดนครอป)
   Widget _buildImage(String imagePath) {
-    final baseUrl = 'http://10.0.2.2:3000';
+    final baseUrl = 'http://$ip:3000';
     final isNetwork =
         imagePath.startsWith('/uploads/') || imagePath.contains('http');
 
