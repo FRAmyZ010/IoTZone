@@ -25,14 +25,35 @@ class _AssetpageState extends State<Assetpage> {
 
   // ✅ ดึงข้อมูลจาก API
   Future<List<AssetModel>> fetchAssets() async {
-    final response = await http.get(
-      Uri.parse('http://10.0.2.2:3000/assets'),
-    ); // Emulator
+    final response = await http.get(Uri.parse('http://10.0.2.2:3000/assets'));
     if (response.statusCode == 200) {
       final List<dynamic> jsonData = json.decode(response.body);
       return jsonData.map((item) => AssetModel.fromMap(item)).toList();
     } else {
       throw Exception('Failed to load assets');
+    }
+  }
+
+  // ✅ โหลดภาพจาก asset หรือ server
+  Widget _buildImage(String imagePath) {
+    if (imagePath.startsWith('/uploads/') || imagePath.contains('http')) {
+      // ✅ โหลดจาก server
+      return Image.network(
+        'http://10.0.2.2:3000$imagePath',
+        height: 90,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+            const Icon(Icons.broken_image, size: 70, color: Colors.grey),
+      );
+    } else {
+      // ✅ โหลดจาก assets
+      return Image.asset(
+        imagePath,
+        height: 90,
+        width: double.infinity,
+        fit: BoxFit.cover,
+      );
     }
   }
 
@@ -228,11 +249,7 @@ class _AssetpageState extends State<Assetpage> {
                                   borderRadius: const BorderRadius.vertical(
                                     top: Radius.circular(16),
                                   ),
-                                  child: Image.asset(
-                                    asset.image,
-                                    height: 90,
-                                    fit: BoxFit.cover,
-                                  ),
+                                  child: _buildImage(asset.image),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
