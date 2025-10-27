@@ -107,24 +107,28 @@ class _ShowAssetDialogStaffState extends State<ShowAssetDialogStaff> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // 🔹 Title
               Text(
                 isEditing ? 'Edit Asset' : 'Add New Asset',
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Colors.deepPurple,
+                  color: Colors.deepPurpleAccent,
                 ),
               ),
               const SizedBox(height: 16),
 
-              // 🔹 รูปภาพ (Preview + Upload)
+              // 🔹 รูปภาพ
               GestureDetector(
                 onTap: _pickImage,
                 child: Container(
                   height: 150,
                   width: 150,
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade400),
+                    border: Border.all(
+                      color: Colors.deepPurpleAccent,
+                      width: 1.5,
+                    ),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: ClipRRect(
@@ -140,12 +144,16 @@ class _ShowAssetDialogStaffState extends State<ShowAssetDialogStaff> {
                         : const Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.image, size: 60, color: Colors.grey),
+                              Icon(
+                                Icons.image,
+                                size: 60,
+                                color: Colors.deepPurpleAccent,
+                              ),
                               SizedBox(height: 8),
                               Text(
                                 'Upload',
                                 style: TextStyle(
-                                  color: Colors.blueAccent,
+                                  color: Colors.deepPurpleAccent,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -159,20 +167,40 @@ class _ShowAssetDialogStaffState extends State<ShowAssetDialogStaff> {
               // 🔹 Name
               TextField(
                 controller: nameController,
+                style: const TextStyle(color: Colors.black87),
                 decoration: InputDecoration(
                   labelText: "Asset's name",
-                  border: OutlineInputBorder(
+                  labelStyle: const TextStyle(color: Colors.deepPurpleAccent),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(
+                      color: Colors.deepPurpleAccent,
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey.shade400),
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
               ),
               const SizedBox(height: 12),
 
-              // 🔹 Type dropdown
+              // 🔹 Type Dropdown
               DropdownButtonFormField<String>(
                 value: selectedType,
+                dropdownColor: Colors.white,
+                style: const TextStyle(color: Colors.black87, fontSize: 15),
                 decoration: InputDecoration(
                   labelText: 'Type',
+                  labelStyle: const TextStyle(color: Colors.deepPurpleAccent),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(
+                      color: Colors.deepPurpleAccent,
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -185,45 +213,52 @@ class _ShowAssetDialogStaffState extends State<ShowAssetDialogStaff> {
                           'Sensor',
                           'Tool',
                           'Component',
-                          'Measurement', // ✅ เพิ่มบรรทัดนี้
-                          'Logic', // ✅ เพิ่มด้วยถ้ามี type Logic
+                          'Measurement',
+                          'Logic',
                         ]
                         .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                         .toList(),
                 onChanged: (value) => setState(() => selectedType = value!),
               ),
-
               const SizedBox(height: 12),
 
               // 🔹 Description
               TextField(
                 controller: descController,
+                style: const TextStyle(color: Colors.black87),
                 maxLines: 2,
                 decoration: InputDecoration(
                   labelText: "Description",
-                  border: OutlineInputBorder(
+                  labelStyle: const TextStyle(color: Colors.deepPurpleAccent),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(
+                      color: Colors.deepPurpleAccent,
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey.shade400),
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
 
-              // 🔹 ปุ่ม Action
+              // 🔹 Buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
+                  // ✅ ปุ่มยืนยัน (สีม่วง ข้อความขาว)
                   ElevatedButton.icon(
                     onPressed: () async {
                       String imagePath =
                           widget.asset?.image ?? 'asset/img/default.png';
-
-                      // ✅ ถ้ามีเลือกรูปใหม่ → upload ไป server
                       if (_imageFile != null) {
                         final uploadedPath = await _uploadImage(_imageFile!);
                         if (uploadedPath != null) imagePath = uploadedPath;
                       }
 
-                      // ✅ เก็บ path เดิมถ้าไม่ได้เลือกใหม่
                       final newAsset =
                           widget.asset?.copyWith(
                             name: nameController.text,
@@ -244,22 +279,48 @@ class _ShowAssetDialogStaffState extends State<ShowAssetDialogStaff> {
                       Navigator.pop(context, newAsset);
                     },
                     icon: const Icon(Icons.check, color: Colors.white),
-                    label: Text(isEditing ? 'SAVE' : 'CONFIRM'),
+                    label: Text(
+                      isEditing ? 'SAVE' : 'CONFIRM',
+                      style: const TextStyle(color: Colors.white),
+                    ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: Colors.deepPurpleAccent,
+                      foregroundColor: Colors.white, // ✅ ข้อความขาว
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 22,
+                        vertical: 12,
+                      ),
                     ),
                   ),
+
+                  // ✅ ปุ่มยกเลิก (สีเทา ข้อความขาว)
                   ElevatedButton.icon(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.close, color: Colors.white),
-                    label: const Text('CANCEL'),
+                    label: const Text(
+                      'CANCEL',
+                      style: TextStyle(color: Colors.white),
+                    ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent,
+                      backgroundColor: Colors.grey.shade600,
+                      foregroundColor: Colors.white, // ✅ ข้อความขาว
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 22,
+                        vertical: 12,
                       ),
                     ),
                   ),
