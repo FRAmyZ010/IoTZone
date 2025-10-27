@@ -294,6 +294,8 @@ class _AssetStaffState extends State<AssetStaff> {
                           onPressed: () => _openAssetDialog(),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
+                            foregroundColor:
+                                Colors.white, // ✅ ข้อความในปุ่มสีขาว
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(25),
                             ),
@@ -370,8 +372,13 @@ class _AssetStaffState extends State<AssetStaff> {
                                       _openAssetDialog(asset: asset),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.blueAccent,
+                                    foregroundColor:
+                                        Colors.white, // ✅ ข้อความในปุ่มสีขาว
                                   ),
-                                  child: const Text('EDIT'),
+                                  child: const Text(
+                                    'EDIT',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
                                 ),
                                 const SizedBox(height: 6),
                                 ElevatedButton(
@@ -380,11 +387,14 @@ class _AssetStaffState extends State<AssetStaff> {
                                     backgroundColor: asset.status == 'Disabled'
                                         ? Colors.green
                                         : Colors.redAccent,
+                                    foregroundColor:
+                                        Colors.white, // ✅ ข้อความในปุ่มสีขาว
                                   ),
                                   child: Text(
                                     asset.status == 'Disabled'
                                         ? 'ENABLE'
                                         : 'DISABLE',
+                                    style: const TextStyle(color: Colors.white),
                                   ),
                                 ),
                               ],
