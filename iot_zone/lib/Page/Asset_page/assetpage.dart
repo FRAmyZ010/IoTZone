@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
 import 'showAssetDialog/showAssetDialog_student.dart';
 import 'asset_listmap/asset_model.dart';
 import '../Widgets/bottom_nav_bar.dart';
@@ -12,68 +15,29 @@ class Assetpage extends StatefulWidget {
 
 class _AssetpageState extends State<Assetpage> {
   String selected = 'All';
+  late Future<List<AssetModel>> futureAssets;
 
-  // ✅ ข้อมูลตัวอย่าง AssetModel
-  final List<AssetModel> assets = [
-    AssetModel(
-      id: 1,
-      type: 'Board',
-      name: 'SN74LS32N',
-      status: 'Available',
-      image: 'asset/img/SN74LS32N.png',
-      description:
-          'A quad 2-input OR gate IC commonly used in digital logic circuits.',
-      statusColorValue: Colors.green.value,
-    ),
-    AssetModel(
-      id: 2,
-      type: 'Tool',
-      name: 'Multimeter',
-      status: 'Disabled',
-      image: 'asset/img/Multimeter.png',
-      description:
-          'An electronic measuring instrument that combines several measurement functions like voltage, current, and resistance.',
-      statusColorValue: Colors.red.value,
-    ),
-    AssetModel(
-      id: 3,
-      type: 'Component',
-      name: 'Resistor',
-      status: 'Borrowed',
-      image: 'asset/img/Resistor.png',
-      description:
-          'A passive electrical component that limits or regulates the flow of electrical current in a circuit.',
-      statusColorValue: Colors.grey.value,
-    ),
-    AssetModel(
-      id: 4,
-      type: 'Component',
-      name: 'Capacitor',
-      status: 'Pending',
-      image: 'asset/img/Capacitor.png',
-      description:
-          'A component that stores and releases electrical energy, often used for filtering or timing applications.',
-      statusColorValue: Colors.orange.value,
-    ),
-    AssetModel(
-      id: 5,
-      type: 'Module',
-      name: 'Transistor',
-      status: 'Available',
-      image: 'asset/img/Transistor.png',
-      description:
-          'A semiconductor device used to amplify or switch electronic signals in circuits.',
-      statusColorValue: Colors.green.value,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    futureAssets = fetchAssets();
+  }
+
+  // ✅ ดึงข้อมูลจาก API
+  Future<List<AssetModel>> fetchAssets() async {
+    final response = await http.get(
+      Uri.parse('http://10.0.2.2:3000/assets'),
+    ); // Emulator
+    if (response.statusCode == 200) {
+      final List<dynamic> jsonData = json.decode(response.body);
+      return jsonData.map((item) => AssetModel.fromMap(item)).toList();
+    } else {
+      throw Exception('Failed to load assets');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // ✅ ฟิลเตอร์ข้อมูลตามปุ่มที่เลือก
-    final filteredAssets = selected == 'All'
-        ? assets
-        : assets.where((a) => a.type == selected).toList();
-
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -96,7 +60,7 @@ class _AssetpageState extends State<Assetpage> {
             Align(
               alignment: Alignment.center,
               child: Container(
-                width: 300, // ✅ ลดขนาด Container
+                width: 300,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(25),
@@ -163,12 +127,12 @@ class _AssetpageState extends State<Assetpage> {
                   ),
                 ],
               ),
-              child: Row(
+              child: const Row(
                 children: [
-                  const SizedBox(width: 12),
-                  const Icon(Icons.search, color: Colors.black54, size: 22),
-                  const SizedBox(width: 8),
-                  const Expanded(
+                  SizedBox(width: 12),
+                  Icon(Icons.search, color: Colors.black54, size: 22),
+                  SizedBox(width: 8),
+                  Expanded(
                     child: TextField(
                       decoration: InputDecoration(
                         hintText: 'Search your item',
@@ -183,90 +147,116 @@ class _AssetpageState extends State<Assetpage> {
 
             const SizedBox(height: 20),
 
-            // 🔹 GridView (แสดงตาม Filter)
+            // ✅ โหลดข้อมูลจาก API
             Expanded(
-              child: GridView.builder(
-                physics: const BouncingScrollPhysics(),
-                itemCount: filteredAssets.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: 0.8,
-                ),
-                itemBuilder: (context, index) {
-                  final asset = filteredAssets[index];
-                  final isAvailable = asset.status == 'Available';
-
-                  return GestureDetector(
-                    onTap: isAvailable
-                        ? () {
-                            showDialog(
-                              context: context,
-                              builder: (context) =>
-                                  BorrowAssetDialog(asset: asset.toMap()),
-                            );
-                          }
-                        : () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  '${asset.name} is currently not available.',
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                                backgroundColor: Colors.redAccent,
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                          },
-                    child: Opacity(
-                      opacity: isAvailable ? 1.0 : 0.6,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.15),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            ClipRRect(
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(16),
-                              ),
-                              child: Image.asset(
-                                asset.image,
-                                height: 90,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              asset.name,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              asset.status,
-                              style: TextStyle(
-                                color: asset.statusColor,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
+              child: FutureBuilder<List<AssetModel>>(
+                future: futureAssets,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(
+                      child: Text(
+                        'Error: ${snapshot.error}',
+                        style: const TextStyle(color: Colors.red),
                       ),
-                    ),
+                    );
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(child: Text('No assets found.'));
+                  }
+
+                  final allAssets = snapshot.data!;
+                  final filteredAssets = selected == 'All'
+                      ? allAssets
+                      : allAssets.where((a) => a.type == selected).toList();
+
+                  return GridView.builder(
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: filteredAssets.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 16,
+                          crossAxisSpacing: 16,
+                          childAspectRatio: 0.8,
+                        ),
+                    itemBuilder: (context, index) {
+                      final asset = filteredAssets[index];
+                      final isAvailable = asset.status == 'Available';
+
+                      return GestureDetector(
+                        onTap: isAvailable
+                            ? () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) =>
+                                      BorrowAssetDialog(asset: asset.toMap()),
+                                );
+                              }
+                            : () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      '${asset.name} is currently not available.',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    backgroundColor: Colors.redAccent,
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              },
+                        child: Opacity(
+                          opacity: isAvailable ? 1.0 : 0.6,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.15),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(16),
+                                  ),
+                                  child: Image.asset(
+                                    asset.image,
+                                    height: 90,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  asset.name,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  asset.status,
+                                  style: TextStyle(
+                                    color: asset.statusColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -274,15 +264,11 @@ class _AssetpageState extends State<Assetpage> {
           ],
         ),
       ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: 0, // หน้าปัจจุบัน (Home)
-        onTap: (index) {
-          setState(() {
-            // index ที่เลือก (0 = Home, 1 = History, 2 = Menu)
-            print("Tapped index: $index");
-          });
 
-          // ✅ ตัวอย่างการลิงก์ไปหน้าอื่น
+      // 🔹 BottomNavBar
+      bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: 0,
+        onTap: (index) {
           if (index == 1) {
             Navigator.pushNamed(context, '/history');
           } else if (index == 2) {
