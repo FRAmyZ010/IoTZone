@@ -34,27 +34,39 @@ class _AssetpageState extends State<Assetpage> {
     }
   }
 
-  // ✅ โหลดภาพจาก asset หรือ server
+  // ✅ โหลดภาพแบบสมส่วน (ไม่โดนครอป)
   Widget _buildImage(String imagePath) {
-    if (imagePath.startsWith('/uploads/') || imagePath.contains('http')) {
-      // ✅ โหลดจาก server
-      return Image.network(
-        'http://10.0.2.2:3000$imagePath',
-        height: 90,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) =>
-            const Icon(Icons.broken_image, size: 70, color: Colors.grey),
-      );
-    } else {
-      // ✅ โหลดจาก assets
-      return Image.asset(
-        imagePath,
-        height: 90,
-        width: double.infinity,
-        fit: BoxFit.cover,
-      );
-    }
+    final baseUrl = 'http://10.0.2.2:3000';
+    final isNetwork =
+        imagePath.startsWith('/uploads/') || imagePath.contains('http');
+
+    return Container(
+      height: 120, // ✅ คุมขนาดความสูงของภาพ
+      width: double.infinity,
+      alignment: Alignment.center,
+      child: FittedBox(
+        fit: BoxFit.contain, // ✅ ปรับขนาดให้สมส่วน
+        child: isNetwork
+            ? Image.network(
+                imagePath.contains('http') ? imagePath : '$baseUrl$imagePath',
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.broken_image,
+                  size: 60,
+                  color: Colors.grey,
+                ),
+              )
+            : Image.asset(
+                imagePath,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.image_not_supported_outlined,
+                  size: 60,
+                  color: Colors.grey,
+                ),
+              ),
+      ),
+    );
   }
 
   @override
@@ -245,10 +257,9 @@ class _AssetpageState extends State<Assetpage> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                ClipRRect(
-                                  borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(16),
-                                  ),
+                                // ✅ แก้ส่วนนี้
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
                                   child: _buildImage(asset.image),
                                 ),
                                 const SizedBox(height: 8),
