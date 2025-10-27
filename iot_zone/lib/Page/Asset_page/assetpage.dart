@@ -14,7 +14,19 @@ class Assetpage extends StatefulWidget {
 }
 
 class _AssetpageState extends State<Assetpage> {
-  String selected = 'All';
+  // --- Filter state ---
+  final List<String> types = const [
+    'Type', // ใช้เป็น hint ใน dropdown
+    'Board',
+    'Module',
+    'Sensor',
+    'Tool',
+    'Component',
+    'Measurement',
+    'Logic',
+  ];
+  String selectedType = 'All';
+
   late Future<List<AssetModel>> futureAssets;
 
   @override
@@ -25,15 +37,48 @@ class _AssetpageState extends State<Assetpage> {
 
   // ✅ ดึงข้อมูลจาก API
   Future<List<AssetModel>> fetchAssets() async {
-    final response = await http.get(
-      Uri.parse('http://10.0.2.2:3000/assets'),
-    ); // Emulator
+    final response = await http.get(Uri.parse('http://10.0.2.2:3000/assets'));
     if (response.statusCode == 200) {
       final List<dynamic> jsonData = json.decode(response.body);
       return jsonData.map((item) => AssetModel.fromMap(item)).toList();
     } else {
       throw Exception('Failed to load assets');
     }
+  }
+
+  // ✅ โหลดภาพแบบสมส่วน (ไม่โดนครอป)
+  Widget _buildImage(String imagePath) {
+    final baseUrl = 'http://10.0.2.2:3000';
+    final isNetwork =
+        imagePath.startsWith('/uploads/') || imagePath.contains('http');
+
+    return Container(
+      height: 120,
+      width: double.infinity,
+      alignment: Alignment.center,
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: isNetwork
+            ? Image.network(
+                imagePath.contains('http') ? imagePath : '$baseUrl$imagePath',
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.broken_image,
+                  size: 60,
+                  color: Colors.grey,
+                ),
+              )
+            : Image.asset(
+                imagePath,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.image_not_supported_outlined,
+                  size: 60,
+                  color: Colors.grey,
+                ),
+              ),
+      ),
+    );
   }
 
   @override
@@ -56,58 +101,104 @@ class _AssetpageState extends State<Assetpage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 🔹 Filter buttons
-            Align(
-              alignment: Alignment.center,
-              child: Container(
-                width: 300,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(25),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.2),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
+            // 🔹 Filter: All + Dropdown
+            Row(
+              children: [
+                // ปุ่ม All
+                OutlinedButton.icon(
+                  onPressed: () => setState(() => selectedType = 'All'),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: selectedType == 'All'
+                          ? const Color(0xFF8C6BFF)
+                          : Colors.grey.shade300,
+                      width: 2,
                     ),
-                  ],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    backgroundColor: selectedType == 'All'
+                        ? const Color(0xFF8C6BFF).withOpacity(0.08)
+                        : null,
+                  ),
+
+                  label: Text(
+                    'All',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: selectedType == 'All'
+                          ? const Color(0xFF8C6BFF)
+                          : Colors.grey.shade800,
+                    ),
+                  ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: ['All', 'Board', 'Module'].map((label) {
-                    final isSelected = selected == label;
-                    return GestureDetector(
-                      onTap: () => setState(() => selected = label),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? const Color(0xFF8C6BFF)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          label,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.w400,
-                            color: isSelected
-                                ? Colors.white
-                                : Colors.grey.shade800,
-                          ),
-                        ),
+                const SizedBox(width: 12),
+                // Dropdown
+                Expanded(
+                  child: Container(
+                    height: 44,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(
+                        color: Colors.grey.shade300,
+                        width: 1.2,
                       ),
-                    );
-                  }).toList(),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.10),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: (selectedType != 'All' && selectedType != 'Type')
+                            ? selectedType
+                            : null, // ถ้า All หรือ Type → แสดง hint
+                        hint: const Text(
+                          'Type',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        items: types.map((t) {
+                          return DropdownMenuItem<String>(
+                            value: t,
+                            child: Text(
+                              t,
+                              style: TextStyle(
+                                color: t == 'Type'
+                                    ? Colors
+                                          .grey // สีอ่อนเฉพาะ Type
+                                    : Colors.black,
+                                fontWeight: t == 'Type'
+                                    ? FontWeight.w500
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (v) {
+                          if (v == null) return;
+
+                          // ✅ ถ้าเลือก "Type" ให้เท่ากับ All
+                          if (v == 'Type') {
+                            setState(() => selectedType = 'All');
+                          } else {
+                            setState(() => selectedType = v);
+                          }
+                        },
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
 
             const SizedBox(height: 20),
@@ -166,9 +257,9 @@ class _AssetpageState extends State<Assetpage> {
                   }
 
                   final allAssets = snapshot.data!;
-                  final filteredAssets = selected == 'All'
+                  final filteredAssets = (selectedType == 'All')
                       ? allAssets
-                      : allAssets.where((a) => a.type == selected).toList();
+                      : allAssets.where((a) => a.type == selectedType).toList();
 
                   return GridView.builder(
                     physics: const BouncingScrollPhysics(),
@@ -224,15 +315,9 @@ class _AssetpageState extends State<Assetpage> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                ClipRRect(
-                                  borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(16),
-                                  ),
-                                  child: Image.asset(
-                                    asset.image,
-                                    height: 90,
-                                    fit: BoxFit.cover,
-                                  ),
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: _buildImage(asset.image),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
