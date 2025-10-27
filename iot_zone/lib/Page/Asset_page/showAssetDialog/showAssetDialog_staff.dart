@@ -178,11 +178,21 @@ class _ShowAssetDialogStaffState extends State<ShowAssetDialogStaff> {
                   ),
                 ),
                 items:
-                    ['Type', 'Board', 'Module', 'Sensor', 'Tool', 'Component']
+                    [
+                          'Type',
+                          'Board',
+                          'Module',
+                          'Sensor',
+                          'Tool',
+                          'Component',
+                          'Measurement', // ✅ เพิ่มบรรทัดนี้
+                          'Logic', // ✅ เพิ่มด้วยถ้ามี type Logic
+                        ]
                         .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                         .toList(),
                 onChanged: (value) => setState(() => selectedType = value!),
               ),
+
               const SizedBox(height: 12),
 
               // 🔹 Description

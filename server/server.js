@@ -137,7 +137,7 @@ function mapStatus(code) {
     case 4:
       return 'Borrowed';
     default:
-      return 'Unknown';
+      return 'Disabled';
   }
 }
 
@@ -153,7 +153,7 @@ function getColor(code) {
     case 4:
       return 0xFF808080; // เทา
     default:
-      return 0xFF000000;
+      return 0xFFFF0000;
   }
 }
 
