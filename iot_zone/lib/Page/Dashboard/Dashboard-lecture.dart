@@ -1,29 +1,14 @@
 import 'package:flutter/material.dart';
+import '../Widgets/buildBotttom_nav_bar/bottom_nav_bar_lender.dart';
 
-void main() {
-  runApp(const SafeAreaApp());
-}
-
-class SafeAreaApp extends StatelessWidget {
-  const SafeAreaApp({super.key});
+class DashboardLender extends StatefulWidget {
+  const DashboardLender({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: DashboardPage(),
-    );
-  }
+  State<DashboardLender> createState() => _DashboardLenderState();
 }
 
-class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
-
-  @override
-  State<DashboardPage> createState() => _DashboardPageState();
-}
-
-class _DashboardPageState extends State<DashboardPage> {
+class _DashboardLenderState extends State<DashboardLender> {
   final TextEditingController searchController = TextEditingController();
 
   final List<Map<String, dynamic>> allEquipments = [
@@ -67,58 +52,167 @@ class _DashboardPageState extends State<DashboardPage> {
     });
   }
 
-  int get approvedCount =>
-      allEquipments.where((e) => e['status'] == 'Approved').length;
-  int get rejectedCount =>
-      allEquipments.where((e) => e['status'] == 'Rejected').length;
-  int get pendingCount =>
-      allEquipments.where((e) => e['status'] == 'Pending').length;
-
-  void updateStatus(String title, String newStatus) {
+  void updateStatus(String title, String newStatus, [String? reason]) {
     setState(() {
       final item = allEquipments.firstWhere((e) => e['title'] == title);
       item['status'] = newStatus;
+      if (reason != null) item['reason'] = reason; // ✅ เก็บเหตุผลไว้ด้วย
       _filterSearch();
     });
   }
 
-  @override
-  void dispose() {
-    searchController.dispose();
-    super.dispose();
+  void _showRejectDialog(BuildContext context, String title) {
+    final TextEditingController reasonController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.redAccent.shade100, width: 1.2),
+        ),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.block, color: Colors.redAccent, size: 60),
+              const SizedBox(height: 12),
+              const Text(
+                "Reject Request",
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.redAccent,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Please provide a reason for rejecting this request.",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 16),
+
+              // กล่องกรอกเหตุผล
+              TextField(
+                controller: reasonController,
+                maxLines: 3,
+                style: const TextStyle(fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: "Enter reason here...",
+                  hintStyle: TextStyle(color: Colors.grey.shade400),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Colors.redAccent,
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 22),
+
+              // ปุ่ม action
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      if (reasonController.text.trim().isNotEmpty) {
+                        Navigator.pop(context);
+                        updateStatus(title, 'Rejected', reasonController.text);
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: Colors.redAccent,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            content: Text(
+                              'Rejected "$title" successfully.',
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 28,
+                        vertical: 10,
+                      ),
+                    ),
+                    icon: const Icon(Icons.send, size: 18, color: Colors.white),
+                    label: const Text(
+                      "Submit",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.grey),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 28,
+                        vertical: 10,
+                      ),
+                    ),
+                    icon: const Icon(
+                      Icons.close,
+                      size: 18,
+                      color: Colors.black54,
+                    ),
+                    label: const Text(
+                      "Cancel",
+                      style: TextStyle(
+                        color: Colors.black54,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F2FB),
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(70),
-        child: Container(
-          color: const Color(0xFF7C4DFF),
-          padding: const EdgeInsets.only(top: 25, left: 8),
-          alignment: Alignment.centerLeft,
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () {},
-              ),
-              const Text(
-                'Dashboard',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  height: 1.3,
-                ),
-              ),
-            ],
-          ),
-        ),
+      appBar: AppBar(
+        title: const Text('Dashboard'),
+        backgroundColor: const Color(0xFF7C4DFF),
+        centerTitle: true,
       ),
-
-      // ---------------- Body ----------------
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -130,13 +224,19 @@ class _DashboardPageState extends State<DashboardPage> {
               children: [
                 StatusCard(
                   label: 'Approved',
-                  value: approvedCount.toString(),
+                  value: allEquipments
+                      .where((e) => e['status'] == 'Approved')
+                      .length
+                      .toString(),
                   icon: Icons.check_circle,
                   color: Colors.green,
                 ),
                 StatusCard(
                   label: 'Rejected',
-                  value: rejectedCount.toString(),
+                  value: allEquipments
+                      .where((e) => e['status'] == 'Rejected')
+                      .length
+                      .toString(),
                   icon: Icons.block,
                   color: Colors.red,
                 ),
@@ -148,7 +248,10 @@ class _DashboardPageState extends State<DashboardPage> {
               children: [
                 StatusCard(
                   label: 'Pending',
-                  value: pendingCount.toString(),
+                  value: allEquipments
+                      .where((e) => e['status'] == 'Pending')
+                      .length
+                      .toString(),
                   icon: Icons.pending,
                   color: Colors.orange,
                 ),
@@ -161,7 +264,7 @@ class _DashboardPageState extends State<DashboardPage> {
               controller: searchController,
               decoration: InputDecoration(
                 prefixIcon: const Icon(Icons.search),
-                hintText: 'Search',
+                hintText: 'Search...',
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
@@ -173,7 +276,7 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(height: 20),
 
             const Text(
-              'Borrowing request on Oct 30, 2025',
+              'Borrowing requests (Oct 30, 2025)',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
@@ -184,137 +287,17 @@ class _DashboardPageState extends State<DashboardPage> {
                 title: item['title'],
                 borrowedBy: item['borrowedBy'],
                 status: item['status'],
-                onApprove: () => _showApproveDialog(context, item['title']),
+                onApprove: () => updateStatus(item['title'], 'Approved'),
                 onReject: () => _showRejectDialog(context, item['title']),
               ),
-
-            if (filteredEquipments.isEmpty)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Text('No matching items found',
-                      style: TextStyle(color: Colors.grey)),
-                ),
-              ),
           ],
-        ),
-      ),
-
-      // ---------------- Bottom Navigation ----------------
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(25),
-            topRight: Radius.circular(25),
-          ),
-          color: Colors.grey.shade200,
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: const [
-            Icon(Icons.home, size: 28, color: Colors.black),
-            Icon(Icons.dashboard, size: 28, color: Colors.black),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // -------- Dialogs --------
-  void _showApproveDialog(BuildContext context, String title) {
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.check_circle, color: Colors.green, size: 80),
-            const SizedBox(height: 10),
-            const Text("This request has been confirmed.",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25))),
-              onPressed: () {
-                Navigator.pop(context);
-                updateStatus(title, 'Approved');
-              },
-              child: const Text("Close",
-                  style: TextStyle(color: Colors.white, fontSize: 16)),
-            ),
-          ]),
-        ),
-      ),
-    );
-  }
-
-  void _showRejectDialog(BuildContext context, String title) {
-    TextEditingController reasonController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Align(
-                alignment: Alignment.centerLeft,
-                child: Text("Reject reason",
-                    style: TextStyle(color: Colors.red, fontSize: 14))),
-            const SizedBox(height: 8),
-            TextField(
-              controller: reasonController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-            const SizedBox(height: 15),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25)),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    updateStatus(title, 'Rejected');
-                  },
-                  child: const Text("Send",
-                      style: TextStyle(color: Colors.white)),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25)),
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Cancel",
-                      style: TextStyle(color: Colors.white)),
-                ),
-              ],
-            )
-          ]),
         ),
       ),
     );
   }
 }
 
-// ---------------- Status Card ----------------
+// -------------------- Helper Widgets --------------------
 class StatusCard extends StatelessWidget {
   final String label;
   final String value;
@@ -342,9 +325,10 @@ class StatusCard extends StatelessWidget {
         child: Column(
           children: [
             Icon(icon, color: color, size: 30),
-            Text(value,
-                style:
-                    const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
             Text(label),
           ],
         ),
@@ -353,7 +337,6 @@ class StatusCard extends StatelessWidget {
   }
 }
 
-// ---------------- Equipment Tile ----------------
 class EquipmentTile extends StatelessWidget {
   final String imageUrl;
   final String title;
@@ -404,8 +387,10 @@ class EquipmentTile extends StatelessWidget {
                 ],
               )
             : Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: statusColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
@@ -413,7 +398,9 @@ class EquipmentTile extends StatelessWidget {
                 child: Text(
                   status,
                   style: TextStyle(
-                      color: statusColor, fontWeight: FontWeight.bold),
+                    color: statusColor,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
       ),

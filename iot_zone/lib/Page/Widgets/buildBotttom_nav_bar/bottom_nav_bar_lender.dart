@@ -1,6 +1,47 @@
 import 'package:flutter/material.dart';
-import '../../homepagelender.dart';
+import 'package:iot_zone/Page/homepagelender.dart';
+import 'package:iot_zone/Page/Dashboard/Dashboard-lecture.dart';
 
+class LenderMain extends StatefulWidget {
+  const LenderMain({super.key});
+
+  @override
+  State<LenderMain> createState() => _LenderMainState();
+}
+
+class _LenderMainState extends State<LenderMain> {
+  int _selectedIndex = 0;
+
+  final List<Widget> _pages = const [
+    Homepagelender(),
+    Center(
+      child: Text(
+        "⚙️ Settings Page (กำลังพัฒนา)",
+        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+      ),
+    ),
+    DashboardLender(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF6F2FB),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: _pages[_selectedIndex],
+      ),
+      bottomNavigationBar: CustomBottomNavBarLender(
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          setState(() => _selectedIndex = index);
+        },
+      ),
+    );
+  }
+}
+
+// ---------------- Bottom Nav ----------------
 class CustomBottomNavBarLender extends StatefulWidget {
   final int currentIndex;
   final Function(int) onTap;
@@ -16,14 +57,6 @@ class CustomBottomNavBarLender extends StatefulWidget {
 }
 
 class _CustomBottomNavBarState extends State<CustomBottomNavBarLender> {
-  late int _selectedIndex;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedIndex = widget.currentIndex;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -43,21 +76,18 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBarLender> {
           ),
           Container(
             height: 54,
-            margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+            margin: const EdgeInsets.all(5),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(100),
             ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildAnimatedIcon(Icons.home, 0),
-                  _buildAnimatedIcon(Icons.history, 1),
-                  _buildAnimatedIcon(Icons.window, 2),
-                ],
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(Icons.home, 0),
+                _buildNavItem(Icons.history, 1),
+                _buildNavItem(Icons.window, 2),
+              ],
             ),
           ),
         ],
@@ -65,39 +95,15 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBarLender> {
     );
   }
 
-  Widget _buildAnimatedIcon(IconData icon, int index) {
-    final bool isActive = _selectedIndex == index;
+  Widget _buildNavItem(IconData icon, int index) {
+    final bool isActive = widget.currentIndex == index;
 
-    return AnimatedScale(
-      duration: const Duration(milliseconds: 200),
-      scale: isActive ? 1.2 : 1.0,
-      child: IconButton(
-        onPressed: () {
-          setState(() => _selectedIndex = index);
-
-          if (index == 0) {
-            // ✅ กลับไปหน้า Homepage
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => const Homepagelender()),
-              (route) => false,
-            );
-          } else {
-            widget.onTap(index);
-          }
-        },
-
-        icon: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          transitionBuilder: (child, animation) =>
-              ScaleTransition(scale: animation, child: child),
-          child: Icon(
-            icon,
-            key: ValueKey(isActive),
-            size: 26,
-            color: isActive ? const Color(0xFF6B45FF) : Colors.black,
-          ),
-        ),
+    return GestureDetector(
+      onTap: () => widget.onTap(index),
+      child: Icon(
+        icon,
+        size: 28,
+        color: isActive ? const Color(0xFF6B45FF) : Colors.black,
       ),
     );
   }
