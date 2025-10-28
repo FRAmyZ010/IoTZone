@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 // ปรับ path ให้ตรงโปรเจกต์ของคุณ
 import 'package:iot_zone/Page/homepagestaff.dart';
 import 'package:iot_zone/Page/Dashboard/Dashboard-staff.dart';
+import 'package:iot_zone/Page/Asset_page/assetstaff.dart';
 
 class StaffMain extends StatefulWidget {
   const StaffMain({super.key});
+
+  // ให้ลูก ๆ ดึง state ของ StaffMain ได้ (ถ้าต้องใช้ changeTab จากหน้าอื่น)
+  static _StaffMainState? of(BuildContext context) =>
+      context.findAncestorStateOfType<_StaffMainState>();
 
   @override
   State<StaffMain> createState() => _StaffMainState();
@@ -14,36 +19,49 @@ class _StaffMainState extends State<StaffMain> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = const [
-    Homepagestaff(),
-    Center(
-      child: Text(
-        "⚙️ Settings Page (กำลังพัฒนา)",
-        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-      ),
-    ),
-    DashboardStaff(),
+    Homepagestaff(), // 0
+    Center(child: Text('⚙️ Settings')), // 1 (แค่ตัวอย่าง)
+    DashboardStaff(), // 2
+    AssetStaff(), // 3 (อยู่ใน Shell แต่ไม่มีไอคอน)
   ];
+
+  void changeTab(int i) {
+    if (_selectedIndex == i) return;
+    setState(() => _selectedIndex = i);
+  }
+
+  /// ✅ แบบ A: ให้หน้าแม่ตัดสินใจการนำทาง/สลับแท็บ
+  void _handleBottomTap(int index) {
+    switch (index) {
+      case 0:
+        // Home → สลับแท็บใน Shell
+        changeTab(0);
+        break;
+      case 1:
+        // History → เปิดด้วย named route
+        Navigator.pushNamed(context, '/history');
+        break;
+      case 2:
+        // ✅ Dashboard → สลับแท็บไป index 2
+        changeTab(2);
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F2FB),
-      // ถ้าต้องการคง state ของแต่ละหน้า เปลี่ยนเป็น IndexedStack ได้
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        child: _pages[_selectedIndex],
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: CustomBottomNavBarStaff(
         currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() => _selectedIndex = index);
-        },
+        onTap: _handleBottomTap, // 👈 ใช้ฟังก์ชันแบบ A
       ),
     );
   }
 }
 
-// ---------------- Bottom Nav (รวมไฟล์เดียวกันเหมือนตัวอย่าง) ----------------
+// ---------------- Bottom Nav (dumb widget) ----------------
 class CustomBottomNavBarStaff extends StatefulWidget {
   final int currentIndex;
   final Function(int) onTap;
@@ -70,7 +88,6 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBarStaff> {
   @override
   void didUpdateWidget(covariant CustomBottomNavBarStaff oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // ซิงก์ไอคอนกับ currentIndex จากหน้าแม่
     if (widget.currentIndex != _selectedIndex) {
       _selectedIndex = widget.currentIndex;
     }
@@ -83,7 +100,6 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBarStaff> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // กรอบนอก Gradient
           AnimatedContainer(
             duration: const Duration(milliseconds: 400),
             height: 63,
@@ -94,7 +110,6 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBarStaff> {
               ),
             ),
           ),
-          // แถบขาวด้านใน
           Container(
             height: 54,
             margin: const EdgeInsets.all(5),
@@ -115,9 +130,9 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBarStaff> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildNavItem(Icons.home, 0),
-                  _buildNavItem(Icons.history, 1),
-                  _buildNavItem(Icons.window, 2),
+                  _buildNavItem(Icons.home, 0), // Home → changeTab(0)
+                  _buildNavItem(Icons.history, 1), // → /history
+                  _buildNavItem(Icons.window, 2), // → /menu
                 ],
               ),
             ),
@@ -137,7 +152,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBarStaff> {
         splashRadius: 24,
         onPressed: () {
           setState(() => _selectedIndex = index);
-          widget.onTap(index); // ให้หน้าแม่สลับหน้า (ไม่ใช้ Navigator)
+          widget.onTap(index); // ให้หน้าแม่ตัดสินใจ (แบบ A)
         },
         icon: AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),

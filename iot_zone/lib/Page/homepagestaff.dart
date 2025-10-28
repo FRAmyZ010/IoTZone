@@ -197,12 +197,8 @@ class _HomepageState extends State<Homepagestaff> {
                         Center(
                           child: ElevatedButton(
                             onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const AssetStaff(),
-                                ),
-                              );
+                              // ✅ เปลี่ยนแท็บใน StaffMain โดยไม่เปิดหน้าใหม่
+                              StaffMain.of(context)?.changeTab(3);
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF6B45FF),
