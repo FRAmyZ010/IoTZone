@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
 import 'Asset_page/assetstaff.dart';
-import 'Widgets/buildBotttom_nav_bar/bottom_nav_bar_staff_lender.dart';
+import 'Widgets/buildBotttom_nav_bar/bottom_nav_bar_staff.dart';
 import 'Widgets/buildTextContainer2/buildTextContainar_rigthlow.dart';
 import 'Widgets/buildTextContainer2/buildTextContainer_rigthtop.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_center.dart';

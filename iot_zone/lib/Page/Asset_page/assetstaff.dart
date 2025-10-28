@@ -4,7 +4,7 @@ import 'dart:convert';
 
 import 'asset_listmap/asset_model.dart';
 import 'showAssetDialog/showAssetDialog_staff.dart';
-import '../Widgets/buildBotttom_nav_bar/bottom_nav_bar_staff_lender.dart';
+import '../Widgets/buildBotttom_nav_bar/bottom_nav_bar_staff.dart';
 
 class AssetStaff extends StatefulWidget {
   const AssetStaff({super.key});

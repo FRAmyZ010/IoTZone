@@ -107,15 +107,15 @@ app.get('/assets', (req, res) => {
           imgPath = 'asset/img/no_image.png';
         }
 
-        return {
-          id: row.id,
-          name: row.asset_name || 'Unknown',
-          description: row.description || '',
-          type: row.type || 'Unknown',
-          status: mapStatus(row.status ?? 0),
-          image: imgPath,
-          statusColorValue: getColor(row.status ?? 0),
-        };
+       return {
+  id: row.id,
+  name: row.asset_name || 'Unknown', // ✅ key ชื่อ name
+  description: row.description || '',
+  type: row.type || 'Unknown',
+  status: mapStatus(row.status ?? 0),
+  image: imgPath,
+  statusColorValue: getColor(row.status ?? 0),
+};
       });
 
       res.json(formatted);
