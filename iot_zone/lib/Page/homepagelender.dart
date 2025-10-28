@@ -11,14 +11,14 @@ import 'package:iot_zone/Page/Asset_page/assetpage.dart';
 
 import 'Widgets/meatball_menu/meatball_menu.dart';
 
-class Homepage extends StatefulWidget {
-  const Homepage({super.key});
+class Homepagelender extends StatefulWidget {
+  const Homepagelender({super.key});
 
   @override
-  State<Homepage> createState() => _HomepageState();
+  State<Homepagelender> createState() => _HomepageState();
 }
 
-class _HomepageState extends State<Homepage> {
+class _HomepageState extends State<Homepagelender> {
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -100,7 +100,7 @@ class _HomepageState extends State<Homepage> {
                                   ),
                                 ),
                                 Text(
-                                  'Student',
+                                  'lender',
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
