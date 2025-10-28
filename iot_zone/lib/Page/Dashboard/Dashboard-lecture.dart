@@ -209,9 +209,16 @@ class _DashboardLenderState extends State<DashboardLender> {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F2FB),
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: const Text(
+          'Dashboard',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold, // ✅ ต้องใส่ชื่อ property
+          ),
+        ),
         backgroundColor: const Color(0xFF7C4DFF),
-        centerTitle: true,
+        centerTitle: true, // (ถ้าอยากให้ข้อความอยู่ตรงกลาง)
+        elevation: 0, // (ถ้าไม่อยากให้มีเงา)
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
