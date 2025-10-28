@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 
 import 'showAssetDialog/showAssetDialog_student.dart';
 import 'asset_listmap/asset_model.dart';
-import '../Widgets/bottom_nav_bar.dart';
+import '../Widgets/buildBotttom_nav_bar/bottom_nav_bar.dart';
 
 class Assetpage extends StatefulWidget {
   const Assetpage({super.key});
@@ -26,7 +26,7 @@ class _AssetpageState extends State<Assetpage> {
     'Logic',
   ];
   String selectedType = 'All';
-  String ip = '192.168.1.125';
+  String ip = '192.168.145.1';
 
   late Future<List<AssetModel>> futureAssets;
 

@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
-import '../homepage.dart'; //
+import '../../homepagestaff.dart';
 
-class CustomBottomNavBar extends StatefulWidget {
+class CustomBottomNavBarStaff extends StatefulWidget {
   final int currentIndex;
   final Function(int) onTap;
 
-  const CustomBottomNavBar({
+  const CustomBottomNavBarStaff({
     super.key,
     required this.currentIndex,
     required this.onTap,
   });
 
   @override
-  State<CustomBottomNavBar> createState() => _CustomBottomNavBarState();
+  State<CustomBottomNavBarStaff> createState() => _CustomBottomNavBarState();
 }
 
-class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
+class _CustomBottomNavBarState extends State<CustomBottomNavBarStaff> {
   late int _selectedIndex;
 
   @override
@@ -55,7 +55,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                 children: [
                   _buildAnimatedIcon(Icons.home, 0),
                   _buildAnimatedIcon(Icons.history, 1),
-                  _buildAnimatedIcon(Icons.list_alt, 2),
+                  _buildAnimatedIcon(Icons.window, 2),
                 ],
               ),
             ),
@@ -79,13 +79,14 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
             // ✅ กลับไปหน้า Homepage
             Navigator.pushAndRemoveUntil(
               context,
-              MaterialPageRoute(builder: (context) => const Homepage()),
+              MaterialPageRoute(builder: (context) => const Homepagestaff()),
               (route) => false,
             );
           } else {
             widget.onTap(index);
           }
         },
+
         icon: AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
           transitionBuilder: (child, animation) =>
