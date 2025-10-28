@@ -7,6 +7,6 @@ import 'package:iot_zone/Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar_staff.
 
 void main() {
   runApp(
-    const MaterialApp(debugShowCheckedModeBanner: false, home: StaffMain()),
+    const MaterialApp(debugShowCheckedModeBanner: false, home: LenderMain()),
   );
 }
