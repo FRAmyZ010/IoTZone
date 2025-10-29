@@ -8,6 +8,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  Color blackColor = const Color(0xFF1e1e1e);
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,6 +68,38 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                     ],
+                  ),
+                  Container(
+                    color: Colors.white,
+                    width: 350,
+                    height: 400,
+                    // decoration: BoxDecoration(
+                    //   borderRadius: BorderRadius.circular(20), // มุมโค้ง
+                    // ),
+                    child: Column(
+                      children: [
+                        SizedBox(height: 20),
+                        Image.asset(
+                          'asset/icon/padlock.png',
+                          width: 40,
+                          height: 40,
+                        ),
+                        Text(
+                          'Login',
+                          style: TextStyle(
+                            color: blackColor,
+                            fontSize: 25,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        TextField(
+                          decoration: InputDecoration(
+                            labelText: 'Username',
+                            prefixIcon: Icon(Icons.person),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
