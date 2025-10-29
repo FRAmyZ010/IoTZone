@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
-import 'Widgets/buildBotttom_nav_bar/bottom_nav_bar.dart';
+import 'Widgets/buildBotttom_nav_bar/bottom_nav_bar_staff.dart';
 import 'Widgets/buildTextContainer2/buildTextContainar_rigthlow.dart';
 import 'Widgets/buildTextContainer2/buildTextContainer_rigthtop.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_center.dart';
@@ -10,14 +10,14 @@ import 'Widgets/buildTextContainer1/buildSlidehomepage_leftlow.dart';
 
 import 'Widgets/meatball_menu/meatball_menu.dart';
 
-class Homepage extends StatefulWidget {
-  const Homepage({super.key});
+class Homepagestaff extends StatefulWidget {
+  const Homepagestaff({super.key});
 
   @override
-  State<Homepage> createState() => _HomepageState();
+  State<Homepagestaff> createState() => _HomepageState();
 }
 
-class _HomepageState extends State<Homepage> {
+class _HomepageState extends State<Homepagestaff> {
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -91,7 +91,7 @@ class _HomepageState extends State<Homepage> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: const [
                                 Text(
-                                  'Doi_za007',
+                                  'Frame_za007',
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
@@ -99,7 +99,7 @@ class _HomepageState extends State<Homepage> {
                                   ),
                                 ),
                                 Text(
-                                  'Student',
+                                  'staff',
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
@@ -196,8 +196,8 @@ class _HomepageState extends State<Homepage> {
                         Center(
                           child: ElevatedButton(
                             onPressed: () {
-                              // ✅ สลับแท็บใน Shell เดิม (ไม่เปิดหน้าใหม่)
-                              StudentMain.of(context)?.changeTab(3);
+                              // ✅ เปลี่ยนแท็บใน StaffMain โดยไม่เปิดหน้าใหม่
+                              StaffMain.of(context)?.changeTab(3);
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF6B45FF),

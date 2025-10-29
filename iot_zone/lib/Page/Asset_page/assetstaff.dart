@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'asset_listmap/asset_model.dart';
 import 'showAssetDialog/showAssetDialog_staff.dart';
+import '../Widgets/buildBotttom_nav_bar/bottom_nav_bar_staff.dart';
 
 class AssetStaff extends StatefulWidget {
   const AssetStaff({super.key});
@@ -24,7 +25,7 @@ class _AssetStaffState extends State<AssetStaff> {
     'Logic',
   ];
   String selectedType = 'All';
-  String ip = '192.168.1.125';
+  String ip = '192.168.145.1';
 
   List<AssetModel> assets = [];
   bool isLoading = true;
