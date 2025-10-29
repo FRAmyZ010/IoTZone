@@ -9,6 +9,12 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   Color blackColor = const Color(0xFF1e1e1e);
+  Color primary = Color(0xFF4D5DFF);
+  Color purpleColor = const Color(0xFFC368FF);
+
+  TextEditingController tcUser = TextEditingController();
+  TextEditingController tcPass = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -16,11 +22,11 @@ class _LoginPageState extends State<LoginPage> {
         children: [
           // พื้นหลังไล่สี
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xFFC368FF), Color(0xFF4D5DFF)],
+                colors: [purpleColor, primary],
               ),
             ),
           ),
@@ -36,11 +42,11 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0x80C368FF), Color(0xFF4D5DFF)],
+                colors: [Color(0x80C368FF), primary],
               ),
             ),
           ),
@@ -69,36 +75,129 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ],
                   ),
-                  Container(
-                    color: Colors.white,
-                    width: 350,
-                    height: 400,
-                    // decoration: BoxDecoration(
-                    //   borderRadius: BorderRadius.circular(20), // มุมโค้ง
-                    // ),
-                    child: Column(
-                      children: [
-                        SizedBox(height: 20),
-                        Image.asset(
-                          'asset/icon/padlock.png',
-                          width: 40,
-                          height: 40,
-                        ),
-                        Text(
-                          'Login',
-                          style: TextStyle(
-                            color: blackColor,
-                            fontSize: 25,
-                            fontWeight: FontWeight.bold,
+                  Padding(
+                    padding: const EdgeInsets.only(top: 35),
+                    child: Container(
+                      width: 350,
+                      height: 400,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20), // มุมโค้ง
+                      ),
+                      child: Column(
+                        children: [
+                          SizedBox(height: 20),
+                          Image.asset(
+                            'asset/icon/padlock.png',
+                            width: 40,
+                            height: 40,
                           ),
-                        ),
-                        TextField(
-                          decoration: InputDecoration(
-                            labelText: 'Username',
-                            prefixIcon: Icon(Icons.person),
+                          Text(
+                            'Login',
+                            style: TextStyle(
+                              color: blackColor,
+                              fontSize: 25,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                      ],
+                          Padding(
+                            padding: const EdgeInsets.only(top: 30, bottom: 15),
+                            child: SizedBox(
+                              width: 250,
+                              child: TextField(
+                                controller: tcUser,
+                                keyboardType: TextInputType.text,
+
+                                decoration: InputDecoration(
+                                  hintText: 'Username',
+                                  hintStyle: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.grey[200],
+                                  contentPadding: EdgeInsets.symmetric(
+                                    vertical: 16,
+                                    horizontal: 20,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 250,
+                            child: TextField(
+                              controller: tcPass,
+                              keyboardType: TextInputType.text,
+                              obscureText: true, //
+                              decoration: InputDecoration(
+                                hintText: 'Password',
+                                hintStyle: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey[200],
+                                contentPadding: EdgeInsets.symmetric(
+                                  vertical: 16,
+                                  horizontal: 20,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          SizedBox(height: 40),
+                          FilledButton(
+                            onPressed: () {
+                              setState(() {});
+                            },
+                            style: FilledButton.styleFrom(
+                              backgroundColor: primary,
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 80,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            child: Text(
+                              'Login',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text("Don't have an account? "),
+                              TextButton(
+                                onPressed: () {
+                                  setState(() {});
+                                },
+                                child: Text(
+                                  'Register here!',
+                                  style: TextStyle(
+                                    color: purpleColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
