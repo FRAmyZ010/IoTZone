@@ -19,37 +19,43 @@ class _LenderMainState extends State<LenderMain> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = const [
-    Homepagelender(), // 0
-    HistoryLenderPage(), // 1
-    DashboardLender(), // 2
-    Assetlender(), // 3  ← เพิ่มแท็บ Asset ไว้ใน Shell
+    Homepagelender(),
+    HistoryLenderPage(),
+    DashboardLender(),
+    Assetlender(),
   ];
-
-  static _LenderMainState? of(BuildContext context) =>
-      context.findAncestorStateOfType<_LenderMainState>();
 
   void changeTab(int i) {
     if (_selectedIndex == i) return;
     setState(() => _selectedIndex = i);
   }
 
-  // ถ้าต้องการให้ bottom bar เปิด route บางอันก็ทำ handler แบบนี้ได้
+  /// ✅ แบบ A: ให้หน้าแม่ตัดสินใจการนำทาง/สลับแท็บ
   void _handleBottomTap(int index) {
-    // ตัวอย่าง: ทั้ง 3 ปุ่มสลับแท็บใน Shell
-    changeTab(index);
-    // หรือถ้าจะให้ index 1 เปิดหน้าชื่อ '/history':
-    // if (index == 1) Navigator.pushNamed(context, '/history'); else changeTab(index);
+    switch (index) {
+      case 0:
+        // Home → สลับแท็บใน Shell
+        changeTab(0);
+        break;
+      case 1:
+        // History → เปิดด้วย named route
+        changeTab(1);
+        break;
+      case 2:
+        // ✅ Dashboard → สลับแท็บไป index 2
+        changeTab(2);
+        break;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F2FB),
-      // ✅ คง state ของแต่ละหน้า
       body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: CustomBottomNavBarLender(
         currentIndex: _selectedIndex,
-        onTap: _handleBottomTap,
+        onTap: _handleBottomTap, // 👈 ใช้ฟังก์ชันแบบ A
       ),
     );
   }
