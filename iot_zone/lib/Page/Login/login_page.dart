@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iot_zone/Page/Login/register_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -184,7 +185,14 @@ class _LoginPageState extends State<LoginPage> {
                               Text("Don't have an account? "),
                               TextButton(
                                 onPressed: () {
-                                  setState(() {});
+                                  setState(() {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => RegisterPage(),
+                                      ),
+                                    );
+                                  });
                                 },
                                 child: Text(
                                   'Register here!',
