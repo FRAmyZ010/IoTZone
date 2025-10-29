@@ -19,7 +19,7 @@ class _ShowAssetDialogStaffState extends State<ShowAssetDialogStaff> {
   late TextEditingController nameController;
   late TextEditingController descController;
   late String selectedType;
-  String ip = '192.168.1.125';
+  String ip = '192.168.145.1';
 
   @override
   void initState() {
