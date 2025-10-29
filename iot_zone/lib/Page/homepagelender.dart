@@ -7,7 +7,6 @@ import 'Widgets/buildTextContainer2/buildTextContainer_rigthtop.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_center.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_rigthtop.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_leftlow.dart';
-import 'package:iot_zone/Page/Asset_page/assetlender.dart';
 
 import 'Widgets/meatball_menu/meatball_menu.dart';
 

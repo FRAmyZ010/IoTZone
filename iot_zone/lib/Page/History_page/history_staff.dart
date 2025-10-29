@@ -122,35 +122,27 @@ class _HistoryStaffPageState extends State<HistoryStaffPage> {
 
   @override
   Widget build(BuildContext context) {
-    const purple = Color(0xFFC368FF);
-    const blue = Color(0xFF4D5DFF);
-    const bg = Color(0xFFF9F9FF);
-
     return Scaffold(
-      backgroundColor: bg,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(56),
         child: SafeArea(
           bottom: false,
           child: AppBar(
             automaticallyImplyLeading: false,
-            backgroundColor: blue,
+            backgroundColor: Colors.deepPurpleAccent,
             elevation: 0,
             titleSpacing: 0,
             title: Row(
               children: [
-                IconButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  icon: const Icon(Icons.arrow_back, color: Colors.black),
-                ),
-                const Text(
-                  "History",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 25,
+                Padding(
+                  padding: const EdgeInsets.only(left: 20),
+                  child: const Text(
+                    "History",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 25,
+                    ),
                   ),
                 ),
               ],
@@ -237,54 +229,6 @@ class _HistoryStaffPageState extends State<HistoryStaffPage> {
                         return _buildHistoryCard(item);
                       },
                     ),
-            ),
-
-            //Bottom Nav
-            Center(
-              child: Container(
-                width: 220,
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(40),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF4D5DFF), Color(0xFFC368FF)],
-                  ),
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(40),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          // TODO: ไปหน้า Dashboard
-                        },
-                        icon: const Icon(Icons.home_outlined, size: 26),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          setState(() {
-                            _selectedDate = null;
-                            _searchCtrl.clear();
-                            filteredList = historyList;
-                          });
-                        },
-                        icon: const Icon(Icons.history, size: 30),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          // TODO: ไปหน้า Asset
-                        },
-                        icon: const Icon(Icons.grid_view_rounded, size: 28),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
             ),
           ],
         ),

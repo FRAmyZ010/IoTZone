@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:iot_zone/Page/homepagestaff.dart';
 import 'package:iot_zone/Page/Dashboard/Dashboard-staff.dart';
 import 'package:iot_zone/Page/Asset_page/assetstaff.dart';
+import 'package:iot_zone/Page/History_page/history_staff.dart';
 
 class StaffMain extends StatefulWidget {
   const StaffMain({super.key});
@@ -20,7 +21,7 @@ class _StaffMainState extends State<StaffMain> {
 
   final List<Widget> _pages = const [
     Homepagestaff(), // 0
-    Center(child: Text('⚙️ Settings')), // 1 (แค่ตัวอย่าง)
+    HistoryStaffPage(), // 1
     DashboardStaff(), // 2
     AssetStaff(), // 3 (อยู่ใน Shell แต่ไม่มีไอคอน)
   ];
@@ -39,7 +40,7 @@ class _StaffMainState extends State<StaffMain> {
         break;
       case 1:
         // History → เปิดด้วย named route
-        Navigator.pushNamed(context, '/history');
+        changeTab(1);
         break;
       case 2:
         // ✅ Dashboard → สลับแท็บไป index 2

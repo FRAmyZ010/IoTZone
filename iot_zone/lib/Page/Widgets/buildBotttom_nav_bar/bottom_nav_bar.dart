@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 // 🔧 ปรับ path ตามโครงโปรเจกต์ของคุณ
 import 'package:iot_zone/Page/homepage.dart';
 import 'package:iot_zone/Page/Asset_page/assetpage.dart';
+import 'package:iot_zone/Page/History_page/history_student.dart';
+import 'package:iot_zone/Page/Request Status/Req_Status.dart';
 
 class StudentMain extends StatefulWidget {
   const StudentMain({super.key});
@@ -20,8 +22,8 @@ class _StudentMainState extends State<StudentMain> {
 
   final List<Widget> _pages = const [
     Homepage(), // 0
-    Center(child: Text('⚙️ Settings')), // 1 (ตัวอย่าง)
-    Center(child: Text('⚙️ Settings')), // 2
+    HistoryStudentPage(), // 1 (ตัวอย่าง)
+    RequestStatusPage(), // 2
     Assetpage(), // 3 (ซ่อนในไอคอน เรียกด้วย changeTab)
   ];
   static _StudentMainState? of(BuildContext context) =>
@@ -38,8 +40,8 @@ class _StudentMainState extends State<StudentMain> {
       case 0: // Home
         changeTab(0);
         break;
-      case 1: // History → ไปหน้า route นอก Shell
-        Navigator.pushNamed(context, '/history');
+      case 1: // History
+        changeTab(1);
         break;
       case 2: // Dashboard
         changeTab(2);
@@ -131,8 +133,11 @@ class _CustomBottomNavBarStudentState extends State<CustomBottomNavBarStudent> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _buildNavItem(Icons.home, 0), // Home → changeTab(0)
-                  _buildNavItem(Icons.history, 1), // → /history
-                  _buildNavItem(Icons.list_alt, 2), // Dashboard → changeTab(2)
+                  _buildNavItem(Icons.history, 1),
+                  _buildNavItem(
+                    Icons.hourglass_empty,
+                    2,
+                  ), // → /history // Dashboard → changeTab(2)
                 ],
               ),
             ),

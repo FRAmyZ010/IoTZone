@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'package:iot_zone/Page/homepage.dart';
+import 'package:iot_zone/Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar.dart';
+import 'package:iot_zone/Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar_staff.dart';
 
 void main() {
-  runApp(
-    MaterialApp(home: Homepage(), debugShowCheckedModeBanner: false),
-  );
+  runApp(MaterialApp(home: StaffMain(), debugShowCheckedModeBanner: false));
 }
