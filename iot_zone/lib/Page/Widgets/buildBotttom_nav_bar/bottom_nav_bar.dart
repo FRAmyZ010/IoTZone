@@ -1,27 +1,96 @@
 import 'package:flutter/material.dart';
-import '../../homepage.dart'; //
 
-class CustomBottomNavBar extends StatefulWidget {
+// 🔧 ปรับ path ตามโครงโปรเจกต์ของคุณ
+import 'package:iot_zone/Page/homepage.dart';
+import 'package:iot_zone/Page/Asset_page/assetpage.dart';
+
+class StudentMain extends StatefulWidget {
+  const StudentMain({super.key});
+
+  // ให้ลูก ๆ เรียกเปลี่ยนแท็บได้: StudentMain.of(context)?.changeTab(3)
+  static _StudentMainState? of(BuildContext context) =>
+      context.findAncestorStateOfType<_StudentMainState>();
+
+  @override
+  State<StudentMain> createState() => _StudentMainState();
+}
+
+class _StudentMainState extends State<StudentMain> {
+  int _selectedIndex = 0;
+
+  final List<Widget> _pages = const [
+    Homepage(), // 0
+    Center(child: Text('⚙️ Settings')), // 1 (ตัวอย่าง)
+    Center(child: Text('⚙️ Settings')), // 2
+    Assetpage(), // 3 (ซ่อนในไอคอน เรียกด้วย changeTab)
+  ];
+  static _StudentMainState? of(BuildContext context) =>
+      context.findAncestorStateOfType<_StudentMainState>();
+
+  void changeTab(int i) {
+    if (_selectedIndex == i) return;
+    setState(() => _selectedIndex = i);
+  }
+
+  /// แบบ A: หน้าแม่ตัดสินใจ
+  void _handleBottomTap(int index) {
+    switch (index) {
+      case 0: // Home
+        changeTab(0);
+        break;
+      case 1: // History → ไปหน้า route นอก Shell
+        Navigator.pushNamed(context, '/history');
+        break;
+      case 2: // Dashboard
+        changeTab(2);
+        break;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF6F2FB),
+      body: IndexedStack(index: _selectedIndex, children: _pages),
+      bottomNavigationBar: CustomBottomNavBarStudent(
+        currentIndex: _selectedIndex,
+        onTap: _handleBottomTap,
+      ),
+    );
+  }
+}
+
+// ---------------- Bottom Nav (dumb widget) ----------------
+class CustomBottomNavBarStudent extends StatefulWidget {
   final int currentIndex;
   final Function(int) onTap;
 
-  const CustomBottomNavBar({
+  const CustomBottomNavBarStudent({
     super.key,
     required this.currentIndex,
     required this.onTap,
   });
 
   @override
-  State<CustomBottomNavBar> createState() => _CustomBottomNavBarState();
+  State<CustomBottomNavBarStudent> createState() =>
+      _CustomBottomNavBarStudentState();
 }
 
-class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
+class _CustomBottomNavBarStudentState extends State<CustomBottomNavBarStudent> {
   late int _selectedIndex;
 
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.currentIndex;
+  }
+
+  @override
+  void didUpdateWidget(covariant CustomBottomNavBarStudent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.currentIndex != _selectedIndex) {
+      _selectedIndex = widget.currentIndex;
+    }
   }
 
   @override
@@ -43,19 +112,27 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
           ),
           Container(
             height: 54,
-            margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+            margin: const EdgeInsets.all(5),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(100),
+              boxShadow: const [
+                BoxShadow(
+                  blurRadius: 14,
+                  spreadRadius: -2,
+                  offset: Offset(0, 8),
+                  color: Colors.black12,
+                ),
+              ],
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildAnimatedIcon(Icons.home, 0),
-                  _buildAnimatedIcon(Icons.history, 1),
-                  _buildAnimatedIcon(Icons.list_alt, 2),
+                  _buildNavItem(Icons.home, 0), // Home → changeTab(0)
+                  _buildNavItem(Icons.history, 1), // → /history
+                  _buildNavItem(Icons.list_alt, 2), // Dashboard → changeTab(2)
                 ],
               ),
             ),
@@ -65,26 +142,17 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
     );
   }
 
-  Widget _buildAnimatedIcon(IconData icon, int index) {
+  Widget _buildNavItem(IconData icon, int index) {
     final bool isActive = _selectedIndex == index;
 
     return AnimatedScale(
       duration: const Duration(milliseconds: 200),
       scale: isActive ? 1.2 : 1.0,
       child: IconButton(
+        splashRadius: 24,
         onPressed: () {
           setState(() => _selectedIndex = index);
-
-          if (index == 0) {
-            // ✅ กลับไปหน้า Homepage
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => const Homepage()),
-              (route) => false,
-            );
-          } else {
-            widget.onTap(index);
-          }
+          widget.onTap(index); // ให้หน้าแม่ตัดสินใจ (แบบ A)
         },
         icon: AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
@@ -92,8 +160,8 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
               ScaleTransition(scale: animation, child: child),
           child: Icon(
             icon,
-            key: ValueKey(isActive),
-            size: 26,
+            key: ValueKey('${icon}_$isActive'),
+            size: 28,
             color: isActive ? const Color(0xFF6B45FF) : Colors.black,
           ),
         ),

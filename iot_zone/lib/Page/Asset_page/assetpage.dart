@@ -350,18 +350,6 @@ class _AssetpageState extends State<Assetpage> {
           ],
         ),
       ),
-
-      // 🔹 BottomNavBar
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: 0,
-        onTap: (index) {
-          if (index == 1) {
-            Navigator.pushNamed(context, '/history');
-          } else if (index == 2) {
-            Navigator.pushNamed(context, '/menu');
-          }
-        },
-      ),
     );
   }
 }
