@@ -197,12 +197,8 @@ class _HomepageState extends State<Homepagelender> {
                         Center(
                           child: ElevatedButton(
                             onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const Assetlender(),
-                                ),
-                              );
+                              // ✅ สลับแท็บใน LenderMain ไปหน้า Asset (index 3)
+                              LenderMain.of(context)?.changeTab(3);
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF6B45FF),
