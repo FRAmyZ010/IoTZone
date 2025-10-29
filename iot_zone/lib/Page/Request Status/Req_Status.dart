@@ -67,19 +67,14 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
 
   @override
   Widget build(BuildContext context) {
-    const purple = Color(0xFFC368FF);
-    const blue = Color(0xFF4D5DFF);
-    const bg = Color(0xFFF9F9FF);
-
     return Scaffold(
-      backgroundColor: bg,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(56),
         child: SafeArea(
           bottom: false,
           child: AppBar(
             automaticallyImplyLeading: false,
-            backgroundColor: blue,
+            backgroundColor: Colors.deepPurpleAccent,
             elevation: 0,
             titleSpacing: 0,
             title: Row(
