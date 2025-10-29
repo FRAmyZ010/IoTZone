@@ -84,18 +84,15 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
             titleSpacing: 0,
             title: Row(
               children: [
-                IconButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  icon: const Icon(Icons.arrow_back, color: Colors.black),
-                ),
-                const Text(
-                  "Request Status",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 25,
+                Padding(
+                  padding: const EdgeInsets.only(left: 20),
+                  child: const Text(
+                    "Request Status",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 25,
+                    ),
                   ),
                 ),
               ],
@@ -154,54 +151,6 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
                         return _buildRequestCard(item);
                       },
                     ),
-            ),
-
-            // Bottom Nav
-            Center(
-              child: Container(
-                width: 220,
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(40),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF4D5DFF), Color(0xFFC368FF)],
-                  ),
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(40),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          // TODO: หน้า Home
-                        },
-                        icon: const Icon(Icons.home_outlined, size: 26),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          // TODO: หน้า History
-                        },
-                        icon: const Icon(Icons.history, size: 30),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          // ✅ รีเฟรชหน้านี้ (กลับมาหน้า Request Status)
-                          setState(() {
-                            _searchCtrl.clear();
-                            filteredList = requestList;
-                          });
-                        },
-                        icon: const Icon(Icons.list_alt_outlined, size: 30),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
             ),
           ],
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:iot_zone/Page/homepagelender.dart';
 import 'package:iot_zone/Page/Dashboard/Dashboard-lecture.dart';
 import 'package:iot_zone/Page/Asset_page/assetlender.dart';
+import 'package:iot_zone/Page/History_page/history_lender.dart';
 
 class LenderMain extends StatefulWidget {
   const LenderMain({super.key});
@@ -19,7 +20,7 @@ class _LenderMainState extends State<LenderMain> {
 
   final List<Widget> _pages = const [
     Homepagelender(), // 0
-    Center(child: Text("⚙️ Settings Page (กำลังพัฒนา)")), // 1
+    HistoryLenderPage(), // 1
     DashboardLender(), // 2
     Assetlender(), // 3  ← เพิ่มแท็บ Asset ไว้ใน Shell
   ];
