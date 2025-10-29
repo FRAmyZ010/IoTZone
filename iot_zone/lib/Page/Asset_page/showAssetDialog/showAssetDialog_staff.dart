@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'dart:convert';
 import '../asset_listmap/asset_model.dart';
+import 'package:iot_zone/Page/AppConfig.dart';
 
 class ShowAssetDialogStaff extends StatefulWidget {
   final AssetModel? asset;
@@ -19,7 +20,7 @@ class _ShowAssetDialogStaffState extends State<ShowAssetDialogStaff> {
   late TextEditingController nameController;
   late TextEditingController descController;
   late String selectedType;
-  String ip = '192.168.145.1';
+  final String ip = AppConfig.serverIP;
 
   @override
   void initState() {

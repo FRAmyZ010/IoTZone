@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
+import 'package:iot_zone/Page/AppConfig.dart';
 
 class BorrowAssetDialog extends StatefulWidget {
   final Map<String, dynamic> asset;
@@ -14,7 +15,7 @@ class BorrowAssetDialog extends StatefulWidget {
 class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
   DateTime? startDate;
   DateTime? endDate;
-  String ip = '192.168.145.1';
+  final String ip = AppConfig.serverIP;
 
   // ✅ โหลดภาพแบบสมส่วน
   Widget _buildImage(String imagePath) {

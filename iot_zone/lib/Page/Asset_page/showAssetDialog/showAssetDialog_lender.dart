@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:iot_zone/Page/AppConfig.dart';
 
 class ShowAssetDialogLender extends StatelessWidget {
   final Map<String, dynamic> asset;
   const ShowAssetDialogLender({super.key, required this.asset});
 
-  final String ip = '192.168.145.1'; // ✅ กำหนด IP ที่ใช้ใน network
+  final String ip = AppConfig.serverIP;
 
   // ✅ โหลดภาพแบบสมส่วน (รองรับทั้ง http, /uploads/, uploads/, asset/)
   Widget _buildImage(String imagePath) {

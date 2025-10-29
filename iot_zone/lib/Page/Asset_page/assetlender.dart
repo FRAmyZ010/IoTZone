@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 
 import 'asset_listmap/asset_model.dart';
 import 'showAssetDialog/showAssetDialog_lender.dart';
-import '../Widgets/buildBotttom_nav_bar/bottom_nav_bar_lender.dart';
+import 'package:iot_zone/Page/AppConfig.dart';
 
 class Assetlender extends StatefulWidget {
   const Assetlender({super.key});
@@ -26,7 +26,7 @@ class _AssetlenderState extends State<Assetlender> {
   ];
 
   String selectedType = 'All';
-  String ip = '192.168.145.1';
+  final String ip = AppConfig.serverIP;
   late Future<List<AssetModel>> futureAssets;
 
   @override
