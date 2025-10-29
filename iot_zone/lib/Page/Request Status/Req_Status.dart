@@ -79,7 +79,7 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
           bottom: false,
           child: AppBar(
             automaticallyImplyLeading: false,
-            backgroundColor: purple,
+            backgroundColor: blue,
             elevation: 0,
             titleSpacing: 0,
             title: Row(
@@ -160,8 +160,7 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
             Center(
               child: Container(
                 width: 220,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(40),
@@ -189,7 +188,7 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
                         },
                         icon: const Icon(Icons.history, size: 30),
                       ),
-                     IconButton(
+                      IconButton(
                         onPressed: () {
                           // ✅ รีเฟรชหน้านี้ (กลับมาหน้า Request Status)
                           setState(() {
@@ -272,22 +271,33 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
               children: [
                 Row(
                   children: [
-                    Text(item["name"],
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(
+                      item["name"],
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                     const Spacer(),
                     RichText(
                       text: TextSpan(
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
                         children: [
                           const TextSpan(
                             text: 'Status : ',
-                            style: TextStyle(color: Colors.black), // ✅ คำว่า Status เป็นสีดำ
+                            style: TextStyle(
+                              color: Colors.black,
+                            ), // ✅ คำว่า Status เป็นสีดำ
                           ),
                           TextSpan(
                             text: item["status"],
                             style: TextStyle(
-                              color: getStatusColor(item["status"]), // ✅ สีของสถานะยังเปลี่ยนได้
+                              color: getStatusColor(
+                                item["status"],
+                              ), // ✅ สีของสถานะยังเปลี่ยนได้
                             ),
                           ),
                         ],
@@ -297,19 +307,26 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                    "Borrowed on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item["borrowDate"]))}"),
+                  "Borrowed on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item["borrowDate"]))}",
+                ),
 
                 if (item["status"] == "Approved" &&
                     item.containsKey("returnDate"))
                   Text(
-                      "Returned on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item["returnDate"]))}"),
+                    "Returned on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item["returnDate"]))}",
+                  ),
 
                 if (item["status"] == "Pending" && item["note"] != null)
-                  Text(item["note"], style: const TextStyle(color: Colors.grey)),
+                  Text(
+                    item["note"],
+                    style: const TextStyle(color: Colors.grey),
+                  ),
 
                 if (item["status"] == "Rejected" && item["reason"] != null)
-                  Text("Reason : ${item["reason"]}",
-                      style: const TextStyle(color: Colors.redAccent)),
+                  Text(
+                    "Reason : ${item["reason"]}",
+                    style: const TextStyle(color: Colors.redAccent),
+                  ),
 
                 if (item.containsKey("approvedBy") &&
                     item["approvedBy"].toString().isNotEmpty)
