@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:iot_zone/Page/Login/login_page.dart';
+import 'package:iot_zone/Page/Login/textfield_widget.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -11,12 +13,59 @@ class _RegisterPageState extends State<RegisterPage> {
   Color blackColor = const Color(0xFF1e1e1e);
   Color primary = Color(0xFF4D5DFF);
   Color purpleColor = const Color(0xFFC368FF);
+  Color green = const Color(0xFF14f105);
+  Color red = const Color(0xFFFF0004);
 
   TextEditingController tcUser = TextEditingController();
   TextEditingController tcPass = TextEditingController();
+  TextEditingController tcConfirmPass = TextEditingController();
   TextEditingController tcName = TextEditingController();
   TextEditingController tcPhone = TextEditingController();
   TextEditingController tcEmail = TextEditingController();
+
+  void showAlert(BuildContext context) async {
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Container(
+            width: 100,
+            height: 180,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(height: 20),
+                Image.asset('asset/icon/check.png', width: 100),
+                SizedBox(height: 20),
+                Text(
+                  'Register Successfully!',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            // TextButton(
+            //   onPressed: () {
+            //     Navigator.of(context).pop();
+            //   },
+            //   child: Text('OK'),
+            // ),
+            FilledButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => LoginPage()),
+                );
+              },
+              style: FilledButton.styleFrom(backgroundColor: red),
+              child: Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +110,7 @@ class _RegisterPageState extends State<RegisterPage> {
               child: Container(
                 alignment: Alignment.center,
                 width: 350,
-                height: 600,
+                height: 680,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -83,38 +132,105 @@ class _RegisterPageState extends State<RegisterPage> {
                       SizedBox(height: 50),
                       Padding(
                         padding: const EdgeInsets.only(left: 10.0, right: 10),
-                        child: Row(
+                        child: Column(
                           children: [
-                            Image.asset('asset/icon/user.png', width: 30),
-                            SizedBox(width: 20),
-                            SizedBox(
-                              width: 200,
-                              child: TextField(
-                                controller: tcUser,
-                                keyboardType: TextInputType.text,
-                                // obscureText: true, //
-                                decoration: InputDecoration(
-                                  hintText: 'Username',
-                                  hintStyle: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.grey[200],
-                                  contentPadding: EdgeInsets.symmetric(
-                                    vertical: 16,
-                                    horizontal: 20,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                ),
-                              ),
+                            InputFieldWidget(
+                              hintText: 'Username',
+                              controller: tcName,
+                              assetPath: 'asset/icon/user.png',
+                            ),
+                            SizedBox(height: 20),
+                            InputFieldWidget(
+                              hintText: 'Password',
+                              controller: tcPass,
+                              assetPath: 'asset/icon/padlock.png',
+                            ),
+                            SizedBox(height: 20),
+                            InputFieldWidget(
+                              hintText: 'Confirm-password',
+                              controller: tcPass,
+                              assetPath: 'asset/icon/padlock.png',
+                            ),
+                            SizedBox(height: 35),
+                            InputFieldWidget(
+                              hintText: 'Full Name',
+                              controller: tcUser,
+                              assetPath: 'asset/icon/id-card.png',
+                            ),
+                            SizedBox(height: 20),
+                            InputFieldWidget(
+                              hintText: 'Phone',
+                              controller: tcPhone,
+                              assetPath: 'asset/icon/phone.png',
+                            ),
+                            SizedBox(height: 20),
+                            InputFieldWidget(
+                              hintText: 'Email',
+                              controller: tcEmail,
+                              assetPath: 'asset/icon/gmail.png',
                             ),
                           ],
                         ),
+                      ),
+                      SizedBox(height: 40),
+                      Row(
+                        children: [
+                          SizedBox(width: 30),
+                          // Confirm button
+                          FilledButton(
+                            onPressed: () {
+                              showAlert(context);
+                            },
+
+                            style: FilledButton.styleFrom(
+                              backgroundColor: green,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 30,
+                                vertical: 15,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            child: Text(
+                              'Register',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 20),
+                          // Cancel button
+                          FilledButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => LoginPage(),
+                                ),
+                              );
+                            },
+
+                            style: FilledButton.styleFrom(
+                              backgroundColor: red,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 30,
+                                vertical: 15,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            child: Text(
+                              'Cancle',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       // เพิ่มฟอร์มการสมัครสมาชิกที่นี่
                     ],
