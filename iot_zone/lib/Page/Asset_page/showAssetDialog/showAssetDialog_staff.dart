@@ -1,18 +1,104 @@
 import 'package:flutter/material.dart';
-import '../asset_listmap/asset_model.dart'; // ✅ ตรวจ path ให้ถูก
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'dart:io';
+import 'dart:convert';
+import '../asset_listmap/asset_model.dart';
 
-class ShowAssetDialogStaff extends StatelessWidget {
-  final AssetModel? asset; // ✅ ตัวแปรรับค่า
+class ShowAssetDialogStaff extends StatefulWidget {
+  final AssetModel? asset;
   const ShowAssetDialogStaff({super.key, this.asset});
 
   @override
-  Widget build(BuildContext context) {
-    final isEditing = asset != null; // ✅ ตรวจว่ามี asset ส่งมาหรือไม่
-    final nameController = TextEditingController(text: asset?.name ?? '');
-    final descController = TextEditingController(
-      text: asset?.description ?? '',
+  State<ShowAssetDialogStaff> createState() => _ShowAssetDialogStaffState();
+}
+
+class _ShowAssetDialogStaffState extends State<ShowAssetDialogStaff> {
+  final picker = ImagePicker();
+  File? _imageFile;
+  late TextEditingController nameController;
+  late TextEditingController descController;
+  late String selectedType;
+  String ip = '192.168.145.1';
+
+  @override
+  void initState() {
+    super.initState();
+    nameController = TextEditingController(text: widget.asset?.name ?? '');
+    descController = TextEditingController(
+      text: widget.asset?.description ?? '',
     );
-    String selectedType = asset?.type ?? 'Type';
+    selectedType = widget.asset?.type ?? 'Type';
+  }
+
+  // ✅ ฟังก์ชันเลือกรูปจาก Gallery
+  Future<void> _pickImage() async {
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() {
+        _imageFile = File(picked.path);
+      });
+    }
+  }
+
+  // ✅ ฟังก์ชันอัปโหลดรูปไป Server
+  Future<String?> _uploadImage(File imageFile) async {
+    try {
+      final uri = Uri.parse('http://$ip:3000/upload');
+      final request = http.MultipartRequest('POST', uri);
+      request.files.add(
+        await http.MultipartFile.fromPath('image', imageFile.path),
+      );
+
+      final response = await request.send();
+      if (response.statusCode == 200) {
+        final res = await http.Response.fromStream(response);
+        final data = jsonDecode(res.body);
+        print('✅ Uploaded: ${data['filePath']}');
+        return data['filePath']; // เช่น /uploads/1730039123.png
+      } else {
+        print('❌ Upload failed: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('⚠️ Upload error: $e');
+      return null;
+    }
+  }
+
+  // ✅ ตัวช่วยสร้าง ImageProvider ปลอดภัย
+  ImageProvider _buildImageProvider(String imagePath) {
+    if (imagePath.isEmpty) {
+      return const AssetImage('asset/img/no_image.png');
+    }
+
+    // ✅ ถ้ามี path เต็มอยู่แล้ว เช่น asset/img/Resistor.png
+    if (imagePath.startsWith('asset/')) {
+      return AssetImage(imagePath);
+    }
+
+    // ✅ ถ้าเก็บแค่ชื่อไฟล์ เช่น SN74LS32N.png
+    if (imagePath.endsWith('.png') && !imagePath.contains('asset/')) {
+      return AssetImage('asset/img/$imagePath');
+    }
+
+    // ✅ ถ้าเก็บแค่ชื่อ (ไม่มี .png)
+    if (!imagePath.contains('.') && !imagePath.contains('/')) {
+      return AssetImage('asset/img/$imagePath.png');
+    }
+
+    // ✅ ถ้ามาจาก server upload
+    if (imagePath.startsWith('/uploads/')) {
+      return NetworkImage('http://$ip:3000$imagePath');
+    }
+
+    // fallback
+    return const AssetImage('asset/img/no_image.png');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isEditing = widget.asset != null;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -22,37 +108,59 @@ class ShowAssetDialogStaff extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // 🔹 Title
               Text(
                 isEditing ? 'Edit Asset' : 'Add New Asset',
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Colors.deepPurple,
+                  color: Colors.deepPurpleAccent,
                 ),
               ),
               const SizedBox(height: 16),
 
-              // 🔹 รูป
-              Container(
-                height: 150,
-                width: 150,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade400),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.image, size: 60, color: Colors.grey),
-                    SizedBox(height: 8),
-                    Text(
-                      'Upload',
-                      style: TextStyle(
-                        color: Colors.blueAccent,
-                        fontWeight: FontWeight.bold,
-                      ),
+              // 🔹 รูปภาพ
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  height: 150,
+                  width: 150,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: Colors.deepPurpleAccent,
+                      width: 1.5,
                     ),
-                  ],
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: _imageFile != null
+                        ? Image.file(_imageFile!, fit: BoxFit.cover)
+                        : (widget.asset?.image != null &&
+                              widget.asset!.image.isNotEmpty)
+                        ? Image(
+                            image: _buildImageProvider(widget.asset!.image),
+                            fit: BoxFit.cover,
+                          )
+                        : const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.image,
+                                size: 60,
+                                color: Colors.deepPurpleAccent,
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Upload',
+                                style: TextStyle(
+                                  color: Colors.deepPurpleAccent,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -60,64 +168,111 @@ class ShowAssetDialogStaff extends StatelessWidget {
               // 🔹 Name
               TextField(
                 controller: nameController,
+                style: const TextStyle(color: Colors.black87),
                 decoration: InputDecoration(
                   labelText: "Asset's name",
-                  border: OutlineInputBorder(
+                  labelStyle: const TextStyle(color: Colors.deepPurpleAccent),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(
+                      color: Colors.deepPurpleAccent,
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey.shade400),
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
               ),
               const SizedBox(height: 12),
 
-              // 🔹 Type dropdown
+              // 🔹 Type Dropdown
               DropdownButtonFormField<String>(
                 value: selectedType,
+                dropdownColor: Colors.white,
+                style: const TextStyle(color: Colors.black87, fontSize: 15),
                 decoration: InputDecoration(
                   labelText: 'Type',
+                  labelStyle: const TextStyle(color: Colors.deepPurpleAccent),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(
+                      color: Colors.deepPurpleAccent,
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
                 items:
-                    ['Type', 'Board', 'Module', 'Sensor', 'Tool', 'Component']
+                    [
+                          'Type',
+                          'Board',
+                          'Module',
+                          'Sensor',
+                          'Tool',
+                          'Component',
+                          'Measurement',
+                          'Logic',
+                        ]
                         .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                         .toList(),
-                onChanged: (value) => selectedType = value!,
+                onChanged: (value) => setState(() => selectedType = value!),
               ),
               const SizedBox(height: 12),
 
               // 🔹 Description
               TextField(
                 controller: descController,
+                style: const TextStyle(color: Colors.black87),
                 maxLines: 2,
                 decoration: InputDecoration(
                   labelText: "Description",
-                  border: OutlineInputBorder(
+                  labelStyle: const TextStyle(color: Colors.deepPurpleAccent),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(
+                      color: Colors.deepPurpleAccent,
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey.shade400),
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
 
-              // 🔹 ปุ่ม Action
+              // 🔹 Buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
+                  // ✅ ปุ่มยืนยัน (สีม่วง ข้อความขาว)
                   ElevatedButton.icon(
-                    onPressed: () {
-                      // ✅ สร้าง object ใหม่ / แก้ไข
+                    onPressed: () async {
+                      String imagePath =
+                          widget.asset?.image ?? 'asset/img/default.png';
+                      if (_imageFile != null) {
+                        final uploadedPath = await _uploadImage(_imageFile!);
+                        if (uploadedPath != null) imagePath = uploadedPath;
+                      }
+
                       final newAsset =
-                          asset?.copyWith(
+                          widget.asset?.copyWith(
                             name: nameController.text,
                             type: selectedType,
                             description: descController.text,
+                            image: imagePath,
                           ) ??
                           AssetModel(
                             id: DateTime.now().millisecondsSinceEpoch,
                             name: nameController.text,
                             type: selectedType,
                             description: descController.text,
-                            image: 'asset/img/default.png',
+                            image: imagePath,
                             status: 'Available',
                             statusColorValue: Colors.green.value,
                           );
@@ -125,22 +280,48 @@ class ShowAssetDialogStaff extends StatelessWidget {
                       Navigator.pop(context, newAsset);
                     },
                     icon: const Icon(Icons.check, color: Colors.white),
-                    label: Text(isEditing ? 'SAVE' : 'CONFIRM'),
+                    label: Text(
+                      isEditing ? 'SAVE' : 'CONFIRM',
+                      style: const TextStyle(color: Colors.white),
+                    ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: Colors.deepPurpleAccent,
+                      foregroundColor: Colors.white, // ✅ ข้อความขาว
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 22,
+                        vertical: 12,
+                      ),
                     ),
                   ),
+
+                  // ✅ ปุ่มยกเลิก (สีเทา ข้อความขาว)
                   ElevatedButton.icon(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.close, color: Colors.white),
-                    label: const Text('CANCEL'),
+                    label: const Text(
+                      'CANCEL',
+                      style: TextStyle(color: Colors.white),
+                    ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent,
+                      backgroundColor: Colors.grey.shade600,
+                      foregroundColor: Colors.white, // ✅ ข้อความขาว
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 22,
+                        vertical: 12,
                       ),
                     ),
                   ),

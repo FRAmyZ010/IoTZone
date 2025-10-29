@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
-import 'Widgets/bottom_nav_bar.dart';
+import 'Widgets/buildBotttom_nav_bar/bottom_nav_bar.dart';
 import 'Widgets/buildTextContainer2/buildTextContainar_rigthlow.dart';
 import 'Widgets/buildTextContainer2/buildTextContainer_rigthtop.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_center.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_rigthtop.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_leftlow.dart';
 import 'package:iot_zone/Page/Asset_page/assetpage.dart';
+
+import 'Widgets/meatball_menu/meatball_menu.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -40,7 +42,7 @@ class _HomepageState extends State<Homepage> {
           children: [
             // 🔹 ส่วนบน 20% พร้อมรูปจาง + Gradient + โปรไฟล์
             Expanded(
-              flex: 25,
+              flex: 28,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -71,16 +73,8 @@ class _HomepageState extends State<Homepage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            IconButton(
-                              icon: const Icon(
-                                Icons.more_horiz,
-                                color: Colors.white,
-                                size: 40,
-                              ),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              onPressed: () {},
-                            ),
+                            // 🚀 แทนที่ IconButton เดิมด้วย Custom Widget
+                            UserProfileMenu(),
                           ],
                         ),
                         Row(
@@ -152,7 +146,7 @@ class _HomepageState extends State<Homepage> {
 
             // 🔹 ส่วนล่าง (Carousel + Recommend)
             Expanded(
-              flex: 75,
+              flex: 72,
               child: Container(
                 color: Colors.white,
                 alignment: Alignment.topCenter,
