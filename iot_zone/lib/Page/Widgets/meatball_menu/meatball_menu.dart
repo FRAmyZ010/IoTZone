@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:iot_zone/Page/Login/login_page.dart';
 import 'package:path/path.dart' as path;
 
 // ***************************************************************
@@ -501,10 +502,10 @@ class UserProfileMenu extends StatelessWidget {
     } else if (result == ProfileMenuAction.logout) {
       // ** Logic Log-out: นำทางไปหน้า Login และล้าง Stack **
       debugPrint('User is logging out...');
-      // Navigator.of(context).pushAndRemoveUntil(
-      //   MaterialPageRoute(builder: (context) => const LoginPage()),
-      //   (Route<dynamic> route) => false, // ล้างทุกหน้า
-      // );
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+        (Route<dynamic> route) => false, // ล้างทุกหน้า
+      );
     }
   }
 
