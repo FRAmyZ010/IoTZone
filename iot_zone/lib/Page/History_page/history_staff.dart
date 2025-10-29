@@ -23,7 +23,7 @@ class _HistoryStaffPageState extends State<HistoryStaffPage> {
   //Mock Data
   void _fetchHistory() async {
     List<Map<String, dynamic>> apiData = [
-     {
+      {
         "name": "Multimeter",
         "borrowDate": "2025-10-24",
         "returnDate": "2025-10-25",
@@ -51,7 +51,7 @@ class _HistoryStaffPageState extends State<HistoryStaffPage> {
         "image": "asset/img/Transistor.png",
       },
       {
-       "name": "Resistor",
+        "name": "Resistor",
         "borrowDate": "2025-10-22",
         "status": "Rejected",
         "reason": "Can borrow only one asset a day",
@@ -134,7 +134,7 @@ class _HistoryStaffPageState extends State<HistoryStaffPage> {
           bottom: false,
           child: AppBar(
             automaticallyImplyLeading: false,
-            backgroundColor: purple,
+            backgroundColor: blue,
             elevation: 0,
             titleSpacing: 0,
             title: Row(
@@ -177,8 +177,11 @@ class _HistoryStaffPageState extends State<HistoryStaffPage> {
                     child: Row(
                       children: [
                         const SizedBox(width: 12),
-                        const Icon(Icons.search,
-                            color: Colors.black54, size: 22),
+                        const Icon(
+                          Icons.search,
+                          color: Colors.black54,
+                          size: 22,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: TextField(
@@ -206,8 +209,11 @@ class _HistoryStaffPageState extends State<HistoryStaffPage> {
                       color: Colors.yellow,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Icon(Icons.calendar_month,
-                        color: Colors.black, size: 26),
+                    child: const Icon(
+                      Icons.calendar_month,
+                      color: Colors.black,
+                      size: 26,
+                    ),
                   ),
                 ),
               ],
@@ -215,7 +221,7 @@ class _HistoryStaffPageState extends State<HistoryStaffPage> {
 
             const SizedBox(height: 16),
 
-            //รายการ 
+            //รายการ
             Expanded(
               child: filteredList.isEmpty
                   ? const Center(
@@ -233,12 +239,11 @@ class _HistoryStaffPageState extends State<HistoryStaffPage> {
                     ),
             ),
 
-            //Bottom Nav 
+            //Bottom Nav
             Center(
               child: Container(
                 width: 220,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(40),
@@ -330,30 +335,37 @@ class _HistoryStaffPageState extends State<HistoryStaffPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item["name"],
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16)),
+                Text(
+                  item["name"],
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 Text(
-                    "Borrowed on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item["borrowDate"]))}"),
+                  "Borrowed on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item["borrowDate"]))}",
+                ),
                 if (item.containsKey("returnDate"))
                   Text(
-                      "Expected return on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item["returnDate"]))}"),
+                    "Expected return on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item["returnDate"]))}",
+                  ),
                 if (item.containsKey("approvedBy"))
-                    Text(
-                      item["status"] == "Rejected"
-                          ? "Rejected by ${item["approvedBy"]}"
-                          : "Approved by ${item["approvedBy"]}",
-                      
-                    ),
+                  Text(
+                    item["status"] == "Rejected"
+                        ? "Rejected by ${item["approvedBy"]}"
+                        : "Approved by ${item["approvedBy"]}",
+                  ),
 
                 if (item.containsKey("borrowedBy"))
                   Text("Borrowed by ${item["borrowedBy"]}"),
                 if (item.containsKey("receivedBy"))
                   Text("Received by ${item["receivedBy"]}"),
                 if (item["status"] == "Rejected" && item["reason"] != null)
-                  Text("Reason : ${item["reason"]}",
-                      style: const TextStyle(color: Colors.redAccent)),
+                  Text(
+                    "Reason : ${item["reason"]}",
+                    style: const TextStyle(color: Colors.redAccent),
+                  ),
               ],
             ),
           ),

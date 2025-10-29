@@ -20,49 +20,48 @@ class _HistoryStudentPageState extends State<HistoryStudentPage> {
     _fetchHistory();
   }
 
-  //Mock Data 
- void _fetchHistory() async {
-  List<Map<String, dynamic>> apiData = [
-    {
-      "name": "Multimeter",
-      "status": "Returned",
-      "borrowDate": "2025-10-24",
-      "returnDate": "2025-10-25",
-      "approvedBy": "Prof. John Doe",
-      "image": "asset/img/Multimeter.png",
-    },
-    {
-      "name": "Capacitor",
-      "status": "Rejected",
-      "borrowDate": "2025-10-22",
-      "reason": "Can borrow only one asset a day",
-      "approvedBy": "Prof. John Doe",
-      "image": "asset/img/Capacitor.png",
-    },
-    {
-      "name": "Transistor",
-      "status": "Returned",
-      "borrowDate": "2025-10-21",
-      "returnDate": "2025-10-23",
-      "approvedBy": "Prof. John Doe",
-      "image": "asset/img/Transistor.png", 
-    },
-    {
-      "name": "Resistor",
-      "status": "Rejected",
-      "borrowDate": "2025-10-19",
-      "reason": "Can borrow only one asset a day",
-      "approvedBy": "Prof. John Doe",
-      "image": "asset/img/Resistor.png", 
-    },
-  ];
+  //Mock Data
+  void _fetchHistory() async {
+    List<Map<String, dynamic>> apiData = [
+      {
+        "name": "Multimeter",
+        "status": "Returned",
+        "borrowDate": "2025-10-24",
+        "returnDate": "2025-10-25",
+        "approvedBy": "Prof. John Doe",
+        "image": "asset/img/Multimeter.png",
+      },
+      {
+        "name": "Capacitor",
+        "status": "Rejected",
+        "borrowDate": "2025-10-22",
+        "reason": "Can borrow only one asset a day",
+        "approvedBy": "Prof. John Doe",
+        "image": "asset/img/Capacitor.png",
+      },
+      {
+        "name": "Transistor",
+        "status": "Returned",
+        "borrowDate": "2025-10-21",
+        "returnDate": "2025-10-23",
+        "approvedBy": "Prof. John Doe",
+        "image": "asset/img/Transistor.png",
+      },
+      {
+        "name": "Resistor",
+        "status": "Rejected",
+        "borrowDate": "2025-10-19",
+        "reason": "Can borrow only one asset a day",
+        "approvedBy": "Prof. John Doe",
+        "image": "asset/img/Resistor.png",
+      },
+    ];
 
-  setState(() {
-    historyList = apiData;
-    filteredList = apiData;
-  });
-}
-
+    setState(() {
+      historyList = apiData;
+      filteredList = apiData;
+    });
+  }
 
   //ฟังก์ชันค้นหา
   void _searchItem(String query) {
@@ -99,7 +98,7 @@ class _HistoryStudentPageState extends State<HistoryStudentPage> {
         return Theme(
           data: ThemeData(
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFFC368FF),
+              primary: Color(0xFF4D5DFF),
               onPrimary: Colors.white,
               onSurface: Colors.black,
             ),
@@ -131,7 +130,7 @@ class _HistoryStudentPageState extends State<HistoryStudentPage> {
           bottom: false,
           child: AppBar(
             automaticallyImplyLeading: false,
-            backgroundColor: purple,
+            backgroundColor: blue,
             elevation: 0,
             titleSpacing: 0,
             title: Row(
@@ -174,8 +173,11 @@ class _HistoryStudentPageState extends State<HistoryStudentPage> {
                     child: Row(
                       children: [
                         const SizedBox(width: 12),
-                        const Icon(Icons.search,
-                            color: Colors.black54, size: 22),
+                        const Icon(
+                          Icons.search,
+                          color: Colors.black54,
+                          size: 22,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: TextField(
@@ -203,8 +205,11 @@ class _HistoryStudentPageState extends State<HistoryStudentPage> {
                       color: Colors.yellow,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Icon(Icons.calendar_month,
-                        color: Colors.black, size: 26),
+                    child: const Icon(
+                      Icons.calendar_month,
+                      color: Colors.black,
+                      size: 26,
+                    ),
                   ),
                 ),
               ],
@@ -230,12 +235,11 @@ class _HistoryStudentPageState extends State<HistoryStudentPage> {
                     ),
             ),
 
-            //Bottom Nav 
+            //Bottom Nav
             Center(
               child: Container(
                 width: 220,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(40),
@@ -329,14 +333,20 @@ class _HistoryStudentPageState extends State<HistoryStudentPage> {
               children: [
                 Row(
                   children: [
-                    Text(item["name"],
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(
+                      item["name"],
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                     const Spacer(),
                     RichText(
                       text: TextSpan(
                         style: const TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.bold),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
                         children: [
                           const TextSpan(
                             text: 'Status: ',
@@ -357,13 +367,17 @@ class _HistoryStudentPageState extends State<HistoryStudentPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                    "Borrowed on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item["borrowDate"]))}"),
+                  "Borrowed on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item["borrowDate"]))}",
+                ),
                 if (item.containsKey("returnDate"))
                   Text(
-                      "Returned on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item["returnDate"]))}"),
+                    "Returned on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item["returnDate"]))}",
+                  ),
                 if (item["status"] == "Rejected" && item["reason"] != null)
-                  Text("Reason: ${item["reason"]}",
-                      style: const TextStyle(color: Colors.redAccent)),
+                  Text(
+                    "Reason: ${item["reason"]}",
+                    style: const TextStyle(color: Colors.redAccent),
+                  ),
                 if (item.containsKey("approvedBy"))
                   Text(
                     item["status"] == "Rejected"
