@@ -197,12 +197,8 @@ class _HomepageState extends State<Homepagestaff> {
                         Center(
                           child: ElevatedButton(
                             onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const AssetStaff(),
-                                ),
-                              );
+                              // ✅ เปลี่ยนแท็บใน StaffMain โดยไม่เปิดหน้าใหม่
+                              StaffMain.of(context)?.changeTab(3);
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF6B45FF),
@@ -270,23 +266,6 @@ class _HomepageState extends State<Homepagestaff> {
             ),
           ],
         ),
-      ),
-
-      bottomNavigationBar: CustomBottomNavBarStaff(
-        currentIndex: 0, // หน้าปัจจุบัน (Home)
-        onTap: (index) {
-          setState(() {
-            // index ที่เลือก (0 = Home, 1 = History, 2 = Menu)
-            print("Tapped index: $index");
-          });
-
-          // ✅ ตัวอย่างการลิงก์ไปหน้าอื่น
-          if (index == 1) {
-            Navigator.pushNamed(context, '/history');
-          } else if (index == 2) {
-            Navigator.pushNamed(context, '/menu');
-          }
-        },
       ),
     );
   }
