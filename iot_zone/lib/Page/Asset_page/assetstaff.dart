@@ -106,10 +106,10 @@ class _AssetStaffState extends State<AssetStaff> {
     fetchAssets();
   }
 
-  Future<void> deleteAsset(int id) async {
-    await http.delete(Uri.parse('http://$ip:3000/assets/$id'));
-    fetchAssets();
-  }
+  // Future<void> deleteAsset(int id) async {
+  //   await http.delete(Uri.parse('http://$ip:3000/assets/$id'));
+  //   fetchAssets();
+  // }
 
   void _openAssetDialog({AssetModel? asset}) async {
     final result = await showDialog(

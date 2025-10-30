@@ -12,7 +12,7 @@ import 'package:path/path.dart' as path;
 // ** WIDGETS หลัก: UserProfileMenu **
 // ***************************************************************
 
-enum ProfileMenuAction { profile, changepassword, logout }
+enum ProfileMenuAction { profile, changepassword, logout, meatball }
 
 class UserProfileMenu extends StatelessWidget {
   UserProfileMenu({super.key});
@@ -497,6 +497,8 @@ class UserProfileMenu extends StatelessWidget {
   void _onSelected(BuildContext context, ProfileMenuAction result) {
     if (result == ProfileMenuAction.profile) {
       _showProfileAlert(context);
+    } else if (result == ProfileMenuAction.meatball) {
+      
     } else if (result == ProfileMenuAction.changepassword) {
       _showChangePasswordAlert(context);
     } else if (result == ProfileMenuAction.logout) {
@@ -517,7 +519,7 @@ class UserProfileMenu extends StatelessWidget {
     return <PopupMenuEntry<ProfileMenuAction>>[
       const PopupMenuItem<ProfileMenuAction>(
         // รายการว่างด้านบน
-        enabled: false,
+        value: ProfileMenuAction.meatball,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [Icon(Icons.more_horiz, color: Colors.black, size: 48)],
