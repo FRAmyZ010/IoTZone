@@ -8,9 +8,10 @@ import 'Widgets/buildTextContainer1/buildSlidehomepage_center.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_rigthtop.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_leftlow.dart';
 import 'Widgets/meatball_menu/meatball_menu.dart';
+import 'AppConfig.dart';
 
 class Homepagelender extends StatefulWidget {
-  final Map<String, dynamic>? userData; // ✅ รับข้อมูลจาก login
+  final Map<String, dynamic>? userData;
 
   const Homepagelender({super.key, this.userData});
 
@@ -18,7 +19,6 @@ class Homepagelender extends StatefulWidget {
   State<Homepagelender> createState() => _HomepagelenderState();
 }
 
-/// 🔹 Extension: ช่วยให้ตัวแรกเป็นพิมพ์ใหญ่
 extension StringCasing on String {
   String capitalize() =>
       isEmpty ? this : '${this[0].toUpperCase()}${substring(1)}';
@@ -26,10 +26,12 @@ extension StringCasing on String {
 
 class _HomepagelenderState extends State<Homepagelender> {
   final ScrollController _scrollController = ScrollController();
+  late Map<String, dynamic> _userData;
 
   @override
   void initState() {
     super.initState();
+    _userData = Map<String, dynamic>.from(widget.userData ?? {});
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollController.animateTo(
         300,
@@ -39,12 +41,19 @@ class _HomepagelenderState extends State<Homepagelender> {
     });
   }
 
+  // ✅ เมื่อมีการอัปเดตโปรไฟล์จากเมนู
+  void _onProfileUpdated(Map<String, dynamic> updatedData) {
+    setState(() {
+      _userData.addAll(updatedData);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    // ✅ ดึงข้อมูลผู้ใช้จาก userData
-    final username = widget.userData?['username'] ?? 'Guest';
-    final name = widget.userData?['name'] ?? username;
-    final role = (widget.userData?['role'] ?? 'lender').toString().capitalize();
+    final username = _userData['username'] ?? 'Guest';
+    final name = _userData['name'] ?? username;
+    final role = (_userData['role'] ?? 'lender').toString().capitalize();
+    final imageUrl = _userData['image'];
 
     return Scaffold(
       body: SafeArea(
@@ -80,20 +89,35 @@ class _HomepagelenderState extends State<Homepagelender> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // 🔸 ปุ่ม 3 จุด (Meatball Menu)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            UserProfileMenu(userData: widget.userData),
+                            UserProfileMenu(
+                              userData: _userData,
+                              onProfileUpdated: _onProfileUpdated,
+                            ),
                           ],
                         ),
+
+                        // 🔸 แสดงโปรไฟล์ผู้ใช้
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const CircleAvatar(
+                            CircleAvatar(
                               radius: 26,
-                              backgroundImage: AssetImage(
-                                'asset/img/Icon_Profile.png',
-                              ),
+                              backgroundColor: Colors.white,
+                              backgroundImage:
+                                  (imageUrl != null &&
+                                      imageUrl.toString().isNotEmpty &&
+                                      imageUrl.toString() != "null")
+                                  ? NetworkImage(
+                                      'http://${AppConfig.serverIP}:3000$imageUrl?v=${DateTime.now().millisecondsSinceEpoch}',
+                                    )
+                                  : const AssetImage(
+                                          'asset/img/Icon_Profile.png',
+                                        )
+                                        as ImageProvider,
                             ),
                             const SizedBox(width: 12),
                             Column(
@@ -120,6 +144,8 @@ class _HomepagelenderState extends State<Homepagelender> {
                             ),
                           ],
                         ),
+
+                        // 🔸 โลโก้ IoT Zone
                         Padding(
                           padding: const EdgeInsets.only(top: 5),
                           child: Row(
@@ -205,7 +231,6 @@ class _HomepagelenderState extends State<Homepagelender> {
                         Center(
                           child: ElevatedButton(
                             onPressed: () {
-                              // ✅ สลับแท็บไปหน้า Asset โดยไม่เปิดหน้าใหม่
                               LenderMain.of(context)?.changeTab(4);
                             },
                             style: ElevatedButton.styleFrom(

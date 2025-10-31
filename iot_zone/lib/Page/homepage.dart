@@ -9,21 +9,18 @@ import 'Widgets/buildTextContainer1/buildSlidehomepage_leftlow.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_rigthtop.dart';
 import 'Widgets/buildTextContainer2/buildTextContainar_rigthlow.dart';
 import 'Widgets/buildTextContainer2/buildTextContainer_rigthtop.dart';
+import 'AppConfig.dart';
 
 /// 🏠 Homepage แสดงข้อมูลโปรไฟล์ + แบนเนอร์
 class Homepage extends StatefulWidget {
-  final Map<String, dynamic>? userData; // ✅ รับข้อมูลจาก StudentMain
+  final Map<String, dynamic>? userData;
 
-  const Homepage({
-    super.key,
-    this.userData,
-  }); // ✅ เหลือ constructor แค่บรรทัดนี้
+  const Homepage({super.key, this.userData});
 
   @override
   State<Homepage> createState() => _HomepageState();
 }
 
-/// 🔹 Extension: ทำให้ตัวอักษรแรกเป็นพิมพ์ใหญ่
 extension StringCasing on String {
   String capitalize() =>
       isEmpty ? this : '${this[0].toUpperCase()}${substring(1)}';
@@ -31,10 +28,12 @@ extension StringCasing on String {
 
 class _HomepageState extends State<Homepage> {
   final ScrollController _scrollController = ScrollController();
+  late Map<String, dynamic> _userData;
 
   @override
   void initState() {
     super.initState();
+    _userData = Map<String, dynamic>.from(widget.userData ?? {});
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollController.animateTo(
         300,
@@ -44,20 +43,19 @@ class _HomepageState extends State<Homepage> {
     });
   }
 
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
+  // ✅ เมื่ออัปเดตโปรไฟล์จากเมนู
+  void _onProfileUpdated(Map<String, dynamic> updatedUser) {
+    setState(() {
+      _userData = updatedUser;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    // ✅ ดึงข้อมูลผู้ใช้จาก userData
-    final username = widget.userData?['username'] ?? 'Guest';
-    final name = widget.userData?['name'] ?? username;
-    final role = (widget.userData?['role'] ?? 'Student')
-        .toString()
-        .capitalize();
+    final username = _userData['username'] ?? 'Guest';
+    final name = _userData['name'] ?? username;
+    final role = (_userData['role'] ?? 'Student').toString().capitalize();
+    final imageUrl = _userData['image'];
 
     return Scaffold(
       body: SafeArea(
@@ -69,7 +67,7 @@ class _HomepageState extends State<Homepage> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // 🔸 พื้นหลังรูปจาง
+                  // 🔸 พื้นหลัง
                   Opacity(
                     opacity: 0.5,
                     child: Image.asset(
@@ -98,25 +96,36 @@ class _HomepageState extends State<Homepage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ... ปุ่มเมนูด้านขวาบน
+                        // ปุ่มเมนู (Meatball)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            // ✅ เรียกใช้ UserProfileMenu ที่นี่ได้เลย
-                            UserProfileMenu(userData: widget.userData),
+                            UserProfileMenu(
+                              userData: _userData,
+                              onProfileUpdated: _onProfileUpdated,
+                            ),
                           ],
                         ),
                         const SizedBox(height: 10),
 
-                        // ... แถวโปรไฟล์
+                        // 🔸 โปรไฟล์ผู้ใช้
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const CircleAvatar(
+                            CircleAvatar(
                               radius: 26,
-                              backgroundImage: AssetImage(
-                                'asset/img/Icon_Profile.png',
-                              ),
+                              backgroundColor: Colors.grey.shade300,
+                              backgroundImage:
+                                  (imageUrl != null &&
+                                      imageUrl.toString().isNotEmpty &&
+                                      imageUrl.toString() != "null")
+                                  ? NetworkImage(
+                                      'http://${AppConfig.serverIP}:3000$imageUrl?v=${DateTime.now().millisecondsSinceEpoch}',
+                                    )
+                                  : const AssetImage(
+                                          'asset/img/Icon_Profile.png',
+                                        )
+                                        as ImageProvider,
                             ),
                             const SizedBox(width: 12),
                             Column(

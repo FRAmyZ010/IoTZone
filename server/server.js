@@ -110,18 +110,18 @@ app.post('/login', async (req, res) => {
     }
 
     // ✅ ถ้า password ถูกต้อง
-    res.status(200).json({
-      message: 'Login successful',
-      user: {
-        id: user.id,
-        username: user.username,
-        name: user.name,
-        role: user.role,
-        email: user.email,
-        phone: user.phone,
-      },
-    });
-
+  res.status(200).json({
+  message: 'Login successful',
+  user: {
+    id: user.id,
+    username: user.username,
+    name: user.name,
+    role: user.role,
+    email: user.email,
+    phone: user.phone,
+    image: user.image, // ✅ เพิ่มบรรทัดนี้
+  },
+});
   } catch (err) {
     console.error("❌ Login error:", err);
     res.status(500).json({ message: "Internal server error" });
