@@ -133,10 +133,10 @@ class _CustomBottomNavBarStudentState extends State<CustomBottomNavBarStudent> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _buildNavItem(Icons.home, 0), // Home → changeTab(0)
-                  _buildNavItem(Icons.history, 1),
+                  _buildNavItem(Icons.hourglass_empty, 2),
                   _buildNavItem(
-                    Icons.hourglass_empty,
-                    2,
+                    Icons.history,
+                    1,
                   ), // → /history // Dashboard → changeTab(2)
                 ],
               ),
