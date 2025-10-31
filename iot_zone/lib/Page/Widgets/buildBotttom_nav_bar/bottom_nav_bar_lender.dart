@@ -23,6 +23,7 @@ class _LenderMainState extends State<LenderMain> {
     // รายการหน้าต่าง ๆ ที่จะแสดงตามแท็บที่เลือก
     Homepagelender(),
     HistoryLenderPage(),
+    Center(child: Text('⚙️ Settings')),
     DashboardLender(),
     Assetlender(),
   ];
@@ -47,6 +48,10 @@ class _LenderMainState extends State<LenderMain> {
       case 2:
         // ✅ Dashboard → สลับแท็บไป index 2
         changeTab(2);
+        break;
+      // ✅ Dashboard → สลับแท็บไป index 3
+      case 3:
+        changeTab(3);
         break;
     }
   }
@@ -131,9 +136,10 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBarLender> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(Icons.home, 0),
-                _buildNavItem(Icons.history, 1),
-                _buildNavItem(Icons.dashboard, 2), // ชัดว่าเป็น Dashboard
+                _buildNavItem(Icons.home, 0), // Home → changeTab(0)
+                _buildNavItem(Icons.history, 1), // → /history
+                _buildNavItem(Icons.check_circle_outline, 2),
+                _buildNavItem(Icons.window, 3),
               ],
             ),
           ),
