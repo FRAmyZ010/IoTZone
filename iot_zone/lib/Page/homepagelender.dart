@@ -7,23 +7,29 @@ import 'Widgets/buildTextContainer2/buildTextContainer_rigthtop.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_center.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_rigthtop.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_leftlow.dart';
-
 import 'Widgets/meatball_menu/meatball_menu.dart';
 
 class Homepagelender extends StatefulWidget {
-  const Homepagelender({super.key});
+  final Map<String, dynamic>? userData; // ✅ รับข้อมูลจาก login
+
+  const Homepagelender({super.key, this.userData});
 
   @override
-  State<Homepagelender> createState() => _HomepageState();
+  State<Homepagelender> createState() => _HomepagelenderState();
 }
 
-class _HomepageState extends State<Homepagelender> {
+/// 🔹 Extension: ช่วยให้ตัวแรกเป็นพิมพ์ใหญ่
+extension StringCasing on String {
+  String capitalize() =>
+      isEmpty ? this : '${this[0].toUpperCase()}${substring(1)}';
+}
+
+class _HomepagelenderState extends State<Homepagelender> {
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollController.animateTo(
         300,
@@ -35,11 +41,16 @@ class _HomepageState extends State<Homepagelender> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ ดึงข้อมูลผู้ใช้จาก userData
+    final username = widget.userData?['username'] ?? 'Guest';
+    final name = widget.userData?['name'] ?? username;
+    final role = (widget.userData?['role'] ?? 'lender').toString().capitalize();
+
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            // 🔹 ส่วนบน 20% พร้อมรูปจาง + Gradient + โปรไฟล์
+            // 🔹 ส่วนบน (โปรไฟล์)
             Expanded(
               flex: 28,
               child: Stack(
@@ -48,7 +59,7 @@ class _HomepageState extends State<Homepagelender> {
                   Opacity(
                     opacity: 0.5,
                     child: Image.asset(
-                      './asset/img/homepage-banner.jpg',
+                      'asset/img/homepage-banner.jpg',
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -72,8 +83,7 @@ class _HomepageState extends State<Homepagelender> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            // 🚀 แทนที่ IconButton เดิมด้วย Custom Widget
-                            UserProfileMenu(),
+                            UserProfileMenu(userData: widget.userData),
                           ],
                         ),
                         Row(
@@ -82,25 +92,25 @@ class _HomepageState extends State<Homepagelender> {
                             const CircleAvatar(
                               radius: 26,
                               backgroundImage: AssetImage(
-                                './asset/img/Icon_Profile.png',
+                                'asset/img/Icon_Profile.png',
                               ),
                             ),
                             const SizedBox(width: 12),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
+                              children: [
                                 Text(
-                                  'Pub_za007',
-                                  style: TextStyle(
+                                  name,
+                                  style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
                                   ),
                                 ),
                                 Text(
-                                  'lender',
-                                  style: TextStyle(
+                                  role,
+                                  style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                     color: Colors.white70,
@@ -120,15 +130,13 @@ class _HomepageState extends State<Homepagelender> {
                                 width: 60,
                                 height: 60,
                               ),
-                              Padding(
-                                padding: const EdgeInsets.only(left: 5),
-                                child: Text(
-                                  "Zone",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              const SizedBox(width: 5),
+                              const Text(
+                                "Zone",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ],
@@ -152,6 +160,7 @@ class _HomepageState extends State<Homepagelender> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: SingleChildScrollView(
+                    controller: _scrollController,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -196,9 +205,8 @@ class _HomepageState extends State<Homepagelender> {
                         Center(
                           child: ElevatedButton(
                             onPressed: () {
-                              LenderMain.of(
-                                context,
-                              )?.changeTab(4); // ✅ ทำงานแน่นอน
+                              // ✅ สลับแท็บไปหน้า Asset โดยไม่เปิดหน้าใหม่
+                              LenderMain.of(context)?.changeTab(4);
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF6B45FF),
@@ -223,6 +231,8 @@ class _HomepageState extends State<Homepagelender> {
                           ),
                         ),
 
+                        const SizedBox(height: 20),
+
                         // 🔹 Carousel Recommend
                         SizedBox(
                           height: 250,
@@ -239,19 +249,19 @@ class _HomepageState extends State<Homepagelender> {
                             items: [
                               BuildTextContainerRightTop(
                                 text:
-                                    'Manage smarter Live easier All your tools sensors and modules. right at your fingertips Fast. Clean. Powerful.',
+                                    'Manage smarter, live easier. All your tools, sensors, and modules — right at your fingertips.',
                                 color: Colors.deepPurple[100]!,
                                 imagePath: 'asset/img/LAB_ROOM.jpg',
                               ),
                               BuildTextContainerRightLow(
                                 text:
-                                    '“Think ahead\nWork smarter.\nSAFEAREA — The next generation of asset management.”',
+                                    '“Think ahead. Work smarter. SAFEAREA — The next generation of asset management.”',
                                 color: Colors.deepPurple[100]!,
                                 imagePath: 'asset/img/LAB_ROOM2.jpg',
                               ),
                               BuildTextContainerRightTop(
                                 text:
-                                    '“Power up your lab.\nManage smart.\n Borrow easy.\nYour tools, your control — anytime, anywhere.”',
+                                    '“Power up your lab. Manage smart. Borrow easy. Your tools, your control — anytime, anywhere.”',
                                 color: Colors.deepPurple[100]!,
                                 imagePath: 'asset/img/LAB_ROOM3.jpg',
                               ),

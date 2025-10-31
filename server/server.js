@@ -6,7 +6,7 @@ const db = require('./db.js');
 const bcrypt = require('bcrypt');
 const cors = require('cors');
 const multer = require('multer');
-const path = require('path');
+const path = require('path');const argon2 = require('@node-rs/argon2');
 
 const app = express();
 const PORT = 3000;
@@ -45,34 +45,80 @@ app.post('/upload', upload.single('image'), (req, res) => {
 });
 
 // ------------------ Register ------------------
-app.post('/register', (req, res) => {
-  const { username, password, name, phone, email } = req.body;
+
+app.post('/register', async (req, res) => {
+  const { username, password, name, phone, email, role = 'student' } = req.body;
 
   if (!username || !password || !name || !phone || !email) {
     return res.status(400).json({ message: 'All fields are required' });
   }
 
-  bcrypt.hash(password, 10, (err, hash) => {
+  try {
+    const [rows] = await db.promise().query(
+      'SELECT * FROM user WHERE username = ? OR email = ?',
+      [username, email]
+    );
+
+    if (rows.length > 0)
+      return res.status(409).json({ message: 'Username or email already exists' });
+
+    const hash = await argon2.hash(password);
+
+    await db.promise().query(
+      'INSERT INTO user (username, password, name, phone, email, role) VALUES (?, ?, ?, ?, ?, ?)',
+      [username, hash, name, phone, email, role]
+    );
+
+    res.status(201).json({ message: 'User registered successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
+// ------------------ Login ------------------
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ message: 'Username and password are required' });
+  }
+
+  const sql = 'SELECT * FROM user WHERE username = ?';
+  db.query(sql, [username], (err, results) => {
     if (err) {
-      console.error('Error hashing password:', err);
+      console.error('Database error:', err);
       return res.status(500).json({ message: 'Internal server error' });
     }
 
-    const sql =
-      'INSERT INTO user (username, password, name, phone, email) VALUES (?, ?, ?, ?, ?)';
-    db.query(sql, [username, hash, name, phone, email], (err, result) => {
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const user = results[0];
+
+    // ✅ ใช้ bcrypt.compare เทียบ password
+    bcrypt.compare(password, user.password, (err, isMatch) => {
       if (err) {
-        if (err.code === 'ER_DUP_ENTRY') {
-          return res.status(409).json({ message: 'Username already exists' });
-        }
-        console.error('Database error:', err);
+        console.error('Compare error:', err);
         return res.status(500).json({ message: 'Internal server error' });
       }
 
-      res.status(201).json({
-        message: 'User registered successfully',
-        userId: result.insertId,
-        username: username,
+      if (!isMatch) {
+        return res.status(401).json({ message: 'Invalid password' });
+      }
+
+      // ✅ ถ้า password ถูกต้อง
+      res.status(200).json({
+        message: 'Login successful',
+        user: {
+          id: user.id,
+          username: user.username,
+          name: user.name,
+          role: user.role,
+          email: user.email,
+        },
       });
     });
   });

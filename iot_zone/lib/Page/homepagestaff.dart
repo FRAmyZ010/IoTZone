@@ -1,29 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
+// 🔧 import widgets ย่อย
 import 'Widgets/buildBotttom_nav_bar/bottom_nav_bar_staff.dart';
 import 'Widgets/buildTextContainer2/buildTextContainar_rigthlow.dart';
 import 'Widgets/buildTextContainer2/buildTextContainer_rigthtop.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_center.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_rigthtop.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_leftlow.dart';
-
 import 'Widgets/meatball_menu/meatball_menu.dart';
 
+// ✅ รองรับข้อมูล userData จาก login
 class Homepagestaff extends StatefulWidget {
-  const Homepagestaff({super.key});
+  final Map<String, dynamic>? userData;
+
+  const Homepagestaff({super.key, this.userData});
 
   @override
-  State<Homepagestaff> createState() => _HomepageState();
+  State<Homepagestaff> createState() => _HomepagestaffState();
 }
 
-class _HomepageState extends State<Homepagestaff> {
+// 🔹 Extension ช่วย capitalize ตัวอักษรแรก
+extension StringCasing on String {
+  String capitalize() =>
+      isEmpty ? this : '${this[0].toUpperCase()}${substring(1)}';
+}
+
+class _HomepagestaffState extends State<Homepagestaff> {
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollController.animateTo(
         300,
@@ -35,23 +43,31 @@ class _HomepageState extends State<Homepagestaff> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ ดึงข้อมูลผู้ใช้จาก userData
+    final username = widget.userData?['username'] ?? 'Guest';
+    final name = widget.userData?['name'] ?? username;
+    final role = (widget.userData?['role'] ?? 'staff').toString().capitalize();
+
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            // 🔹 ส่วนบน 20% พร้อมรูปจาง + Gradient + โปรไฟล์
+            // 🔹 ส่วนบน
             Expanded(
               flex: 28,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
+                  // พื้นหลังจาง
                   Opacity(
                     opacity: 0.5,
                     child: Image.asset(
-                      './asset/img/homepage-banner.jpg',
+                      'asset/img/homepage-banner.jpg',
                       fit: BoxFit.cover,
                     ),
                   ),
+
+                  // ไล่สี
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -64,6 +80,8 @@ class _HomepageState extends State<Homepagestaff> {
                       ),
                     ),
                   ),
+
+                  // เนื้อหาโปรไฟล์
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
@@ -72,8 +90,7 @@ class _HomepageState extends State<Homepagestaff> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            // 🚀 แทนที่ IconButton เดิมด้วย Custom Widget
-                            UserProfileMenu(),
+                            UserProfileMenu(userData: widget.userData),
                           ],
                         ),
                         Row(
@@ -82,25 +99,25 @@ class _HomepageState extends State<Homepagestaff> {
                             const CircleAvatar(
                               radius: 26,
                               backgroundImage: AssetImage(
-                                './asset/img/Icon_Profile.png',
+                                'asset/img/Icon_Profile.png',
                               ),
                             ),
                             const SizedBox(width: 12),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
+                              children: [
                                 Text(
-                                  'Frame_za007',
-                                  style: TextStyle(
+                                  name,
+                                  style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
                                   ),
                                 ),
                                 Text(
-                                  'staff',
-                                  style: TextStyle(
+                                  role,
+                                  style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                     color: Colors.white70,
@@ -111,7 +128,7 @@ class _HomepageState extends State<Homepagestaff> {
                           ],
                         ),
                         Padding(
-                          padding: const EdgeInsets.only(top: 5),
+                          padding: const EdgeInsets.only(top: 8),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -120,15 +137,13 @@ class _HomepageState extends State<Homepagestaff> {
                                 width: 60,
                                 height: 60,
                               ),
-                              Padding(
-                                padding: const EdgeInsets.only(left: 5),
-                                child: Text(
-                                  "Zone",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              const SizedBox(width: 5),
+                              const Text(
+                                "Zone",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ],
@@ -143,7 +158,7 @@ class _HomepageState extends State<Homepagestaff> {
 
             const SizedBox(height: 20),
 
-            // 🔹 ส่วนล่าง (Carousel + Recommend)
+            // 🔹 ส่วนล่าง
             Expanded(
               flex: 72,
               child: Container(
@@ -152,6 +167,7 @@ class _HomepageState extends State<Homepagestaff> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: SingleChildScrollView(
+                    controller: _scrollController,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -196,7 +212,6 @@ class _HomepageState extends State<Homepagestaff> {
                         Center(
                           child: ElevatedButton(
                             onPressed: () {
-                              // ✅ เปลี่ยนแท็บใน StaffMain โดยไม่เปิดหน้าใหม่
                               StaffMain.of(context)?.changeTab(4);
                             },
                             style: ElevatedButton.styleFrom(
@@ -222,6 +237,8 @@ class _HomepageState extends State<Homepagestaff> {
                           ),
                         ),
 
+                        const SizedBox(height: 20),
+
                         // 🔹 Carousel Recommend
                         SizedBox(
                           height: 250,
@@ -238,19 +255,19 @@ class _HomepageState extends State<Homepagestaff> {
                             items: [
                               BuildTextContainerRightTop(
                                 text:
-                                    'Manage smarter Live easier All your tools sensors and modules. right at your fingertips Fast. Clean. Powerful.',
+                                    'Manage smarter. Live easier. All your tools, sensors, and modules — right at your fingertips.',
                                 color: Colors.deepPurple[100]!,
                                 imagePath: 'asset/img/LAB_ROOM.jpg',
                               ),
                               BuildTextContainerRightLow(
                                 text:
-                                    '“Think ahead\nWork smarter.\nSAFEAREA — The next generation of asset management.”',
+                                    '“Think ahead. Work smarter. SAFEAREA — The next generation of asset management.”',
                                 color: Colors.deepPurple[100]!,
                                 imagePath: 'asset/img/LAB_ROOM2.jpg',
                               ),
                               BuildTextContainerRightTop(
                                 text:
-                                    '“Power up your lab.\nManage smart.\n Borrow easy.\nYour tools, your control — anytime, anywhere.”',
+                                    '“Power up your lab. Manage smart. Borrow easy. Your tools, your control — anytime, anywhere.”',
                                 color: Colors.deepPurple[100]!,
                                 imagePath: 'asset/img/LAB_ROOM3.jpg',
                               ),
