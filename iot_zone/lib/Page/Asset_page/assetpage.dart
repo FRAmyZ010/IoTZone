@@ -242,42 +242,58 @@ class _AssetpageState extends State<Assetpage> {
             // ✅ โหลดข้อมูลจาก API
             Expanded(
               child: FutureBuilder<List<AssetModel>>(
+                // 👉 Future ที่จะไปโหลดรายการสินทรัพย์จาก API
                 future: futureAssets,
                 builder: (context, snapshot) {
+                  // ⏳ ระหว่างรอผลลัพธ์จาก Future (กำลังโหลด)
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
+                  }
+                  // ❌ ถ้ามีข้อผิดพลาดจาก Future (เช่น เน็ตหลุด / 500)
+                  else if (snapshot.hasError) {
                     return Center(
                       child: Text(
                         'Error: ${snapshot.error}',
                         style: const TextStyle(color: Colors.red),
                       ),
                     );
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  }
+                  // 🈳 โหลดสำเร็จแต่ไม่มีข้อมูล (ลิสต์ว่าง)
+                  else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return const Center(child: Text('No assets found.'));
                   }
 
+                  // ✅ มีข้อมูลพร้อมใช้งาน
                   final allAssets = snapshot.data!;
+
+                  // 🔍 กรองตามประเภทที่เลือกไว้จาก dropdown (selectedType)
+                  //     ถ้าเลือก 'All' = ไม่กรอง แสดงทั้งหมด
                   final filteredAssets = (selectedType == 'All')
                       ? allAssets
                       : allAssets.where((a) => a.type == selectedType).toList();
 
+                  // 🧱 แสดงผลเป็นกริด 2 คอลัมน์
                   return GridView.builder(
-                    physics: const BouncingScrollPhysics(),
+                    physics:
+                        const BouncingScrollPhysics(), // สัมผัสเด้ง ๆ แบบ iOS
                     itemCount: filteredAssets.length,
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 16,
-                          crossAxisSpacing: 16,
-                          childAspectRatio: 0.8,
+                          crossAxisCount: 2, // 2 คอลัมน์
+                          mainAxisSpacing: 16, // เว้นแนวตั้ง
+                          crossAxisSpacing: 16, // เว้นแนวนอน
+                          childAspectRatio: 0.8, // อัตราส่วนกว้าง/สูงของการ์ด
                         ),
                     itemBuilder: (context, index) {
-                      final asset = filteredAssets[index];
-                      final isAvailable = asset.status == 'Available';
-
+                      final asset =
+                          filteredAssets[index]; // ✅ ดึงข้อมูลอุปกรณ์แต่ละตัวจากลิสต์
+                      final isAvailable =
+                          asset.status ==
+                          'Available'; // ✅ ตรวจสถานะว่า “ยืมได้ไหม” (Available = ยืมได้)
                       return GestureDetector(
+                        // 👆 แตะการ์ด
                         onTap: isAvailable
+                            // ✅ สถานะ Available → เปิด dialog สำหรับยืม (ส่ง map เข้า dialog)
                             ? () {
                                 showDialog(
                                   context: context,
@@ -285,6 +301,7 @@ class _AssetpageState extends State<Assetpage> {
                                       BorrowAssetDialog(asset: asset.toMap()),
                                 );
                               }
+                            // 🔒 สถานะอื่น → แจ้งเตือนว่ายืมไม่ได้
                             : () {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
@@ -300,6 +317,7 @@ class _AssetpageState extends State<Assetpage> {
                                 );
                               },
                         child: Opacity(
+                          // 💡 ทำให้การ์ดซีดลงถ้ายืมไม่ได้
                           opacity: isAvailable ? 1.0 : 0.6,
                           child: Container(
                             decoration: BoxDecoration(
@@ -316,11 +334,14 @@ class _AssetpageState extends State<Assetpage> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
+                                // 🖼️ รูปภาพของ asset (ฟังก์ชัน _buildImage ควร handle asset/network)
                                 Padding(
                                   padding: const EdgeInsets.all(8.0),
                                   child: _buildImage(asset.image),
                                 ),
                                 const SizedBox(height: 8),
+
+                                // 📛 ชื่ออุปกรณ์
                                 Text(
                                   asset.name,
                                   textAlign: TextAlign.center,
@@ -330,6 +351,8 @@ class _AssetpageState extends State<Assetpage> {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
+
+                                // 🏷️ สถานะ พร้อมสีตาม statusColor (มาจาก model)
                                 Text(
                                   asset.status,
                                   style: TextStyle(

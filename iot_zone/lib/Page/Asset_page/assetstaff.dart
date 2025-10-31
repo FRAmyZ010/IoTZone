@@ -1,11 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:flutter/material.dart'; // UI หลักของ Flutter
+import 'package:http/http.dart' as http; // ใช้สำหรับเรียก API (HTTP)
+import 'dart:convert'; // ใช้แปลง JSON ↔ Object
 
-import 'asset_listmap/asset_model.dart';
-import 'showAssetDialog/showAssetDialog_staff.dart';
-import 'package:iot_zone/Page/AppConfig.dart';
+import 'asset_listmap/asset_model.dart'; // โมเดล AssetModel
+import 'showAssetDialog/showAssetDialog_staff.dart'; // หน้าต่างเพิ่ม/แก้ไขสินทรัพย์
+import 'package:iot_zone/Page/AppConfig.dart'; // ค่า config เช่น IP Server
 
+// 🔹 หน้าจอหลักสำหรับจัดการสินทรัพย์ (ของ Staff)
 class AssetStaff extends StatefulWidget {
   const AssetStaff({super.key});
 
@@ -14,6 +15,7 @@ class AssetStaff extends StatefulWidget {
 }
 
 class _AssetStaffState extends State<AssetStaff> {
+  // 🔸 รายการประเภทของสินทรัพย์
   final List<String> types = const [
     'Type',
     'Board',
@@ -24,41 +26,58 @@ class _AssetStaffState extends State<AssetStaff> {
     'Measurement',
     'Logic',
   ];
-  String selectedType = 'All';
-  final String ip = AppConfig.serverIP;
 
-  List<AssetModel> assets = [];
-  bool isLoading = true;
-  String? errorMessage;
+  String selectedType = 'All'; // ประเภทสินค้าที่เลือกกรอง (ค่าเริ่มต้น = All)
+  final String ip = AppConfig.serverIP; // IP ของ server ที่เก็บ API
 
+  List<AssetModel> assets = []; // เก็บรายการสินทรัพย์ทั้งหมดจากฐานข้อมูล
+  bool isLoading = true; // สถานะโหลดข้อมูล
+  String? errorMessage; // เก็บข้อความ error (ถ้ามี)
+
+  // 🔹 ฟังก์ชันเลือกแหล่งรูปภาพ (asset หรือ network)
   ImageProvider _buildImageProvider(String imagePath) {
-    if (imagePath.isEmpty) return const AssetImage('asset/img/no_image.png');
-    if (imagePath.startsWith('asset/')) return AssetImage(imagePath);
+    if (imagePath.isEmpty)
+      return const AssetImage(
+        'asset/img/no_image.png',
+      ); // ถ้าไม่มีรูป → รูป default
+    if (imagePath.startsWith('asset/'))
+      return AssetImage(imagePath); // ถ้าเป็น asset ในแอป
     if (!imagePath.startsWith('/uploads/') && !imagePath.contains('http')) {
-      return AssetImage('asset/img/$imagePath');
+      return AssetImage('asset/img/$imagePath'); // โหลดจากโฟลเดอร์ asset/img/
     }
     if (imagePath.startsWith('/uploads/')) {
-      return NetworkImage('http://$ip:3000$imagePath');
+      return NetworkImage(
+        'http://$ip:3000$imagePath',
+      ); // โหลดจาก server (เช่น /uploads/)
     }
-    return const AssetImage('asset/img/no_image.png');
+    return const AssetImage('asset/img/no_image.png'); // กรณีไม่เข้าเงื่อนไขใด
   }
 
+  // 🔹 ฟังก์ชันดึงข้อมูลสินทรัพย์จาก API
   Future<void> fetchAssets() async {
     try {
-      final response = await http.get(Uri.parse('http://$ip:3000/assets'));
+      final response = await http.get(
+        Uri.parse('http://$ip:3000/assets'),
+      ); // GET /assets
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final List<dynamic> data = json.decode(
+          response.body,
+        ); // แปลง JSON → List
         setState(() {
-          assets = data.map((e) => AssetModel.fromMap(e)).toList();
-          isLoading = false;
+          assets = data
+              .map((e) => AssetModel.fromMap(e))
+              .toList(); // แปลงแต่ละ item → AssetModel
+          isLoading = false; // โหลดเสร็จ
         });
       } else {
+        // ❌ ถ้าสถานะ HTTP ไม่ใช่ 200
         setState(() {
           isLoading = false;
           errorMessage = 'Failed to fetch data (${response.statusCode})';
         });
       }
     } catch (e) {
+      // ❌ ถ้ามี error เช่น ไม่มีการเชื่อมต่อ
       setState(() {
         isLoading = false;
         errorMessage = 'Connection error: $e';
@@ -66,7 +85,9 @@ class _AssetStaffState extends State<AssetStaff> {
     }
   }
 
+  // 🔹 ฟังก์ชันอัปเดตสถานะ (เช่น Available → Disabled)
   Future<void> updateStatusInAPI(int id, String newStatus) async {
+    // แปลงสถานะจากชื่อ → รหัส (ตามหลังบ้าน)
     int statusCode = switch (newStatus) {
       'Available' => 1,
       'Disabled' => 2,
@@ -74,43 +95,49 @@ class _AssetStaffState extends State<AssetStaff> {
       'Borrowed' => 4,
       _ => 1,
     };
-
+    // เรียก API เพื่ออัปเดตสถานะ
     await http.patch(
-      Uri.parse('http://$ip:3000/assets/$id/status'),
+      Uri.parse(
+        'http://$ip:3000/assets/$id/status',
+      ), // PATCH /assets/:id/status
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'status': statusCode}),
+      body: jsonEncode({'status': statusCode}), // ส่งค่า status code ใหม่
     );
   }
 
   @override
   void initState() {
     super.initState();
-    fetchAssets();
+    fetchAssets(); // โหลดข้อมูลสินทรัพย์ทันทีเมื่อเปิดหน้า
   }
 
+  // 🔹 เพิ่มสินทรัพย์ใหม่
   Future<void> addAsset(AssetModel newAsset) async {
     await http.post(
       Uri.parse('http://$ip:3000/assets'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(newAsset.toMap()),
+      body: jsonEncode(newAsset.toMap()), // ส่งข้อมูลสินทรัพย์ในรูป JSON
     );
-    fetchAssets();
+    fetchAssets(); // โหลดข้อมูลใหม่หลังเพิ่มเสร็จ
   }
 
+  // 🔹 อัปเดตข้อมูลสินทรัพย์เดิม
   Future<void> updateAsset(AssetModel asset) async {
     await http.put(
       Uri.parse('http://$ip:3000/assets/${asset.id}'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(asset.toMap()),
     );
-    fetchAssets();
+    fetchAssets(); // โหลดข้อมูลใหม่
   }
 
+  // 🔹 ลบสินทรัพย์
   Future<void> deleteAsset(int id) async {
     await http.delete(Uri.parse('http://$ip:3000/assets/$id'));
-    fetchAssets();
+    fetchAssets(); // โหลดข้อมูลใหม่
   }
 
+  // 🔹 เปิดหน้าต่าง (Dialog) สำหรับเพิ่ม/แก้ไขข้อมูลสินทรัพย์
   void _openAssetDialog({AssetModel? asset}) async {
     final result = await showDialog(
       context: context,
@@ -118,17 +145,21 @@ class _AssetStaffState extends State<AssetStaff> {
     );
     if (result is AssetModel) {
       if (asset == null) {
-        addAsset(result);
+        addAsset(result); // ถ้าเป็นของใหม่ → เพิ่ม
       } else {
-        updateAsset(result);
+        updateAsset(result); // ถ้ามีอยู่แล้ว → แก้ไข
       }
     }
   }
 
+  // 🔹 เปลี่ยนสถานะของสินทรัพย์ (Enable / Disable)
   void _toggleStatus(AssetModel asset) async {
-    final newStatus = asset.status == 'Disabled' ? 'Available' : 'Disabled';
-    await updateStatusInAPI(asset.id, newStatus);
+    final newStatus = asset.status == 'Disabled'
+        ? 'Available'
+        : 'Disabled'; // ถ้า Disabled → Available, ถ้าไม่ → Disabled
+    await updateStatusInAPI(asset.id, newStatus); // อัปเดตใน API
 
+    // อัปเดตสถานะในหน้า UI (ไม่ต้องโหลดใหม่ทั้งหมด)
     setState(() {
       assets = assets.map((a) {
         if (a.id == asset.id) {
@@ -146,6 +177,7 @@ class _AssetStaffState extends State<AssetStaff> {
 
   @override
   Widget build(BuildContext context) {
+    // 🔹 กรองรายการสินทรัพย์ตามประเภทที่เลือก
     final filteredAssets = selectedType == 'All'
         ? assets
         : assets.where((a) => a.type == selectedType).toList();
@@ -153,25 +185,29 @@ class _AssetStaffState extends State<AssetStaff> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Asset (Staff)',
+          'Asset (Staff)', // หัวข้อหน้า
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 22,
             color: Colors.white,
           ),
         ),
-        backgroundColor: Colors.deepPurpleAccent,
+        backgroundColor: Colors.deepPurpleAccent, // พื้นหลัง AppBar
       ),
-      backgroundColor: const Color(0xFFF9F6FF),
+      backgroundColor: const Color(0xFFF9F6FF), // สีพื้นหลังของหน้าหลัก
       body: RefreshIndicator(
+        // ดึงลงเพื่อรีเฟรชข้อมูล
         onRefresh: fetchAssets,
-        child: isLoading
+        child:
+            isLoading // ถ้ายังโหลดอยู่
             ? const Center(
                 child: CircularProgressIndicator(
+                  // วงกลมโหลด
                   color: Colors.deepPurpleAccent,
                 ),
               )
-            : errorMessage != null
+            : errorMessage !=
+                  null // ถ้ามี error
             ? Center(
                 child: Text(
                   errorMessage!,
@@ -186,10 +222,11 @@ class _AssetStaffState extends State<AssetStaff> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 🔹 Filter row
+                    // 🔹 แถวกรองประเภทสินทรัพย์ (All / Type Dropdown)
                     Row(
                       children: [
                         OutlinedButton(
+                          // ปุ่ม All
                           onPressed: () => setState(() => selectedType = 'All'),
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(
@@ -267,7 +304,7 @@ class _AssetStaffState extends State<AssetStaff> {
 
                     const SizedBox(height: 20),
 
-                    // 🔍 Search + Add
+                    // 🔍 ช่องค้นหา + ปุ่มเพิ่ม item
                     Row(
                       children: [
                         Expanded(
@@ -295,8 +332,7 @@ class _AssetStaffState extends State<AssetStaff> {
                           onPressed: () => _openAssetDialog(),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
-                            foregroundColor:
-                                Colors.white, // ✅ ข้อความในปุ่มสีขาว
+                            foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(25),
                             ),
@@ -312,7 +348,7 @@ class _AssetStaffState extends State<AssetStaff> {
                     const SizedBox(height: 20),
 
                     const Text(
-                      "Asset List",
+                      "Asset List", // หัวข้อรายการ
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -320,18 +356,20 @@ class _AssetStaffState extends State<AssetStaff> {
                     ),
                     const SizedBox(height: 12),
 
+                    // 🔹 แสดงรายการสินทรัพย์แบบตาราง
                     Expanded(
                       child: GridView.builder(
-                        itemCount: filteredAssets.length,
+                        itemCount: filteredAssets.length, // จำนวนการ์ดทั้งหมด
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: 16,
-                              crossAxisSpacing: 16,
-                              childAspectRatio: 0.59,
+                              crossAxisCount: 2, // 2 คอลัมน์
+                              mainAxisSpacing: 16, // ระยะห่างแนวตั้ง
+                              crossAxisSpacing: 16, // ระยะห่างแนวนอน
+                              childAspectRatio: 0.59, // อัตราส่วนการ์ด
                             ),
                         itemBuilder: (context, index) {
-                          final asset = filteredAssets[index];
+                          final asset =
+                              filteredAssets[index]; // ดึงข้อมูลสินค้าตาม index
                           return Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
@@ -346,6 +384,7 @@ class _AssetStaffState extends State<AssetStaff> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
+                                // รูปภาพสินค้า
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(16),
                                   child: Image(
@@ -355,6 +394,7 @@ class _AssetStaffState extends State<AssetStaff> {
                                   ),
                                 ),
                                 const SizedBox(height: 10),
+                                // ชื่อสินค้า
                                 Text(
                                   asset.name,
                                   textAlign: TextAlign.center,
@@ -363,18 +403,15 @@ class _AssetStaffState extends State<AssetStaff> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                Text(
-                                  "Status: ${asset.status}",
-                                  style: TextStyle(color: asset.statusColor),
-                                ),
+                                // แสดงสถานะพร้อมสี
                                 const SizedBox(height: 10),
+                                // ปุ่มแก้ไข
                                 ElevatedButton(
                                   onPressed: () =>
                                       _openAssetDialog(asset: asset),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.blueAccent,
-                                    foregroundColor:
-                                        Colors.white, // ✅ ข้อความในปุ่มสีขาว
+                                    foregroundColor: Colors.white,
                                   ),
                                   child: const Text(
                                     'EDIT',
@@ -382,14 +419,14 @@ class _AssetStaffState extends State<AssetStaff> {
                                   ),
                                 ),
                                 const SizedBox(height: 6),
+                                // ปุ่มเปิด/ปิดการใช้งาน
                                 ElevatedButton(
                                   onPressed: () => _toggleStatus(asset),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: asset.status == 'Disabled'
                                         ? Colors.green
                                         : Colors.redAccent,
-                                    foregroundColor:
-                                        Colors.white, // ✅ ข้อความในปุ่มสีขาว
+                                    foregroundColor: Colors.white,
                                   ),
                                   child: Text(
                                     asset.status == 'Disabled'

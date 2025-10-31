@@ -7,18 +7,20 @@ import 'package:iot_zone/Page/History_page/history_lender.dart';
 class LenderMain extends StatefulWidget {
   const LenderMain({super.key});
 
-  // ✅ ให้ลูก ๆ เรียกเปลี่ยนแท็บได้: LenderMain.of(context)?.changeTab(2)
-  static _LenderMainState? of(BuildContext context) =>
-      context.findAncestorStateOfType<_LenderMainState>();
+  static _LenderMainState? of(
+    BuildContext context,
+  ) => // หา State ของ LenderMain ใน context ปัจจุบัน
+      context.findAncestorStateOfType<_LenderMainState>(); //👈
 
   @override
-  State<LenderMain> createState() => _LenderMainState();
+  State<LenderMain> createState() => _LenderMainState(); // สร้าง State ของ LenderMain
 }
 
 class _LenderMainState extends State<LenderMain> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 0; // ตัวแปรเก็บดัชนีของแท็บที่เลือก
 
   final List<Widget> _pages = const [
+    // รายการหน้าต่าง ๆ ที่จะแสดงตามแท็บที่เลือก
     Homepagelender(),
     HistoryLenderPage(),
     DashboardLender(),
@@ -26,6 +28,7 @@ class _LenderMainState extends State<LenderMain> {
   ];
 
   void changeTab(int i) {
+    // ฟังก์ชันเปลี่ยนแท็บ
     if (_selectedIndex == i) return;
     setState(() => _selectedIndex = i);
   }

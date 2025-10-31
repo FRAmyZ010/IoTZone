@@ -164,6 +164,31 @@ class _ShowAssetDialogStaffState extends State<ShowAssetDialogStaff> {
                   ),
                 ),
               ),
+
+              // ✅ ปุ่มเพิ่มรูปภาพ (ใหม่)
+              const SizedBox(height: 10),
+              ElevatedButton.icon(
+                onPressed: _pickImage, // เรียกฟังก์ชันเดิมได้เลย
+                icon: const Icon(Icons.add_a_photo, color: Colors.white),
+                label: const Text(
+                  'Add Image',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurpleAccent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  elevation: 3,
+                ),
+              ),
               const SizedBox(height: 16),
 
               // 🔹 Name
@@ -224,7 +249,7 @@ class _ShowAssetDialogStaffState extends State<ShowAssetDialogStaff> {
               ),
               const SizedBox(height: 12),
 
-              // 🔹 Description
+              // 🔹 Description ช่องกรอกรายละเอียด
               TextField(
                 controller: descController,
                 style: const TextStyle(color: Colors.black87),
