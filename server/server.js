@@ -76,54 +76,149 @@ app.post('/register', async (req, res) => {
   }
 });
 
-
 // ------------------ Login ------------------
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
     return res.status(400).json({ message: 'Username and password are required' });
   }
 
-  const sql = 'SELECT * FROM user WHERE username = ?';
-  db.query(sql, [username], (err, results) => {
-    if (err) {
-      console.error('Database error:', err);
-      return res.status(500).json({ message: 'Internal server error' });
+  try {
+    const [rows] = await db.promise().query("SELECT * FROM user WHERE username = ?", [username]);
+    if (rows.length === 0) return res.status(404).json({ message: "User not found" });
+
+    const user = rows[0];
+    const storedHash = user.password;
+
+    let isMatch = false;
+
+    try {
+      // ✅ ลองตรวจด้วย argon2 ก่อน
+      isMatch = await argon2.verify(storedHash, password);
+    } catch (err) {
+      // ❗ ถ้าไม่ใช่ hash ของ argon2 → ลอง bcrypt อีกที
+      try {
+        isMatch = await bcrypt.compare(password, storedHash);
+      } catch (err2) {
+        console.error("⚠️ bcrypt error:", err2);
+      }
     }
 
-    if (results.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid password" });
     }
 
-    const user = results[0];
-
-    // ✅ ใช้ bcrypt.compare เทียบ password
-    bcrypt.compare(password, user.password, (err, isMatch) => {
-      if (err) {
-        console.error('Compare error:', err);
-        return res.status(500).json({ message: 'Internal server error' });
-      }
-
-      if (!isMatch) {
-        return res.status(401).json({ message: 'Invalid password' });
-      }
-
-      // ✅ ถ้า password ถูกต้อง
-      res.status(200).json({
-        message: 'Login successful',
-        user: {
-          id: user.id,
-          username: user.username,
-          name: user.name,
-          role: user.role,
-          email: user.email,
-        },
-      });
+    // ✅ ถ้า password ถูกต้อง
+    res.status(200).json({
+      message: 'Login successful',
+      user: {
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        role: user.role,
+        email: user.email,
+        phone: user.phone,
+      },
     });
-  });
+
+  } catch (err) {
+    console.error("❌ Login error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+// ------------------ Change  password ------------------
+app.put("/api/change-password/:id", async (req, res) => {
+  const { id } = req.params;
+  const { oldPassword, newPassword } = req.body;
+
+  try {
+    const [rows] = await db.promise().query("SELECT password FROM user WHERE id = ?", [id]);
+    if (rows.length === 0) return res.status(404).json({ message: "User not found" });
+
+    const user = rows[0];
+    const storedHash = user.password;
+    let isMatch = false;
+
+    try {
+      // ✅ ลอง verify ด้วย argon2 ก่อน
+      isMatch = await argon2.verify(storedHash, oldPassword);
+    } catch {
+      // ถ้า error → ลอง bcrypt อีกที
+      isMatch = await bcrypt.compare(oldPassword, storedHash);
+    }
+
+    if (!isMatch) {
+      return res.status(401).json({ message: "Incorrect current password" });
+    }
+
+    const newHash = await argon2.hash(newPassword);
+    await db.promise().query("UPDATE user SET password = ? WHERE id = ?", [newHash, id]);
+
+    res.json({ message: "Password updated successfully" });
+  } catch (err) {
+    console.error("❌ Change password error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
+// ------------------ Update Profile ------------------
+app.put("/api/update-profile/:id", upload.single("image"), async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { username, name, phone, email } = req.body;
+
+    let imagePath = null;
+    if (req.file) {
+      imagePath = `/uploads/${req.file.filename}`;
+    }
+
+    const sql = `
+      UPDATE user 
+      SET username = ?, name = ?, phone = ?, email = ?, image = COALESCE(?, image)
+      WHERE id = ?
+    `;
+
+    // ✅ ใช้ db.query() แทน con.query()
+    db.query(sql, [username, name, phone, email, imagePath, userId], (err) => {
+      if (err) {
+        console.error("❌ Database update failed:", err);
+        return res.status(500).json({ message: "Database update failed" });
+      }
+
+      // ✅ ดึงข้อมูล user ใหม่กลับไปให้ Flutter
+      db.query("SELECT * FROM user WHERE id = ?", [userId], (err, result) => {
+        if (err) {
+          console.error("❌ Fetch failed:", err);
+          return res.status(500).json({ message: "Fetch failed" });
+        }
+
+        console.log("✅ Updated user:", result[0]);
+        res.json(result[0]); // ✅ ส่งข้อมูล user ล่าสุดกลับไป Flutter
+      });
+    });
+  } catch (err) {
+    console.error("❌ Unexpected error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+
+// ---------------- get user -------------------
+app.get('/api/get-user/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await db.promise().query('SELECT * FROM user WHERE id = ?', [id]);
+    if (rows.length === 0)
+      return res.status(404).json({ message: 'User not found' });
+
+    res.json({ user: rows[0] });
+  } catch (err) {
+    console.error('❌ Get user error:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 // ------------------ Get All Assets ------------------
 app.get('/assets', (req, res) => {
   const sql = 'SELECT * FROM asset';
