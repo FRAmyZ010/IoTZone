@@ -242,26 +242,37 @@ class _AssetpageState extends State<Assetpage> {
             // ✅ โหลดข้อมูลจาก API
             Expanded(
               child: FutureBuilder<List<AssetModel>>(
+                // 👉 Future ที่จะไปโหลดรายการสินทรัพย์จาก API
                 future: futureAssets,
                 builder: (context, snapshot) {
+                  // ⏳ ระหว่างรอผลลัพธ์จาก Future (กำลังโหลด)
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
+                  }
+                  // ❌ ถ้ามีข้อผิดพลาดจาก Future (เช่น เน็ตหลุด / 500)
+                  else if (snapshot.hasError) {
                     return Center(
                       child: Text(
                         'Error: ${snapshot.error}',
                         style: const TextStyle(color: Colors.red),
                       ),
                     );
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  }
+                  // 🈳 โหลดสำเร็จแต่ไม่มีข้อมูล (ลิสต์ว่าง)
+                  else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return const Center(child: Text('No assets found.'));
                   }
 
+                  // ✅ มีข้อมูลพร้อมใช้งาน
                   final allAssets = snapshot.data!;
+
+                  // 🔍 กรองตามประเภทที่เลือกไว้จาก dropdown (selectedType)
+                  //     ถ้าเลือก 'All' = ไม่กรอง แสดงทั้งหมด
                   final filteredAssets = (selectedType == 'All')
                       ? allAssets
                       : allAssets.where((a) => a.type == selectedType).toList();
 
+                  // 🧱 แสดงผลเป็นกริด 2 คอลัมน์
                   return GridView.builder(
                     physics: const BouncingScrollPhysics(),
                     itemCount: filteredAssets.length,
@@ -270,75 +281,133 @@ class _AssetpageState extends State<Assetpage> {
                           crossAxisCount: 2,
                           mainAxisSpacing: 16,
                           crossAxisSpacing: 16,
-                          childAspectRatio: 0.8,
+                          childAspectRatio: 0.65, //ปรับสูงของการ์ด
                         ),
                     itemBuilder: (context, index) {
                       final asset = filteredAssets[index];
                       final isAvailable = asset.status == 'Available';
+                      final isDisabled = asset.status == 'Disabled';
+                      final isBorrowed = asset.status == 'Borrowed';
 
-                      return GestureDetector(
-                        onTap: isAvailable
-                            ? () {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) =>
-                                      BorrowAssetDialog(asset: asset.toMap()),
-                                );
-                              }
-                            : () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      '${asset.name} is currently not available.',
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                      return Opacity(
+                        opacity: isAvailable ? 1.0 : 0.6,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.15),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              // 🖼️ รูปภาพ
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: _buildImage(asset.image),
+                              ),
+                              const SizedBox(height: 8),
+
+                              // 📛 ชื่ออุปกรณ์
+                              Text(
+                                asset.name,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+
+                              // 🏷️ สถานะ
+                              Text(
+                                asset.status,
+                                style: TextStyle(
+                                  color: asset.statusColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+
+                              // 🔘 ปุ่มตามสถานะ
+                              if (isAvailable)
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) => BorrowAssetDialog(
+                                        asset: asset.toMap(),
                                       ),
+                                    );
+                                  },
+
+                                  label: const Text(
+                                    'BORROW',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.deepPurpleAccent,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 25,
+                                      vertical: 10,
                                     ),
-                                    backgroundColor: Colors.redAccent,
-                                    duration: const Duration(seconds: 2),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(22),
+                                    ),
                                   ),
-                                );
-                              },
-                        child: Opacity(
-                          opacity: isAvailable ? 1.0 : 0.6,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.15),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: _buildImage(asset.image),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  asset.name,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                                )
+                              else if (isDisabled)
+                                ElevatedButton.icon(
+                                  onPressed: null,
+
+                                  label: const Text(
+                                    'UNAVAILABLE',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.grey,
+                                    disabledBackgroundColor: Colors.grey,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(22),
+                                    ),
+                                  ),
+                                )
+                              else if (isBorrowed)
+                                ElevatedButton.icon(
+                                  onPressed: null,
+
+                                  label: const Text(
+                                    'IN USE',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.orangeAccent,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(22),
+                                    ),
+                                  ),
+                                )
+                              else
+                                ElevatedButton.icon(
+                                  onPressed: null,
+
+                                  label: Text(
+                                    asset.status.toUpperCase(),
+                                    style: const TextStyle(color: Colors.white),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blueGrey,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(22),
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  asset.status,
-                                  style: TextStyle(
-                                    color: asset.statusColor,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
+                            ],
                           ),
                         ),
                       );

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+// โมเดลข้อมูลของ Asset ในระบบ IoT
 class AssetModel {
+  //เป็นโมเดลข้อมูลของ Asset // อุปกรณ์หรือทรัพย์สินในระบบ IoT
   final int id;
   final String type;
   final String name;
@@ -10,6 +12,7 @@ class AssetModel {
   final int statusColorValue;
 
   const AssetModel({
+    // Constructor ของคลาส AssetModel // รับค่าต่าง ๆ ที่จำเป็นในการสร้างอ็อบเจ็กต์
     required this.id,
     required this.type,
     required this.name,
@@ -21,6 +24,7 @@ class AssetModel {
 
   // 🔹 ใช้สำหรับแปลงจาก Map → Object (เช่น จาก DB หรือ JSON)
   factory AssetModel.fromMap(Map<String, dynamic> map) {
+    // สร้างอ็อบเจ็กต์ AssetModel จากแผนที่ข้อมูล (Map)
     return AssetModel(
       id: map['id'] ?? 0,
       type: map['type'] ?? '',
@@ -34,6 +38,7 @@ class AssetModel {
 
   // 🔹 ใช้สำหรับแปลงจาก Object → Map (เก็บลง DB)
   Map<String, dynamic> toMap() {
+    // แปลงอ็อบเจ็กต์ AssetModel เป็นแผนที่ข้อมูล (Map)
     return {
       'id': id,
       'type': type,
@@ -50,6 +55,7 @@ class AssetModel {
 
   // 🔹 ใช้สำหรับ clone แล้วแก้บางค่า (เช่น toggle status)
   AssetModel copyWith({
+    // สร้างสำเนาของอ็อบเจ็กต์ AssetModel โดยสามารถแก้ไขค่าบางค่าได้
     int? id,
     String? type,
     String? name,
@@ -59,6 +65,7 @@ class AssetModel {
     int? statusColorValue,
   }) {
     return AssetModel(
+      // คืนค่าอ็อบเจ็กต์ AssetModel ใหม่ที่มีค่าที่แก้ไขแล้ว
       id: id ?? this.id,
       type: type ?? this.type,
       name: name ?? this.name,

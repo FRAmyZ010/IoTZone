@@ -197,7 +197,7 @@ class _HomepageState extends State<Homepagestaff> {
                           child: ElevatedButton(
                             onPressed: () {
                               // ✅ เปลี่ยนแท็บใน StaffMain โดยไม่เปิดหน้าใหม่
-                              StaffMain.of(context)?.changeTab(3);
+                              StaffMain.of(context)?.changeTab(4);
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF6B45FF),

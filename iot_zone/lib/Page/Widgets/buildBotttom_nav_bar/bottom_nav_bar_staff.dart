@@ -22,7 +22,8 @@ class _StaffMainState extends State<StaffMain> {
     Homepagestaff(), // 0
     HistoryStaffPage(), // 1
     DashboardStaff(), // 2
-    AssetStaff(), // 3 (อยู่ใน Shell แต่ไม่มีไอคอน)
+    Center(child: Text('⚙️ Settings')), //3
+    AssetStaff(), // 4 (อยู่ใน Shell แต่ไม่มีไอคอน)
   ];
 
   void changeTab(int i) {
@@ -44,6 +45,10 @@ class _StaffMainState extends State<StaffMain> {
       case 2:
         // ✅ Dashboard → สลับแท็บไป index 2
         changeTab(2);
+        break;
+      // ✅ Dashboard → สลับแท็บไป index 3
+      case 3:
+        changeTab(3);
         break;
     }
   }
@@ -132,7 +137,9 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBarStaff> {
                 children: [
                   _buildNavItem(Icons.home, 0), // Home → changeTab(0)
                   _buildNavItem(Icons.history, 1), // → /history
-                  _buildNavItem(Icons.window, 2), // → /menu
+                  _buildNavItem(Icons.check_circle_outline, 3),
+                  _buildNavItem(Icons.window, 2),
+                  // → /menu
                 ],
               ),
             ),
