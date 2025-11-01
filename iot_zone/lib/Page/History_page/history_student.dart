@@ -43,7 +43,7 @@ class _HistoryStudentPageState extends State<HistoryStudentPage> {
         "name": "Transistor",
         "status": "Returned",
         "borrowDate": "2025-10-21",
-        "returnDate": "2025-10-23",
+        "returnDate": "2025-10-22",
         "approvedBy": "Prof. John Doe",
         "image": "asset/img/Transistor.png",
       },
