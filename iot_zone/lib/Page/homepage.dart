@@ -1,7 +1,8 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:iot_zone/Page/Widgets/meatball_menu/meatball_menu.dart';
-
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 // 🔧 import widget ย่อย
 import 'Widgets/buildBotttom_nav_bar/bottom_nav_bar.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_center.dart';
@@ -29,6 +30,107 @@ extension StringCasing on String {
 class _HomepageState extends State<Homepage> {
   final ScrollController _scrollController = ScrollController();
   late Map<String, dynamic> _userData;
+
+  Future<void> _checkBorrowAndNavigate(BuildContext context, int userId) async {
+    final ip = AppConfig.serverIP;
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://$ip:3000/api/check-borrow-status/$userId'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data['hasActiveRequest'] == true) {
+          showDialog(
+            context: context,
+            barrierDismissible: true,
+            builder: (_) => Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              backgroundColor: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.amber,
+                      size: 70,
+                    ),
+                    const SizedBox(height: 15),
+                    const Text(
+                      'Borrow Request Pending',
+                      style: TextStyle(
+                        color: Color(0xFF6B45FF),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      data['message'] ??
+                          'You already have a pending or active borrow request.\nPlease wait until it’s approved or returned.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Colors.black87,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6B45FF),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 40,
+                          vertical: 14,
+                        ),
+                      ),
+                      child: const Text(
+                        "OK",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        } else {
+          StudentMain.of(context)?.changeTab(3);
+        }
+      } else {
+        throw Exception('Server responded with ${response.statusCode}');
+      }
+    } catch (e) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('❌ Connection Error'),
+          content: Text('Cannot connect to server:\n$e'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -238,9 +340,11 @@ class _HomepageState extends State<Homepage> {
                         // ปุ่ม Browse Asset
                         Center(
                           child: ElevatedButton(
-                            onPressed: () {
-                              StudentMain.of(context)?.changeTab(3);
-                            },
+                            onPressed: () => _checkBorrowAndNavigate(
+                              context,
+                              _userData['id'] ?? 0,
+                            ),
+
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF6B45FF),
                               foregroundColor: Colors.white,

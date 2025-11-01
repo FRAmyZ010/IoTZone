@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:iot_zone/Page/AppConfig.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class BorrowAssetDialog extends StatefulWidget {
   final Map<String, dynamic> asset;
@@ -67,24 +69,66 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
     );
   }
 
-  // ✅ ยืมวันนี้ คืนพรุ่งนี้
-  void _borrowToday() {
+  bool _isBorrowing = false;
+
+  void _borrowToday() async {
+    if (_isBorrowing) return; // 🔒 ป้องกันกดซ้ำ
+    setState(() => _isBorrowing = true);
+
     final now = DateTime.now();
     final tomorrow = now.add(const Duration(days: 1));
 
-    Navigator.of(context).pop(true); // ✅ ส่ง true กลับไปหน้า Assetpage
+    try {
+      final response = await http.post(
+        Uri.parse('http://$ip:3000/api/borrow'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'asset_id': widget.asset['id'], 'borrower_id': 1}),
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '✅ Borrowed "${widget.asset['name']}" '
-          '(${DateFormat('MMM d').format(now)} → ${DateFormat('MMM d').format(tomorrow)})',
-          style: const TextStyle(color: Colors.white, fontSize: 15),
+      final body = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        Navigator.of(context).pop(true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '✅ Borrowed "${widget.asset['name']}" (${DateFormat('MMM d').format(now)} → ${DateFormat('MMM d').format(tomorrow)})',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        // ❌ ถ้ายืมไม่ได้
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('⚠ Cannot Borrow'),
+            content: Text(body['message'] ?? 'Borrow failed'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('❌ Error'),
+          content: Text('Server error: $e'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
         ),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 3),
-      ),
-    );
+      );
+    } finally {
+      setState(() => _isBorrowing = false);
+    }
   }
 
   @override

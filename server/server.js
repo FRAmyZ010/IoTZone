@@ -353,6 +353,103 @@ app.patch('/assets/:id/status', (req, res) => {
     res.json({ message: `Status updated to ${status}` });
   });
 });
+// ------------------ Borrow Asset ------------------
+app.post('/api/borrow', async (req, res) => {
+  const { asset_id, borrower_id } = req.body;
+
+  try {
+    // ✅ ตรวจว่าสินทรัพย์นี้ถูกยืมหรือรออนุมัติอยู่ไหม
+    const [rows] = await db.promise().query(
+      `SELECT * FROM history 
+       WHERE asset_id = ? 
+       AND status IN (1, 2, 4) 
+       LIMIT 1`,
+      [asset_id]
+    );
+
+    if (rows.length > 0) {
+      return res.status(400).json({
+        message:
+          'This asset is already borrowed or waiting for approval. Please try again later.',
+      });
+    }
+
+    // ✅ ตรวจว่านักศึกษายืมครบ 1 ชิ้นแล้วในวันนี้หรือยัง
+    const [checkUser] = await db.promise().query(
+      `SELECT * FROM history 
+       WHERE borrower_id = ? 
+       AND DATE(borrow_date) = CURDATE()
+       AND status IN (1, 2, 4)`,
+      [borrower_id]
+    );
+
+    if (checkUser.length > 0) {
+      return res.status(400).json({
+        message:
+          'You already have a pending or active borrow request. Please wait until it is approved or returned.',
+      });
+    }
+
+    // ✅ ถ้ายังไม่มีการยืม → insert record ใหม่ใน history
+    await db.promise().query(
+      `INSERT INTO history (asset_id, borrower_id, status, borrow_date)
+       VALUES (?, ?, 1, NOW())`,
+      [asset_id, borrower_id]
+    );
+
+    // ✅ เปลี่ยนสถานะสินทรัพย์เป็น Pending (status = 3)
+    await db.promise().query(`UPDATE asset SET status = 3 WHERE id = ?`, [asset_id]);
+
+    res.json({ message: 'Borrow request submitted successfully!' });
+  } catch (err) {
+    console.error('❌ Borrow error:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+// ------------------ Check if user already borrowed ------------------
+app.get('/api/check-borrow-status/:userId', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const [rows] = await db.promise().query(
+      `SELECT * FROM history 
+       WHERE borrower_id = ? 
+       AND status IN (1, 2, 4)
+       LIMIT 1`,
+      [userId]
+    );
+
+    if (rows.length > 0) {
+      return res.json({
+        hasActiveRequest: true,
+        message:
+          'You already have a borrow request pending or active. Please wait for approval or return the asset first.',
+      });
+    } else {
+      return res.json({
+        hasActiveRequest: false,
+        message: 'You can borrow a new asset.',
+      });
+    }
+  } catch (err) {
+    console.error('❌ Check borrow status error:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+app.get('/api/check-borrow-status/:userId', async (req, res) => {
+  const { userId } = req.params;
+  const [rows] = await db.promise().query(
+    'SELECT * FROM history WHERE borrower_id = ? AND status IN (1,2,4)', 
+    [userId]
+  );
+
+  if (rows.length > 0) {
+    return res.json({ hasActiveRequest: true, message: "You already have an active or pending borrow request." });
+  } else {
+    return res.json({ hasActiveRequest: false });
+  }
+});
+
 
 // ------------------ Root ------------------
 app.get('/', (req, res) => {
