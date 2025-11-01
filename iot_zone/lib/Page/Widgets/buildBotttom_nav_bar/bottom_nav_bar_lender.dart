@@ -137,9 +137,9 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBarLender> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildNavItem(Icons.home, 0), // Home → changeTab(0)
-                _buildNavItem(Icons.history, 1), // → /history
-                _buildNavItem(Icons.check_circle_outline, 2),
                 _buildNavItem(Icons.window, 3),
+                _buildNavItem(Icons.check_circle_outline, 2),
+                _buildNavItem(Icons.history, 1), // → /history
               ],
             ),
           ),
