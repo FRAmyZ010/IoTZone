@@ -358,11 +358,19 @@ app.post('/api/borrow', async (req, res) => {
   const { asset_id, borrower_id } = req.body;
 
   try {
-    // ✅ ตรวจว่าสินทรัพย์นี้ถูกยืมหรือรออนุมัติอยู่ไหม
+    // ✅ 1. รีเซ็ตสินทรัพย์ที่เคยคืนแล้ว (history.status = 4) แต่ asset ยังไม่กลับเป็น Available
+    await db.promise().query(`
+      UPDATE asset a
+      JOIN history h ON a.id = h.asset_id
+      SET a.status = 1
+      WHERE h.status = 4 AND a.status != 1
+    `);
+
+    // ✅ 2. ตรวจว่าสินทรัพย์นี้ถูกยืมหรือรออนุมัติอยู่ไหม
     const [rows] = await db.promise().query(
       `SELECT * FROM history 
        WHERE asset_id = ? 
-       AND status IN (1, 2, 4) 
+       AND status IN (1, 2)  -- 1=Pending, 2=Approved
        LIMIT 1`,
       [asset_id]
     );
@@ -374,12 +382,11 @@ app.post('/api/borrow', async (req, res) => {
       });
     }
 
-    // ✅ ตรวจว่านักศึกษายืมครบ 1 ชิ้นแล้วในวันนี้หรือยัง
+    // ✅ 3. ตรวจว่าผู้ใช้มีรายการยืมที่ยังไม่คืนอยู่ไหม (Pending / Approved เท่านั้น)
     const [checkUser] = await db.promise().query(
       `SELECT * FROM history 
        WHERE borrower_id = ? 
-       AND DATE(borrow_date) = CURDATE()
-       AND status IN (1, 2, 4)`,
+       AND status IN (1, 2)`, // ❗ ไม่รวม Returned (4)
       [borrower_id]
     );
 
@@ -390,42 +397,47 @@ app.post('/api/borrow', async (req, res) => {
       });
     }
 
-    // ✅ ถ้ายังไม่มีการยืม → insert record ใหม่ใน history
-    await db.promise().query(
-      `INSERT INTO history (asset_id, borrower_id, status, borrow_date)
-       VALUES (?, ?, 1, NOW())`,
-      [asset_id, borrower_id]
-    );
+    // ✅ 4. ถ้ายังไม่มีการยืม → สร้าง record ใหม่ใน history
+   await db.promise().query(
+  `INSERT INTO history (asset_id, borrower_id, status, borrow_date, return_date)
+   VALUES (?, ?, 1, NOW(), DATE_ADD(NOW(), INTERVAL 1 DAY))`,
+  [asset_id, borrower_id]
+);
 
-    // ✅ เปลี่ยนสถานะสินทรัพย์เป็น Pending (status = 3)
+    // ✅ 5. เปลี่ยนสถานะสินทรัพย์เป็น Pending (3)
     await db.promise().query(`UPDATE asset SET status = 3 WHERE id = ?`, [asset_id]);
 
     res.json({ message: 'Borrow request submitted successfully!' });
+
   } catch (err) {
     console.error('❌ Borrow error:', err);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 // ------------------ Check if user already borrowed ------------------
 app.get('/api/check-borrow-status/:userId', async (req, res) => {
   const { userId } = req.params;
 
   try {
+    // 🔹 ดึงข้อมูลที่อยู่ระหว่างยืม (status = 1, 2 เท่านั้น)
     const [rows] = await db.promise().query(
       `SELECT * FROM history 
        WHERE borrower_id = ? 
-       AND status IN (1, 2, 4)
+       AND status IN (1, 2)
        LIMIT 1`,
       [userId]
     );
 
     if (rows.length > 0) {
+      // 🟡 มีรายการที่อยู่ระหว่างยืม
       return res.json({
         hasActiveRequest: true,
         message:
           'You already have a borrow request pending or active. Please wait for approval or return the asset first.',
       });
     } else {
+      // 🟢 ไม่มีรายการที่อยู่ระหว่างยืม → ยืมใหม่ได้
       return res.json({
         hasActiveRequest: false,
         message: 'You can borrow a new asset.',
@@ -436,17 +448,64 @@ app.get('/api/check-borrow-status/:userId', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
-app.get('/api/check-borrow-status/:userId', async (req, res) => {
-  const { userId } = req.params;
-  const [rows] = await db.promise().query(
-    'SELECT * FROM history WHERE borrower_id = ? AND status IN (1,2,4)', 
-    [userId]
-  );
+// ------------------ Update Borrow Status ------------------
+app.put('/api/history/:id/status', async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
 
-  if (rows.length > 0) {
-    return res.json({ hasActiveRequest: true, message: "You already have an active or pending borrow request." });
-  } else {
-    return res.json({ hasActiveRequest: false });
+  try {
+    // ✅ ดึง asset_id จาก history
+    const [historyRows] = await db.promise().query(
+      `SELECT asset_id FROM history WHERE id = ?`,
+      [id]
+    );
+
+    if (historyRows.length === 0) {
+      return res.status(404).json({ message: 'History record not found' });
+    }
+
+    const assetId = historyRows[0].asset_id;
+    console.log(`🟢 API Triggered: Update history ${id} → status ${status}`);
+
+    // ✅ อัปเดตสถานะใน history
+    await db.promise().query(
+      `UPDATE history SET status = ? WHERE id = ?`,
+      [status, id]
+    );
+
+    // ✅ Logic เชื่อมโยงกับ asset
+    switch (Number(status)) {
+      case 1: // Pending (รออนุมัติ)
+        await db.promise().query(
+          `UPDATE asset SET status = 3 WHERE id = ?`,
+          [assetId]
+        );
+        break;
+
+      case 2: // Approved (อนุมัติแล้ว → กำลังถูกยืม)
+        await db.promise().query(
+          `UPDATE asset SET status = 4 WHERE id = ?`,
+          [assetId]
+        );
+        break;
+
+      case 3: // Rejected (ถูกปฏิเสธ)
+      case 4: // Returned (คืนแล้ว)
+      case 5: // Expired (หมดอายุ)
+        await db.promise().query(
+          `UPDATE asset SET status = 1 WHERE id = ?`, // ✅ คืนให้เป็น Available
+          [assetId]
+        );
+        break;
+
+      default:
+        console.warn(`⚠️ Unknown status: ${status}`);
+    }
+
+    res.json({ message: 'History and asset status updated successfully' });
+  } catch (err) {
+    console.error('❌ Update history status error:', err);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
