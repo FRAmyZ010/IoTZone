@@ -5,14 +5,12 @@ class InputFieldWidget extends StatelessWidget {
   final TextEditingController controller;
   final String assetPath; // สำหรับ path ของ icon
   final double iconWidth;
-  final bool isObscure;
 
   const InputFieldWidget({
     Key? key,
     required this.hintText,
     required this.controller,
     required this.assetPath,
-    required this.isObscure,
     this.iconWidth = 30.0, // กำหนดค่าเริ่มต้น
   }) : super(key: key);
 
@@ -31,7 +29,6 @@ class InputFieldWidget extends StatelessWidget {
           width: 220, // สามารถทำให้ยืดหยุ่นกว่านี้ได้ (เช่นใช้ Expanded)
           child: TextField(
             controller: controller,
-            obscureText: isObscure,
             keyboardType: TextInputType.text,
             decoration: InputDecoration(
               hintText: hintText,
@@ -43,7 +40,7 @@ class InputFieldWidget extends StatelessWidget {
               filled: true,
               fillColor: Colors.grey[200],
               contentPadding: const EdgeInsets.symmetric(
-                vertical: 1,
+                vertical: 12,
                 horizontal: 28,
               ),
               border: OutlineInputBorder(
