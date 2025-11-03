@@ -5,54 +5,48 @@ import 'package:iot_zone/Page/Asset_page/assetlender.dart';
 import 'package:iot_zone/Page/History_page/history_lender.dart';
 
 class LenderMain extends StatefulWidget {
-  final Map<String, dynamic>? userData; // ✅ รับข้อมูลผู้ใช้จากหน้า login
+  const LenderMain({super.key});
 
-  const LenderMain({super.key, this.userData});
-
-  // ✅ ใช้ให้หน้าอื่นเรียกเปลี่ยนแท็บได้ เช่น LenderMain.of(context)?.changeTab(2)
-  static _LenderMainState? of(BuildContext context) =>
-      context.findAncestorStateOfType<_LenderMainState>();
+  static _LenderMainState? of(
+    BuildContext context,
+  ) => // หา State ของ LenderMain ใน context ปัจจุบัน
+      context.findAncestorStateOfType<_LenderMainState>(); //👈
 
   @override
-  State<LenderMain> createState() => _LenderMainState();
+  State<LenderMain> createState() => _LenderMainState(); // สร้าง State ของ LenderMain
 }
 
 class _LenderMainState extends State<LenderMain> {
-  int _selectedIndex = 0;
-  late final List<Widget> _pages;
+  int _selectedIndex = 0; // ตัวแปรเก็บดัชนีของแท็บที่เลือก
 
-  @override
-  void initState() {
-    super.initState();
-
-    // ✅ ส่ง userData ไปหน้าที่ต้องใช้
-    _pages = [
-      Homepagelender(userData: widget.userData), // 0
-      const HistoryLenderPage(), // 1
-      const Center(child: Text('⚙️ Settings')), // 2
-      DashboardLender(), // 3
-      const Assetlender(), // 4
-    ];
-  }
+  final List<Widget> _pages = const [
+    // รายการหน้าต่าง ๆ ที่จะแสดงตามแท็บที่เลือก
+    Homepagelender(),
+    HistoryLenderPage(),
+    DashboardLender(),
+    Assetlender(),
+  ];
 
   void changeTab(int i) {
+    // ฟังก์ชันเปลี่ยนแท็บ
     if (_selectedIndex == i) return;
     setState(() => _selectedIndex = i);
   }
 
+  /// ✅ แบบ A: ให้หน้าแม่ตัดสินใจการนำทาง/สลับแท็บ
   void _handleBottomTap(int index) {
     switch (index) {
       case 0:
+        // Home → สลับแท็บใน Shell
         changeTab(0);
         break;
       case 1:
+        // History → เปิดด้วย named route
         changeTab(1);
         break;
       case 2:
+        // ✅ Dashboard → สลับแท็บไป index 2
         changeTab(2);
-        break;
-      case 3:
-        changeTab(3);
         break;
     }
   }
@@ -64,7 +58,7 @@ class _LenderMainState extends State<LenderMain> {
       body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: CustomBottomNavBarLender(
         currentIndex: _selectedIndex,
-        onTap: _handleBottomTap,
+        onTap: _handleBottomTap, // 👈 ใช้ฟังก์ชันแบบ A
       ),
     );
   }
@@ -82,11 +76,10 @@ class CustomBottomNavBarLender extends StatefulWidget {
   });
 
   @override
-  State<CustomBottomNavBarLender> createState() =>
-      _CustomBottomNavBarLenderState();
+  State<CustomBottomNavBarLender> createState() => _CustomBottomNavBarState();
 }
 
-class _CustomBottomNavBarLenderState extends State<CustomBottomNavBarLender> {
+class _CustomBottomNavBarState extends State<CustomBottomNavBarLender> {
   late int _selectedIndex;
 
   @override
@@ -140,8 +133,7 @@ class _CustomBottomNavBarLenderState extends State<CustomBottomNavBarLender> {
               children: [
                 _buildNavItem(Icons.home, 0),
                 _buildNavItem(Icons.history, 1),
-                _buildNavItem(Icons.check_circle_outline, 2),
-                _buildNavItem(Icons.window, 3),
+                _buildNavItem(Icons.dashboard, 2), // ชัดว่าเป็น Dashboard
               ],
             ),
           ),
@@ -159,7 +151,7 @@ class _CustomBottomNavBarLenderState extends State<CustomBottomNavBarLender> {
       child: IconButton(
         onPressed: () {
           setState(() => _selectedIndex = index);
-          widget.onTap(index);
+          widget.onTap(index); // ให้หน้าแม่ตัดสินใจ
         },
         icon: AnimatedSwitcher(
           duration: const Duration(milliseconds: 180),
