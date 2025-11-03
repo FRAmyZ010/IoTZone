@@ -7,9 +7,11 @@ import 'package:iot_zone/Page/History_page/history_student.dart';
 import 'package:iot_zone/Page/Request Status/Req_Status.dart';
 
 class StudentMain extends StatefulWidget {
-  const StudentMain({super.key});
+  final Map<String, dynamic>? userData; // ✅ รับข้อมูล user จาก login
 
-  // ให้ลูก ๆ เรียกเปลี่ยนแท็บได้: StudentMain.of(context)?.changeTab(3)
+  const StudentMain({super.key, this.userData});
+
+  // ✅ ใช้เพื่อให้หน้าอื่นเรียกเปลี่ยนแท็บได้ เช่น StudentMain.of(context)?.changeTab(3)
   static _StudentMainState? of(BuildContext context) =>
       context.findAncestorStateOfType<_StudentMainState>();
 
@@ -19,32 +21,43 @@ class StudentMain extends StatefulWidget {
 
 class _StudentMainState extends State<StudentMain> {
   int _selectedIndex = 0;
+  late final List<Widget> _pages;
 
-  final List<Widget> _pages = const [
-    Homepage(), // 0
-    HistoryStudentPage(), // 1 (ตัวอย่าง)
-    RequestStatusPage(), // 2
-    Assetpage(), // 3 (ซ่อนในไอคอน เรียกด้วย changeTab)
-  ];
-  static _StudentMainState? of(BuildContext context) =>
-      context.findAncestorStateOfType<_StudentMainState>();
+  @override
+  void initState() {
+    super.initState();
 
-  void changeTab(int i) {
-    if (_selectedIndex == i) return;
-    setState(() => _selectedIndex = i);
+    // ✅ ส่ง userData ไปหน้า Homepage
+    _pages = [
+      Homepage(userData: widget.userData), // ส่งข้อมูลผู้ใช้มาจาก login
+      const HistoryStudentPage(),
+      const RequestStatusPage(),
+      const Assetpage(),
+    ];
   }
 
-  /// แบบ A: หน้าแม่ตัดสินใจ
+  // ✅ ฟังก์ชันเปลี่ยนแท็บ
+  void changeTab(int index) {
+    if (_selectedIndex == index) return;
+    setState(() => _selectedIndex = index);
+  }
+
+  // ✅ เมื่อกด icon ด้านล่าง
   void _handleBottomTap(int index) {
     switch (index) {
-      case 0: // Home
-        changeTab(0);
+      case 0:
+        changeTab(0); // Home
         break;
-      case 1: // History
-        changeTab(1);
+      case 1:
+        changeTab(1); // History
         break;
-      case 2: // Dashboard
-        changeTab(2);
+      case 2:
+        changeTab(2); // Request Status
+        break;
+      case 3:
+        changeTab(3); // Asset
+        break;
+      default:
         break;
     }
   }
@@ -62,7 +75,7 @@ class _StudentMainState extends State<StudentMain> {
   }
 }
 
-// ---------------- Bottom Nav (dumb widget) ----------------
+// ---------------- Bottom Nav ----------------
 class CustomBottomNavBarStudent extends StatefulWidget {
   final int currentIndex;
   final Function(int) onTap;
@@ -102,6 +115,7 @@ class _CustomBottomNavBarStudentState extends State<CustomBottomNavBarStudent> {
       child: Stack(
         alignment: Alignment.center,
         children: [
+          // 🔹 แถบ gradient ด้านหลัง
           AnimatedContainer(
             duration: const Duration(milliseconds: 400),
             height: 63,
@@ -112,6 +126,8 @@ class _CustomBottomNavBarStudentState extends State<CustomBottomNavBarStudent> {
               ),
             ),
           ),
+
+          // 🔹 แถบปุ่มจริง
           Container(
             height: 54,
             margin: const EdgeInsets.all(5),
@@ -132,12 +148,9 @@ class _CustomBottomNavBarStudentState extends State<CustomBottomNavBarStudent> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildNavItem(Icons.home, 0), // Home → changeTab(0)
-                  _buildNavItem(Icons.hourglass_empty, 2),
-                  _buildNavItem(
-                    Icons.history,
-                    1,
-                  ), // → /history // Dashboard → changeTab(2)
+                  _buildNavItem(Icons.home, 0), // 🏠 Home
+                  _buildNavItem(Icons.hourglass_empty, 2), // ⏳ Request
+                  _buildNavItem(Icons.history, 1), // 📜 History
                 ],
               ),
             ),
@@ -157,7 +170,7 @@ class _CustomBottomNavBarStudentState extends State<CustomBottomNavBarStudent> {
         splashRadius: 24,
         onPressed: () {
           setState(() => _selectedIndex = index);
-          widget.onTap(index); // ให้หน้าแม่ตัดสินใจ (แบบ A)
+          widget.onTap(index); // ✅ แจ้งหน้าแม่เปลี่ยนแท็บ
         },
         icon: AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
