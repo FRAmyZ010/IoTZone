@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 26, 2025 at 07:33 PM
+-- Generation Time: Nov 01, 2025 at 10:05 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -32,7 +32,7 @@ CREATE TABLE `asset` (
   `asset_name` varchar(60) NOT NULL,
   `description` varchar(100) NOT NULL,
   `type` varchar(60) NOT NULL,
-  `status` int(1) NOT NULL COMMENT '1=available, 2=disabled, 3=pending, 4=borrowed',
+  `status` tinyint(20) NOT NULL COMMENT '1=available, 2=disabled, 3=pending, 4=borrowed',
   `img` varchar(100) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -41,7 +41,7 @@ CREATE TABLE `asset` (
 --
 
 INSERT INTO `asset` (`id`, `asset_name`, `description`, `type`, `status`, `img`) VALUES
-(1, 'Capacitor', 'Capacitor\'s description', 'Component', 1, 'Capacitor.png'),
+(1, 'Capacitors', 'Capacitor\'s description', 'Component', 1, 'asset/img/Capacitor.png'),
 (2, 'Multimeter', 'Multimeter\'s description', 'Measurement', 2, 'Multimeter.png'),
 (3, 'Resistor', 'Resistor\'s description', 'Component', 3, 'Resistor.png'),
 (4, 'SN74LS32N', 'SN74LS32N\'s description', 'Logic', 4, 'SN74LS32N.png'),
@@ -58,8 +58,8 @@ CREATE TABLE `history` (
   `asset_id` tinyint(3) UNSIGNED NOT NULL,
   `borrower_id` tinyint(3) UNSIGNED NOT NULL,
   `approver_id` tinyint(3) UNSIGNED DEFAULT NULL,
-  `reveiver_id` tinyint(3) UNSIGNED DEFAULT NULL,
-  `status` tinyint(1) UNSIGNED NOT NULL COMMENT '1=pending, 2=approved, 3=rejected, 4=returned',
+  `receiver_id` tinyint(3) UNSIGNED DEFAULT NULL,
+  `status` varchar(20) NOT NULL COMMENT '1=pending, 2=approved, 3=rejected, 4=returned',
   `borrow_date` datetime NOT NULL,
   `return_date` datetime NOT NULL,
   `reason` varchar(100) DEFAULT NULL
@@ -74,21 +74,23 @@ CREATE TABLE `history` (
 CREATE TABLE `user` (
   `id` tinyint(3) UNSIGNED NOT NULL,
   `username` varchar(30) NOT NULL,
-  `password` varchar(60) NOT NULL,
+  `password` varchar(97) NOT NULL,
   `name` varchar(60) NOT NULL,
   `phone` varchar(10) NOT NULL,
   `email` varchar(100) NOT NULL,
-  `img` varchar(100) NOT NULL
+  `image` varchar(100) NOT NULL,
+  `role` varchar(20) NOT NULL COMMENT '1 = student, 2 = staff , 3 = lender',
+  `borrowing` tinyint(4) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `user`
 --
 
-INSERT INTO `user` (`id`, `username`, `password`, `name`, `phone`, `email`, `img`) VALUES
-(1, 'Student1', '$2b$10$Y3oek21e9XKKZROIfWJdF.vN3esFxb3RtdgI.Rl32.VpcpRyIRftq', 'Pongsapat P.', '09xxxxxxxx', 'pongsapat@gmail.com', ''),
-(2, 'Staff1', '$2b$10$fnA2QIekzvnKOml9LD99p.eNHHe7JSJKJBdOKEMJsVSAly.8GIRH6', 'John Doe', '09xxxxxxxx', 'john_doe@gmail.com', ''),
-(3, 'Lender1', '$2b$10$pGG.dEEAD0Pdw8ZLH6.Ek.5JAmHfV4IMOlQLi0./s88FheYmTyOJq', 'Prof. John Smith', '09xxxxxxxx', 'j_smith@gmail.com', '');
+INSERT INTO `user` (`id`, `username`, `password`, `name`, `phone`, `email`, `image`, `role`, `borrowing`) VALUES
+(1, 'Student01', '$argon2id$v=19$m=19456,t=2,p=1$QahvYUaTjGWCff9SgLeB3A$p0RxDfUPZHq1zX1Ae0TxtEuGLb3AepOxwOxxO7v8qoA', 'Pongsapat P.', '09xxxxxxxx', 'pongsapat@gmail.com', '', 'Student', NULL),
+(2, 'Staff01', '$argon2id$v=19$m=19456,t=2,p=1$QahvYUaTjGWCff9SgLeB3A$p0RxDfUPZHq1zX1Ae0TxtEuGLb3AepOxwOxxO7v8qoA', 'John Doe', '09xxxxxxxx', 'john_doe@gmail.com', '', 'Staff', NULL),
+(3, 'Lender01', '$argon2id$v=19$m=19456,t=2,p=1$QahvYUaTjGWCff9SgLeB3A$p0RxDfUPZHq1zX1Ae0TxtEuGLb3AepOxwOxxO7v8qoA', 'Prof. John Smith', '09xxxxxxxx', 'j_smith@gmail.com', '', 'Lender', NULL);
 
 --
 -- Indexes for dumped tables
@@ -108,7 +110,7 @@ ALTER TABLE `history`
   ADD KEY `fk_asset_id` (`asset_id`),
   ADD KEY `fk_borrower_id` (`borrower_id`),
   ADD KEY `fk_approver_id` (`approver_id`),
-  ADD KEY `fk_receiver_id` (`reveiver_id`);
+  ADD KEY `fk_receiver_id` (`receiver_id`);
 
 --
 -- Indexes for table `user`
@@ -124,7 +126,7 @@ ALTER TABLE `user`
 -- AUTO_INCREMENT for table `asset`
 --
 ALTER TABLE `asset`
-  MODIFY `id` tinyint(3) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` tinyint(3) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `history`
@@ -149,7 +151,7 @@ ALTER TABLE `history`
   ADD CONSTRAINT `fk_approver_id` FOREIGN KEY (`approver_id`) REFERENCES `user` (`id`),
   ADD CONSTRAINT `fk_asset_id` FOREIGN KEY (`asset_id`) REFERENCES `asset` (`id`),
   ADD CONSTRAINT `fk_borrower_id` FOREIGN KEY (`borrower_id`) REFERENCES `user` (`id`),
-  ADD CONSTRAINT `fk_receiver_id` FOREIGN KEY (`reveiver_id`) REFERENCES `user` (`id`);
+  ADD CONSTRAINT `fk_receiver_id` FOREIGN KEY (`receiver_id`) REFERENCES `user` (`id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
