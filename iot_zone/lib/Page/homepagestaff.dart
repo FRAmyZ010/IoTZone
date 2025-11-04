@@ -1,38 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
-// 🔧 import widgets ย่อย
 import 'Widgets/buildBotttom_nav_bar/bottom_nav_bar_staff.dart';
 import 'Widgets/buildTextContainer2/buildTextContainar_rigthlow.dart';
 import 'Widgets/buildTextContainer2/buildTextContainer_rigthtop.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_center.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_rigthtop.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_leftlow.dart';
+
 import 'Widgets/meatball_menu/meatball_menu.dart';
-import 'AppConfig.dart';
 
 class Homepagestaff extends StatefulWidget {
-  final Map<String, dynamic>? userData;
-
-  const Homepagestaff({super.key, this.userData});
+  const Homepagestaff({super.key});
 
   @override
-  State<Homepagestaff> createState() => _HomepagestaffState();
+  State<Homepagestaff> createState() => _HomepageState();
 }
 
-extension StringCasing on String {
-  String capitalize() =>
-      isEmpty ? this : '${this[0].toUpperCase()}${substring(1)}';
-}
-
-class _HomepagestaffState extends State<Homepagestaff> {
+class _HomepageState extends State<Homepagestaff> {
   final ScrollController _scrollController = ScrollController();
-  late Map<String, dynamic> _userData;
 
   @override
   void initState() {
     super.initState();
-    _userData = Map<String, dynamic>.from(widget.userData ?? {});
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollController.animateTo(
         300,
@@ -42,24 +33,13 @@ class _HomepagestaffState extends State<Homepagestaff> {
     });
   }
 
-  // ✅ อัปเดตข้อมูลใน state ทันทีหลังแก้ไขโปรไฟล์
-  void _onProfileUpdated(Map<String, dynamic> updatedData) {
-    setState(() {
-      _userData.addAll(updatedData);
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    final username = _userData['username'] ?? 'Guest';
-    final name = _userData['name'] ?? username;
-    final role = (_userData['role'] ?? 'staff').toString().capitalize();
-
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            // 🔹 ส่วนบน
+            // 🔹 ส่วนบน 20% พร้อมรูปจาง + Gradient + โปรไฟล์
             Expanded(
               flex: 28,
               child: Stack(
@@ -68,11 +48,10 @@ class _HomepagestaffState extends State<Homepagestaff> {
                   Opacity(
                     opacity: 0.5,
                     child: Image.asset(
-                      'asset/img/homepage-banner.jpg',
+                      './asset/img/homepage-banner.jpg',
                       fit: BoxFit.cover,
                     ),
                   ),
-
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -85,59 +64,43 @@ class _HomepagestaffState extends State<Homepagestaff> {
                       ),
                     ),
                   ),
-
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // 🔹 เมนูมุมขวา
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            UserProfileMenu(
-                              userData: _userData,
-                              onProfileUpdated: _onProfileUpdated,
-                            ),
+                            // 🚀 แทนที่ IconButton เดิมด้วย Custom Widget
+                            UserProfileMenu(),
                           ],
                         ),
-
-                        // 🔹 แสดงโปรไฟล์
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            CircleAvatar(
+                            const CircleAvatar(
                               radius: 26,
-                              backgroundColor: Colors.white,
-                              backgroundImage:
-                                  _userData['image'] != null &&
-                                      _userData['image']
-                                          .toString()
-                                          .isNotEmpty &&
-                                      _userData['image'].toString() != 'null'
-                                  ? NetworkImage(
-                                      'http://${AppConfig.serverIP}:3000${_userData['image']}?v=${DateTime.now().millisecondsSinceEpoch}',
-                                    )
-                                  : const AssetImage(
-                                          'asset/img/Icon_Profile.png',
-                                        )
-                                        as ImageProvider,
+                              backgroundImage: AssetImage(
+                                './asset/img/Icon_Profile.png',
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: const [
                                 Text(
-                                  name,
-                                  style: const TextStyle(
+                                  'Frame_za007',
+                                  style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
                                   ),
                                 ),
                                 Text(
-                                  role,
-                                  style: const TextStyle(
+                                  'staff',
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                     color: Colors.white70,
@@ -147,9 +110,8 @@ class _HomepagestaffState extends State<Homepagestaff> {
                             ),
                           ],
                         ),
-
                         Padding(
-                          padding: const EdgeInsets.only(top: 8),
+                          padding: const EdgeInsets.only(top: 5),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -158,13 +120,15 @@ class _HomepagestaffState extends State<Homepagestaff> {
                                 width: 60,
                                 height: 60,
                               ),
-                              const SizedBox(width: 5),
-                              const Text(
-                                "Zone",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
+                              Padding(
+                                padding: const EdgeInsets.only(left: 5),
+                                child: Text(
+                                  "Zone",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
@@ -179,7 +143,7 @@ class _HomepagestaffState extends State<Homepagestaff> {
 
             const SizedBox(height: 20),
 
-            // 🔹 ส่วนล่าง
+            // 🔹 ส่วนล่าง (Carousel + Recommend)
             Expanded(
               flex: 72,
               child: Container(
@@ -188,10 +152,10 @@ class _HomepagestaffState extends State<Homepagestaff> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: SingleChildScrollView(
-                    controller: _scrollController,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // 🔹 Carousel
                         SizedBox(
                           height: 200,
                           child: CarouselSlider(
@@ -228,9 +192,11 @@ class _HomepagestaffState extends State<Homepagestaff> {
 
                         const SizedBox(height: 20),
 
+                        // 🔹 ปุ่ม Browse Asset
                         Center(
                           child: ElevatedButton(
                             onPressed: () {
+                              // ✅ เปลี่ยนแท็บใน StaffMain โดยไม่เปิดหน้าใหม่
                               StaffMain.of(context)?.changeTab(4);
                             },
                             style: ElevatedButton.styleFrom(
@@ -256,8 +222,7 @@ class _HomepagestaffState extends State<Homepagestaff> {
                           ),
                         ),
 
-                        const SizedBox(height: 20),
-
+                        // 🔹 Carousel Recommend
                         SizedBox(
                           height: 250,
                           child: CarouselSlider(
@@ -273,19 +238,19 @@ class _HomepagestaffState extends State<Homepagestaff> {
                             items: [
                               BuildTextContainerRightTop(
                                 text:
-                                    'Manage smarter. Live easier. All your tools, sensors, and modules — right at your fingertips.',
+                                    'Manage smarter Live easier All your tools sensors and modules. right at your fingertips Fast. Clean. Powerful.',
                                 color: Colors.deepPurple[100]!,
                                 imagePath: 'asset/img/LAB_ROOM.jpg',
                               ),
                               BuildTextContainerRightLow(
                                 text:
-                                    '“Think ahead. Work smarter. SAFEAREA — The next generation of asset management.”',
+                                    '“Think ahead\nWork smarter.\nSAFEAREA — The next generation of asset management.”',
                                 color: Colors.deepPurple[100]!,
                                 imagePath: 'asset/img/LAB_ROOM2.jpg',
                               ),
                               BuildTextContainerRightTop(
                                 text:
-                                    '“Power up your lab. Manage smart. Borrow easy. Your tools, your control — anytime, anywhere.”',
+                                    '“Power up your lab.\nManage smart.\n Borrow easy.\nYour tools, your control — anytime, anywhere.”',
                                 color: Colors.deepPurple[100]!,
                                 imagePath: 'asset/img/LAB_ROOM3.jpg',
                               ),
