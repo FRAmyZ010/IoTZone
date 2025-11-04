@@ -23,7 +23,6 @@ class _LenderMainState extends State<LenderMain> {
     // รายการหน้าต่าง ๆ ที่จะแสดงตามแท็บที่เลือก
     Homepagelender(),
     HistoryLenderPage(),
-    Center(child: Text('⚙️ Settings')),
     DashboardLender(),
     Assetlender(),
   ];
@@ -48,10 +47,6 @@ class _LenderMainState extends State<LenderMain> {
       case 2:
         // ✅ Dashboard → สลับแท็บไป index 2
         changeTab(2);
-        break;
-      // ✅ Dashboard → สลับแท็บไป index 3
-      case 3:
-        changeTab(3);
         break;
     }
   }

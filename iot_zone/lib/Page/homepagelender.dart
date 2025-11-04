@@ -198,7 +198,7 @@ class _HomepageState extends State<Homepagelender> {
                             onPressed: () {
                               LenderMain.of(
                                 context,
-                              )?.changeTab(4); // ✅ ทำงานแน่นอน
+                              )?.changeTab(3); // ✅ ทำงานแน่นอน
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF6B45FF),
