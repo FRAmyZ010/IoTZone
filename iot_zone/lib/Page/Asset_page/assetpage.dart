@@ -14,6 +14,8 @@ class Assetpage extends StatefulWidget {
 }
 
 class _AssetpageState extends State<Assetpage> {
+  String searchQuery = '';
+
   // --- Filter state ---
   final List<String> types = const [
     'Type', // ใช้เป็น hint ใน dropdown
@@ -219,18 +221,23 @@ class _AssetpageState extends State<Assetpage> {
                   ),
                 ],
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  SizedBox(width: 12),
-                  Icon(Icons.search, color: Colors.black54, size: 22),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 12),
+                  const Icon(Icons.search, color: Colors.black54, size: 22),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         hintText: 'Search your item',
                         border: InputBorder.none,
                         hintStyle: TextStyle(color: Colors.black54),
                       ),
+                      onChanged: (value) {
+                        setState(() {
+                          searchQuery = value.toLowerCase();
+                        });
+                      },
                     ),
                   ),
                 ],
@@ -266,11 +273,15 @@ class _AssetpageState extends State<Assetpage> {
                   // ✅ มีข้อมูลพร้อมใช้งาน
                   final allAssets = snapshot.data!;
 
-                  // 🔍 กรองตามประเภทที่เลือกไว้จาก dropdown (selectedType)
-                  //     ถ้าเลือก 'All' = ไม่กรอง แสดงทั้งหมด
-                  final filteredAssets = (selectedType == 'All')
-                      ? allAssets
-                      : allAssets.where((a) => a.type == selectedType).toList();
+                    final allAssets = snapshot.data!;
+                    final filteredAssets = allAssets.where((a) {
+                      final matchesType =
+                          selectedType == 'All' || a.type == selectedType;
+                      final matchesSearch =
+                          searchQuery.isEmpty ||
+                          a.name.toLowerCase().contains(searchQuery);
+                      return matchesType && matchesSearch;
+                    }).toList();
 
                   // 🧱 แสดงผลเป็นกริด 2 คอลัมน์
                   return GridView.builder(
