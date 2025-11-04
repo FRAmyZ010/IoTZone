@@ -14,6 +14,8 @@ class Assetpage extends StatefulWidget {
 }
 
 class _AssetpageState extends State<Assetpage> {
+  String searchQuery = '';
+
   // --- Filter state ---
   final List<String> types = const [
     'Type',
@@ -218,18 +220,23 @@ class _AssetpageState extends State<Assetpage> {
                   ),
                 ],
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  SizedBox(width: 12),
-                  Icon(Icons.search, color: Colors.black54, size: 22),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 12),
+                  const Icon(Icons.search, color: Colors.black54, size: 22),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         hintText: 'Search your item',
                         border: InputBorder.none,
                         hintStyle: TextStyle(color: Colors.black54),
                       ),
+                      onChanged: (value) {
+                        setState(() {
+                          searchQuery = value.toLowerCase();
+                        });
+                      },
                     ),
                   ),
                 ],
@@ -260,11 +267,14 @@ class _AssetpageState extends State<Assetpage> {
                     }
 
                     final allAssets = snapshot.data!;
-                    final filteredAssets = (selectedType == 'All')
-                        ? allAssets
-                        : allAssets
-                              .where((a) => a.type == selectedType)
-                              .toList();
+                    final filteredAssets = allAssets.where((a) {
+                      final matchesType =
+                          selectedType == 'All' || a.type == selectedType;
+                      final matchesSearch =
+                          searchQuery.isEmpty ||
+                          a.name.toLowerCase().contains(searchQuery);
+                      return matchesType && matchesSearch;
+                    }).toList();
 
                     return GridView.builder(
                       physics: const BouncingScrollPhysics(),
