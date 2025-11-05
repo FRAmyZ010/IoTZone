@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:iot_zone/Page/Login/login_page.dart';
 import 'package:path/path.dart' as path;
+import 'package:iot_zone/Page/AppConfig.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 // ***************************************************************
 // ** WIDGETS จำลอง: หน้าจอ Login (สำหรับ Logout) **
@@ -16,6 +19,9 @@ enum ProfileMenuAction { profile, changepassword, logout, meatball }
 
 class UserProfileMenu extends StatelessWidget {
   UserProfileMenu({super.key});
+
+  String url = AppConfig.baseUrl;
+  String uid = '1';
 
   final ImagePicker _picker = ImagePicker();
 
@@ -250,7 +256,7 @@ class UserProfileMenu extends StatelessWidget {
               actions: <Widget>[
                 // ปุ่ม CONFIRM
                 FilledButton(
-                  onPressed: () {
+                  onPressed: () async {
                     // **Logic การบันทึกข้อมูล**
                     if (_formKey.currentState!.validate()) {
                       // 1. ดึงข้อมูลใหม่จาก Controller (ใช้สำหรับ UPDATE DB)
@@ -270,7 +276,30 @@ class UserProfileMenu extends StatelessWidget {
                       // TODO:
                       // 1. ใส่ Logic อัปโหลดรูป (ถ้ามี) (_tempImageFile, _tempFileName -> column: img)
                       // 2. ใส่ Logic Update ข้อมูลใน Database (ใช้ newUsername, newFullName, newPhone, newEmail, _tempFileName)
+                      try {
+                        Uri uri = Uri.parse('$url/api/edit-profile/$uid');
+                        Map updateProfile = {
+                          'name': newFullName.trim(),
+                          'phone': newPhone.trim(),
+                          'email': newEmail.trim(),
+                        };
 
+                        http.Response response = await http
+                            .put(
+                              uri,
+                              body: jsonEncode(updateProfile),
+                              headers: {'Content-Type': 'application/json'},
+                            )
+                            .timeout(const Duration(seconds: 10));
+
+                        if (response.statusCode == 200) {
+                          debugPrint('Edit profile success!!');
+                        } else {
+                          debugPrint('Edit profile failed');
+                        }
+                      } catch (e) {
+                        debugPrint(e.toString());
+                      }
                       // ปิด Alert
                       Navigator.of(context).pop();
                     }
@@ -498,7 +527,6 @@ class UserProfileMenu extends StatelessWidget {
     if (result == ProfileMenuAction.profile) {
       _showProfileAlert(context);
     } else if (result == ProfileMenuAction.meatball) {
-      
     } else if (result == ProfileMenuAction.changepassword) {
       _showChangePasswordAlert(context);
     } else if (result == ProfileMenuAction.logout) {
