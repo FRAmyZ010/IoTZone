@@ -3,10 +3,11 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:iot_zone/Page/AppConfig.dart';
+import 'package:iot_zone/Page/Asset_page/showAssetDialog/showAssetDialog_student.dart';
 
 class RequestStatusPage extends StatefulWidget {
   const RequestStatusPage({super.key});
-
+  static VoidCallback? refreshRequestPage;
   @override
   State<RequestStatusPage> createState() => _RequestStatusPageState();
 }
@@ -18,17 +19,25 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
   List<Map<String, dynamic>> filteredList = [];
 
   @override
-  void initState() {
-    super.initState();
-    _fetchRequests();
-  }
+  @override
+void initState() {
+  super.initState();
+  _fetchRequests();
+
+  // ✅ ผูกฟังก์ชันรีเฟรชกับ static ตัวนี้
+  RequestStatusPage.refreshRequestPage = () {
+    if (mounted) _fetchRequests();
+  };
+}
 
   // ✅ ดึงข้อมูลจาก API จริง
   Future<void> _fetchRequests() async {
     setState(() => _isLoading = true);
     try {
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/request-status/1'), // 🔹 ตัวอย่าง studentId = 1
+        Uri.parse(
+          '${AppConfig.baseUrl}/api/request-status/1',
+        ), // 🔹 ตัวอย่าง studentId = 1
       );
 
       if (response.statusCode == 200) {
@@ -58,6 +67,26 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
     });
   }
 
+  void _openBorrowDialog(Map<String, dynamic> asset) async {
+    await showDialog(
+      context: context,
+      builder: (_) => BorrowAssetDialog(
+        asset: asset,
+        onBorrowSuccess: () async {
+          await _fetchRequests(); // ✅ รีเฟรชทันที
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Borrow successful!'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     const purple = Color(0xFFC368FF);
@@ -77,9 +106,10 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
               child: Text(
                 "Request Status",
                 style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 24),
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                ),
               ),
             ),
           ),
@@ -103,8 +133,11 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
                     child: Row(
                       children: [
                         const SizedBox(width: 12),
-                        const Icon(Icons.search,
-                            color: Colors.black54, size: 22),
+                        const Icon(
+                          Icons.search,
+                          color: Colors.black54,
+                          size: 22,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: TextField(
@@ -127,8 +160,11 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
                   Expanded(
                     child: filteredList.isEmpty
                         ? const Center(
-                            child: Text("No requests found",
-                                style: TextStyle(color: Colors.black54)))
+                            child: Text(
+                              "No requests found",
+                              style: TextStyle(color: Colors.black54),
+                            ),
+                          )
                         : ListView.builder(
                             itemCount: filteredList.length,
                             itemBuilder: (context, index) {
@@ -177,24 +213,24 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
-  borderRadius: BorderRadius.circular(8),
-  child: Image.asset(
-    item["image"].toString().startsWith('asset/img/')
-        ? item["image"]
-        : 'asset/img/${item["image"]}',
-    width: 64,
-    height: 64,
-    fit: BoxFit.cover,
-    errorBuilder: (context, error, stackTrace) {
-      return Container(
-        width: 64,
-        height: 64,
-        color: Colors.grey[200],
-        child: const Icon(Icons.broken_image, color: Colors.red),
-      );
-    },
-  ),
-),
+            borderRadius: BorderRadius.circular(8),
+            child: Image.asset(
+              item["image"].toString().startsWith('asset/img/')
+                  ? item["image"]
+                  : 'asset/img/${item["image"]}',
+              width: 64,
+              height: 64,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  width: 64,
+                  height: 64,
+                  color: Colors.grey[200],
+                  child: const Icon(Icons.broken_image, color: Colors.red),
+                );
+              },
+            ),
+          ),
 
           const SizedBox(width: 12),
 
@@ -207,17 +243,22 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
                     Text(
                       item["name"] ?? "Unknown",
                       style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 16),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                     const Spacer(),
                     RichText(
                       text: TextSpan(
                         style: const TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.bold),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
                         children: [
                           const TextSpan(
-                              text: "Status: ",
-                              style: TextStyle(color: Colors.black)),
+                            text: "Status: ",
+                            style: TextStyle(color: Colors.black),
+                          ),
                           TextSpan(
                             text: item["status"] ?? "Unknown",
                             style: TextStyle(

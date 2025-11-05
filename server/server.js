@@ -6,7 +6,7 @@ const db = require('./db.js');
 const bcrypt = require('bcrypt');
 const cors = require('cors');
 const multer = require('multer');
-const path = require('path');const argon2 = require('@node-rs/argon2');
+const path = require('path'); const argon2 = require('@node-rs/argon2');
 
 const app = express();
 const PORT = 3000;
@@ -110,18 +110,18 @@ app.post('/login', async (req, res) => {
     }
 
     // ✅ ถ้า password ถูกต้อง
-  res.status(200).json({
-  message: 'Login successful',
-  user: {
-    id: user.id,
-    username: user.username,
-    name: user.name,
-    role: user.role,
-    email: user.email,
-    phone: user.phone,
-    image: user.image, // ✅ เพิ่มบรรทัดนี้
-  },
-});
+    res.status(200).json({
+      message: 'Login successful',
+      user: {
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        role: user.role,
+        email: user.email,
+        phone: user.phone,
+        image: user.image, // ✅ เพิ่มบรรทัดนี้
+      },
+    });
   } catch (err) {
     console.error("❌ Login error:", err);
     res.status(500).json({ message: "Internal server error" });
@@ -248,15 +248,15 @@ app.get('/assets', (req, res) => {
           imgPath = 'asset/img/no_image.png';
         }
 
-       return {
-  id: row.id,
-  name: row.asset_name || 'Unknown', // ✅ key ชื่อ name
-  description: row.description || '',
-  type: row.type || 'Unknown',
-  status: mapStatus(row.status ?? 0),
-  image: imgPath,
-  statusColorValue: getColor(row.status ?? 0),
-};
+        return {
+          id: row.id,
+          name: row.asset_name || 'Unknown', // ✅ key ชื่อ name
+          description: row.description || '',
+          type: row.type || 'Unknown',
+          status: mapStatus(row.status ?? 0),
+          image: imgPath,
+          statusColorValue: getColor(row.status ?? 0),
+        };
       });
 
       res.json(formatted);
@@ -479,11 +479,11 @@ app.post('/api/borrow', async (req, res) => {
     }
 
     // ✅ 4. ถ้ายังไม่มีการยืม → สร้าง record ใหม่ใน history
-   await db.promise().query(
-  `INSERT INTO history (asset_id, borrower_id, status, borrow_date, return_date)
+    await db.promise().query(
+      `INSERT INTO history (asset_id, borrower_id, status, borrow_date, return_date)
    VALUES (?, ?, 1, NOW(), DATE_ADD(NOW(), INTERVAL 1 DAY))`,
-  [asset_id, borrower_id]
-);
+      [asset_id, borrower_id]
+    );
 
     // ✅ 5. เปลี่ยนสถานะสินทรัพย์เป็น Pending (3)
     await db.promise().query(`UPDATE asset SET status = 3 WHERE id = ?`, [asset_id]);
@@ -571,10 +571,22 @@ app.put('/api/history/:id/status', async (req, res) => {
         break;
 
       case 3: // Rejected (ถูกปฏิเสธ)
+        await db.promise().query(
+          `UPDATE asset SET status = 1 WHERE id = ?`,
+          [assetId]
+        );
+        break; // ✅ ต้องมี break ตรงนี้!
+
       case 4: // Returned (คืนแล้ว)
+        await db.promise().query(
+          `UPDATE asset SET status = 1 WHERE id = ?`,
+          [assetId]
+        );
+        break; // ✅ ต้องมี break ตรงนี้ด้วย!
+
       case 5: // Expired (หมดอายุ)
         await db.promise().query(
-          `UPDATE asset SET status = 1 WHERE id = ?`, // ✅ คืนให้เป็น Available
+          `UPDATE asset SET status = 1 WHERE id = ?`,
           [assetId]
         );
         break;
@@ -583,15 +595,13 @@ app.put('/api/history/:id/status', async (req, res) => {
         console.warn(`⚠️ Unknown status: ${status}`);
     }
 
+
     res.json({ message: 'History and asset status updated successfully' });
   } catch (err) {
     console.error('❌ Update history status error:', err);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
-
-
-
 
 
 

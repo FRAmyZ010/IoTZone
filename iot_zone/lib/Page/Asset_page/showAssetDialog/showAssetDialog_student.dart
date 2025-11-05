@@ -3,11 +3,17 @@ import 'package:intl/intl.dart';
 import 'package:iot_zone/Page/AppConfig.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:iot_zone/Page/Request Status/Req_Status.dart'; // ✅ แก้ path ให้ตรงไฟล์จริง
 
 class BorrowAssetDialog extends StatefulWidget {
   final Map<String, dynamic> asset;
+  final VoidCallback? onBorrowSuccess; // ✅ callback สำหรับ refresh หน้า
 
-  const BorrowAssetDialog({super.key, required this.asset});
+  const BorrowAssetDialog({
+    super.key,
+    required this.asset,
+    this.onBorrowSuccess,
+  });
 
   @override
   State<BorrowAssetDialog> createState() => _BorrowAssetDialogState();
@@ -40,8 +46,7 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
           alignment: Alignment.center,
           child: FittedBox(
             fit: BoxFit.contain,
-            child:
-                imagePath.startsWith('/uploads/') || imagePath.contains('http')
+            child: imagePath.startsWith('/uploads/') || imagePath.contains('http')
                 ? Image.network(
                     'http://$ip:3000$imagePath',
                     height: 120,
@@ -75,9 +80,6 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
     if (_isBorrowing) return;
     setState(() => _isBorrowing = true);
 
-    final now = DateTime.now();
-    final tomorrow = now.add(const Duration(days: 1));
-
     try {
       final response = await http.post(
         Uri.parse('http://$ip:3000/api/borrow'),
@@ -91,10 +93,15 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
       final body = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        // ✅ ปิด dialog ส่งค่ากลับไปให้หน้าแม่รู้ว่า “ยืมสำเร็จ”
+        // ✅ เรียก callback ใน dialog เอง
+        widget.onBorrowSuccess?.call();
+
+        // ✅ เรียกให้หน้า RequestStatusPage รีเฟรช (ข้ามหน้า)
+        RequestStatusPage.refreshRequestPage?.call();
+
+        // ✅ ปิด dialog
         Navigator.of(context).pop(true);
       } else {
-        // ❌ Error จาก server
         showDialog(
           context: context,
           builder: (_) => AlertDialog(
@@ -142,7 +149,6 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // 🔹 ชื่ออุปกรณ์
               Text(
                 asset['name'] ?? "Unknown Asset",
                 style: const TextStyle(
@@ -153,12 +159,9 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 14),
-
-              // 🔹 รูปภาพ
               _buildImage(asset['image'] ?? ''),
               const SizedBox(height: 14),
 
-              // 🔹 ข้อความเตือน
               const Text(
                 "* You can only borrow 1 asset per day",
                 style: TextStyle(
@@ -170,7 +173,6 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
               ),
               const SizedBox(height: 16),
 
-              // 🔹 คำอธิบาย
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -189,13 +191,21 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
               ),
               const SizedBox(height: 26),
 
-              // 🔹 ปุ่มยืม / ยกเลิก
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   // ปุ่ม Borrow
                   ElevatedButton(
                     onPressed: _isBorrowing ? null : _borrowToday,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurpleAccent,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 36, vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                      elevation: 5,
+                    ),
                     child: _isBorrowing
                         ? const SizedBox(
                             width: 20,
@@ -213,17 +223,6 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
                               fontSize: 18,
                             ),
                           ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurpleAccent,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 36,
-                        vertical: 14,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(22),
-                      ),
-                      elevation: 5,
-                    ),
                   ),
 
                   // ปุ่ม Cancel
@@ -241,9 +240,7 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey.shade600,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 14,
-                      ),
+                          horizontal: 32, vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(22),
                       ),
