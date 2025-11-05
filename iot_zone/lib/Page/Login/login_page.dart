@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:iot_zone/Page/AppConfig.dart';
-import 'dart:convert';
 
-// 🧭 import หน้าหลัง login
-import 'package:iot_zone/Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar.dart'; // ✅ StudentMain อยู่ในไฟล์นี้
+// 👇 import หน้าหลัง login
 import 'package:iot_zone/Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar_staff.dart';
 import 'package:iot_zone/Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar_lender.dart';
-
+import 'package:iot_zone/Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar.dart'; // student
 import 'package:iot_zone/Page/Login/register_page.dart';
 
 import 'package:iot_zone/users_preferences.dart';
@@ -23,93 +19,64 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // 🎨 Colors
-  final Color blackColor = const Color(0xFF1e1e1e);
-  final Color primary = const Color(0xFF4D5DFF);
-  final Color purpleColor = const Color(0xFFC368FF);
+  Color blackColor = const Color(0xFF1e1e1e);
+  Color primary = const Color(0xFF4D5DFF);
+  Color purpleColor = const Color(0xFFC368FF);
 
-  // 🔹 Controller
-  final TextEditingController tcUser = TextEditingController();
-  final TextEditingController tcPass = TextEditingController();
+  TextEditingController tcUser = TextEditingController();
+  TextEditingController tcPass = TextEditingController();
+
+  // 🔹 จำลองฐานข้อมูลผู้ใช้
+  final List<Map<String, String>> mockUsers = [
+    {'username': 'staff01', 'password': '1234', 'role': 'staff'},
+    {'username': 'lender01', 'password': '1234', 'role': 'lender'},
+    {'username': 'student01', 'password': '1234', 'role': 'student'},
+  ];
 
   // 🔹 ฟังก์ชันตรวจสอบ login
-  void _handleLogin() async {
-    final username = tcUser.text.trim();
-    final password = tcPass.text.trim();
-    final ip = AppConfig.serverIP;
+  void _handleLogin() {
+    final user = tcUser.text.trim();
+    final pass = tcPass.text.trim();
 
-    if (username.isEmpty || password.isEmpty) {
+    // ค้นหาผู้ใช้ใน mock list
+    final foundUser = mockUsers.firstWhere(
+      (u) => u['username'] == user && u['password'] == pass,
+      orElse: () => {},
+    );
+
+    if (foundUser.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('⚠️ โปรดกรอกชื่อผู้ใช้และรหัสผ่าน')),
+        const SnackBar(content: Text('❌ ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง')),
       );
       return;
     }
 
-    try {
-      final response = await http.post(
-        Uri.parse('http://$ip:3000/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'username': username, 'password': password}),
-      );
+    final role = foundUser['role'];
 
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode == 200 && data['user'] != null) {
-        final role = data['user']['role'];
-
-        ScaffoldMessenger.of(
+    // ✅ นำทางตาม role
+    switch (role) {
+      case 'staff':
+        Navigator.pushReplacement(
           context,
-        ).showSnackBar(const SnackBar(content: Text('✅ เข้าสู่ระบบสำเร็จ!')));
-
-        // 🧭 นำทางไปหน้าแต่ละ role และส่งข้อมูล userData ไปด้วย
-        switch (role) {
-          case 'student':
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => StudentMain(userData: data['user']),
-              ),
-            );
-            break;
-
-          case 'staff':
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => StaffMain(userData: data['user']),
-              ),
-            );
-            break;
-
-          case 'lender':
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => LenderMain(userData: data['user']),
-              ),
-            );
-            break;
-
-          default:
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('⚠️ ไม่พบสิทธิ์ผู้ใช้ (role)')),
-            );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '❌ ${data['message'] ?? 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'}',
-            ),
-          ),
+          MaterialPageRoute(builder: (_) => const StaffMain()),
         );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์\n$e'),
-        ),
-      );
+        break;
+      case 'lender':
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LenderMain()),
+        );
+        break;
+      case 'student':
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const StudentMain()),
+        );
+        break;
+      default:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('⚠️ ไม่พบสิทธิ์ผู้ใช้ (role)')),
+        );
     }
   }
 
@@ -118,7 +85,7 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       body: Stack(
         children: [
-          // 🔹 พื้นหลัง Gradient
+          // พื้นหลังไล่สี
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -129,7 +96,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
 
-          // 🔹 รูปพื้นหลังโปร่งใส
+          // รูปภาพ
           Opacity(
             opacity: 0.5,
             child: Image.asset(
@@ -149,7 +116,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
 
-          // 🔹 เนื้อหา
           SafeArea(
             child: Center(
               child: Column(
@@ -173,7 +139,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 35),
 
-                  // กล่อง Login
+                  // กล่อง login
                   Container(
                     width: 350,
                     height: 400,
@@ -238,6 +204,7 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                         ),
+
                         const SizedBox(height: 40),
 
                         // ปุ่ม Login

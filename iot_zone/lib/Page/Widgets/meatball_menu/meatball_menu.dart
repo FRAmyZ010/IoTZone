@@ -3,30 +3,31 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:iot_zone/Page/Login/login_page.dart';
 import 'package:path/path.dart' as path;
-import 'dart:convert';
+import 'package:iot_zone/Page/AppConfig.dart';
 import 'package:http/http.dart' as http;
-import 'package:image/image.dart' as img; // ✅ ใช้แปลงภาพเป็น PNG
-import '../../AppConfig.dart';
+import 'dart:convert';
 
-enum ProfileMenuAction { profile, changepassword, logout }
+// ***************************************************************
+// ** WIDGETS จำลอง: หน้าจอ Login (สำหรับ Logout) **
+// ***************************************************************
 
-class UserProfileMenu extends StatefulWidget {
-  final Map<String, dynamic>? userData;
-  final Function(Map<String, dynamic>)? onProfileUpdated;
+// ***************************************************************
+// ** WIDGETS หลัก: UserProfileMenu **
+// ***************************************************************
 
-  const UserProfileMenu({super.key, this.userData, this.onProfileUpdated});
+enum ProfileMenuAction { profile, changepassword, logout, meatball }
 
-  @override
-  State<UserProfileMenu> createState() => _UserProfileMenuState();
-}
+class UserProfileMenu extends StatelessWidget {
+  UserProfileMenu({super.key});
+  String url = AppConfig.baseUrl;
+  String uid = '1';
+  List<dynamic> userProfile = [];
 
-class _UserProfileMenuState extends State<UserProfileMenu> {
   final ImagePicker _picker = ImagePicker();
-  final String ip = AppConfig.serverIP;
 
-  // ----------------------------------------------------------
-  // ✅ ช่อง input
-  // ----------------------------------------------------------
+  // ----------------------------------------------------------------------
+  // ** WIDGET HELPER: สร้างรายการข้อมูลโปรไฟล์ที่แก้ไขได้ (TextFormField) **
+  // ----------------------------------------------------------------------
   Widget _buildProfileEditableItem({
     required Widget icon,
     required String labelText,
@@ -35,12 +36,14 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
     TextInputType keyboardType = TextInputType.text,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          // ไอคอน (อยู่ด้านซ้ายมือ)
           SizedBox(width: 20, height: 20, child: icon),
           const SizedBox(width: 12),
+          // ช่องป้อนข้อมูล (TextFormField โค้งมน)
           Expanded(
             child: TextFormField(
               controller: controller,
@@ -54,11 +57,24 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
                 ),
                 labelText: labelText,
                 labelStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+                // ปรับแต่งขอบเขตให้โค้งมนและมีพื้นหลัง
                 filled: true,
-                fillColor: Colors.grey.shade100,
+                fillColor: Colors.grey.shade100, // สีพื้นหลังอ่อน ๆ
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      BorderSide.none, // ลบเส้นขอบออกเพื่อให้ดูเรียบตามภาพ
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Colors.blue,
+                    width: 1.0,
+                  ), // เส้นขอบเมื่อโฟกัส
                 ),
               ),
             ),
@@ -68,23 +84,47 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
     );
   }
 
-  // ----------------------------------------------------------
-  // ✅ Alert แก้ไขโปรไฟล์ (พร้อมอัปเดตรูปทันที)
-  // ----------------------------------------------------------
+  // ----------------------------------------------------------------------
+  // 1. ฟังก์ชันแสดง AlertDialog Profile (มีการจัดการ State ภายใน)
+  // ----------------------------------------------------------------------
   Future<void> _showProfileAlert(BuildContext context) async {
-    String initialUsername = widget.userData?['username'] ?? 'Unknown';
-    String initialFullName = widget.userData?['name'] ?? 'N/A';
-    String initialPhone = widget.userData?['phone'] ?? 'N/A';
-    String initialEmail = widget.userData?['email'] ?? 'N/A';
-    String? profileImageUrl = widget.userData?['image'];
+    try {
+      Uri uri = Uri.parse('$url/api/get-profile/$uid');
+      http.Response response = await http
+          .get(uri)
+          .timeout(const Duration(seconds: 10));
+
+      // check server's response
+      if (response.statusCode == 200) {
+        userProfile = jsonDecode(response.body);
+      } else {
+        debugPrint('⚠️ Server error: Status ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+
+    // *****************************************************************
+    String initialUsername = userProfile[0]['username']; // column: user
+    String initialFullName = userProfile[0]['name']; // column: name
+    String initialPhone = userProfile[0]['phone']; // column: phone
+    String initialEmail = userProfile[0]['email']; // column: email
+    String initialImage = userProfile[0]['image'];
+    // *****************************************************************
 
     File? _tempImageFile;
-    String? _tempFileName;
+    String _tempFileName = initialImage;
 
-    final userController = TextEditingController(text: initialUsername);
-    final nameController = TextEditingController(text: initialFullName);
-    final phoneController = TextEditingController(text: initialPhone);
-    final emailController = TextEditingController(text: initialEmail);
+    // Mock icons (เพื่อให้คล้ายกับรูปที่แนบมา)
+    // NOTE: เปลี่ยนเป็น AssetImage ที่ถูกต้องของคุณ หรือใช้ Icon() แทน
+    Widget userIcon = Image.asset('asset/icon/user.png', width: 5, height: 5);
+    Widget nameIcon = Image.asset(
+      'asset/icon/id-card.png',
+      width: 5,
+      height: 5,
+    );
+    Widget phoneIcon = Image.asset('asset/icon/phone.png', width: 5, height: 5);
+    Widget emailIcon = Image.asset('asset/icon/gmail.png', width: 5, height: 5);
 
     final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
@@ -92,22 +132,43 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
       context: context,
       barrierDismissible: true,
       builder: (BuildContext dialogContext) {
+        // **ใช้ StatefulBuilder เพื่อให้ UI ภายใน AlertDialog เปลี่ยนแปลงได้**
         return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setDialogState) {
-            // ✅ ใช้ setDialogState() เพื่ออัปเดตรูปใน dialog ทันที
+          builder: (BuildContext context, StateSetter setState) {
+            // **ตัวแปร Controllers (ต้องสร้างใน builder เพื่อจัดการ State)**
+            final TextEditingController userController = TextEditingController(
+              text: initialUsername,
+            );
+            final TextEditingController nameController = TextEditingController(
+              text: initialFullName,
+            );
+            final TextEditingController phoneController = TextEditingController(
+              text: initialPhone,
+            );
+            final TextEditingController emailController = TextEditingController(
+              text: initialEmail,
+            );
+
+            // --- ฟังก์ชัน 1: เลือกรูปภาพและอัปเดต State (รวมการเก็บชื่อไฟล์) ---
             Future<void> _alertPickImage(ImageSource source) async {
-              final pickedFile = await _picker.pickImage(
-                source: source,
-                imageQuality: 85,
-              );
-              if (pickedFile != null) {
-                setDialogState(() {
-                  _tempImageFile = File(pickedFile.path);
-                  _tempFileName = path.basename(pickedFile.path);
-                });
+              try {
+                final pickedFile = await _picker.pickImage(
+                  source: source,
+                  imageQuality: 70,
+                );
+                if (pickedFile != null) {
+                  setState(() {
+                    _tempImageFile = File(pickedFile.path);
+                    // **ดึงชื่อไฟล์ (basename) จาก Path และเก็บไว้**
+                    _tempFileName = path.basename(pickedFile.path);
+                  });
+                }
+              } catch (e) {
+                debugPrint('Failed to pick image: $e');
               }
             }
 
+            // --- ฟังก์ชัน 2: แสดงตัวเลือก Camera/Gallery (เหมือนเดิม) ---
             void _alertShowChoiceDialog() {
               showModalBottomSheet(
                 context: context,
@@ -129,186 +190,184 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
                 },
               );
             }
-
-            ImageProvider<Object>? _getProfileImage() {
-              if (_tempImageFile != null) {
-                return FileImage(_tempImageFile!);
-              } else if (profileImageUrl != null &&
-                  profileImageUrl.isNotEmpty &&
-                  profileImageUrl != "null") {
-                return NetworkImage(
-                  'http://$ip:3000$profileImageUrl?v=${DateTime.now().millisecondsSinceEpoch}',
-                );
-              } else {
-                return null;
-              }
-            }
+            // --------------------------------------------------
 
             return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(25),
-              ),
               content: SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
                   child: Form(
+                    // ใช้ Form เพื่อจัดการการตรวจสอบข้อมูล
                     key: _formKey,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: <Widget>[
-                        const Text(
-                          'Profile',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
+                        Image.asset(
+                          'asset/icon/user.png',
+                          width: 25,
+                          height: 25,
+                        ),
+                        // Header
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 10),
+                          child: Text(
+                            'Profile',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 10),
+
+                        // **ส่วนแสดงรูปภาพและปุ่มเลือก**
                         GestureDetector(
                           onTap: _alertShowChoiceDialog,
                           child: CircleAvatar(
                             radius: 60,
                             backgroundColor: Colors.grey.shade300,
-                            backgroundImage: _getProfileImage(),
-                            child: _getProfileImage() == null
+                            backgroundImage: _tempImageFile != null
+                                // 1. ถ้ามีรูปใหม่ที่เลือก ให้ใช้ FileImage
+                                ? FileImage(_tempImageFile!) as ImageProvider
+                                // 2. ถ้าไม่มีรูปใหม่ ให้ใช้ชื่อไฟล์ที่ดึงมาจาก DB/หรือค่า Default (initialImage)
+                                : AssetImage('asset/$initialImage')
+                                      as ImageProvider, // ** ใช้ AssetImage **
+                            child: _tempImageFile == null
                                 ? const Icon(
                                     Icons.camera_alt,
                                     size: 40,
-                                    color: Colors.grey,
+                                    color: Color.fromARGB(216, 158, 158, 158),
                                   )
                                 : null,
                           ),
                         ),
                         const SizedBox(height: 10),
+                        // **รายการข้อมูลโปรไฟล์ที่แก้ไขได้ (ตามภาพ)**
                         _buildProfileEditableItem(
-                          icon: Image.asset(
-                            'asset/icon/user.png',
-                            width: 5,
-                            height: 5,
-                          ),
+                          icon: userIcon,
                           labelText: 'Username',
                           controller: userController,
+                          readOnly: true, // column: user
                         ),
                         _buildProfileEditableItem(
-                          icon: Image.asset(
-                            'asset/icon/id-card.png',
-                            width: 5,
-                            height: 5,
-                          ),
+                          icon: nameIcon,
                           labelText: 'Full Name',
-                          controller: nameController,
+                          controller: nameController, // column: name
                         ),
                         _buildProfileEditableItem(
-                          icon: Image.asset(
-                            'asset/icon/phone.png',
-                            width: 5,
-                            height: 5,
-                          ),
+                          icon: phoneIcon,
                           labelText: 'Phone',
                           controller: phoneController,
-                          keyboardType: TextInputType.phone,
+                          keyboardType: TextInputType.phone, // column: phone
                         ),
                         _buildProfileEditableItem(
-                          icon: Image.asset(
-                            'asset/icon/gmail.png',
-                            width: 5,
-                            height: 5,
-                          ),
+                          icon: emailIcon,
                           labelText: 'Email',
                           controller: emailController,
-                          keyboardType: TextInputType.emailAddress,
+                          keyboardType:
+                              TextInputType.emailAddress, // column: email
                         ),
                       ],
                     ),
                   ),
                 ),
               ),
-              actions: [
+              actions: <Widget>[
+                // ปุ่ม CONFIRM
                 FilledButton(
                   onPressed: () async {
+                    // **Logic การบันทึกข้อมูล**
                     if (_formKey.currentState!.validate()) {
-                      try {
-                        var request = http.MultipartRequest(
-                          'PUT',
-                          Uri.parse(
-                            'http://$ip:3000/api/update-profile/${widget.userData?['id']}',
-                          ),
-                        );
+                      // 1. ดึงข้อมูลใหม่จาก Controller (ใช้สำหรับ UPDATE DB)
+                      final String newUsername = userController.text;
+                      final String newFullName = nameController.text;
+                      final String newPhone = phoneController.text;
+                      final String newEmail = emailController.text;
 
-                        request.fields['username'] = userController.text;
-                        request.fields['name'] = nameController.text;
-                        request.fields['phone'] = phoneController.text;
-                        request.fields['email'] = emailController.text;
+                      debugPrint('New Username: $newUsername (user)');
+                      debugPrint('New Full Name: $newFullName (name)');
 
-                        if (_tempImageFile != null) {
-                          final bytes = await _tempImageFile!.readAsBytes();
-                          final decoded = img.decodeImage(bytes);
-                          if (decoded != null) {
-                            final resized = img.copyResize(decoded, width: 600);
-                            final pngBytes = img.encodePng(resized);
-                            final newFile = File('${_tempImageFile!.path}.png');
-                            await newFile.writeAsBytes(pngBytes);
-
-                            var stream = http.ByteStream(newFile.openRead());
-                            var length = await newFile.length();
-                            var multipartFile = http.MultipartFile(
-                              'image',
-                              stream,
-                              length,
-                              filename:
-                                  '${path.basenameWithoutExtension(_tempImageFile!.path)}.png',
-                            );
-                            request.files.add(multipartFile);
-                          }
-                        }
-
-                        var response = await request.send();
-                        if (response.statusCode == 200) {
-                          final resData = jsonDecode(
-                            await response.stream.bytesToString(),
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("✅ Profile updated successfully"),
-                            ),
-                          );
-
-                          if (widget.onProfileUpdated != null) {
-                            widget.onProfileUpdated!(resData);
-                          }
-
-                          await Future.delayed(const Duration(seconds: 1));
-                          Navigator.of(context).pop();
-                        } else {
-                          final resData = jsonDecode(
-                            await response.stream.bytesToString(),
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                "⚠️ ${resData['message'] ?? 'Update failed'}",
-                              ),
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        ScaffoldMessenger.of(
-                          context,
-                        ).showSnackBar(SnackBar(content: Text("❌ Error: $e")));
+                      if (_tempImageFile != null) {
+                        debugPrint('New Image Path: ${_tempImageFile!.path}');
+                        debugPrint('New Image File Name: $_tempFileName (img)');
                       }
+
+                      // TODO:
+                      // 1. ใส่ Logic อัปโหลดรูป (ถ้ามี) (_tempImageFile, _tempFileName -> column: img)
+                      // 2. ใส่ Logic Update ข้อมูลใน Database (ใช้ newUsername, newFullName, newPhone, newEmail, _tempFileName)
+                      if (_tempFileName == null) {
+                        try {
+                          Uri uri = Uri.parse('$url/api/edit-profile/$uid');
+
+                          Map updateProfile = {
+                            'name': newFullName.trim(),
+                            'phone': newPhone.trim(),
+                            'email': newEmail.trim(),
+                          };
+
+                          http.Response response = await http
+                              .put(
+                                uri,
+                                body: jsonEncode(updateProfile),
+                                headers: {'Content-Type': 'application/json'},
+                              )
+                              .timeout(const Duration(seconds: 10));
+
+                          if (response.statusCode == 200) {
+                            debugPrint('Edit profile success!!');
+                          } else {
+                            debugPrint('Edit profile failed');
+                          }
+                        } catch (e) {
+                          debugPrint(e.toString());
+                        }
+                      } else if (_tempFileName != null) {
+                        try {
+                          Uri uri = Uri.parse('$url/api/edit-profile/$uid');
+
+                          Map updateProfile = {
+                            'name': newFullName.trim(),
+                            'phone': newPhone.trim(),
+                            'email': newEmail.trim(),
+                            'image': _tempFileName,
+                          };
+
+                          http.Response response = await http
+                              .put(
+                                uri,
+                                body: jsonEncode(updateProfile),
+                                headers: {'Content-Type': 'application/json'},
+                              )
+                              .timeout(const Duration(seconds: 10));
+
+                          if (response.statusCode == 200) {
+                            debugPrint('Edit profile success!!');
+                          } else {
+                            debugPrint('Edit profile failed');
+                          }
+                        } catch (e) {
+                          debugPrint(e.toString());
+                        }
+                      }
+
+                      // ปิด Alert
+                      Navigator.of(context).pop();
                     }
                   },
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFF37E451),
                     foregroundColor: Colors.white,
+                    textStyle: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   child: const Text('Confirm'),
                 ),
+                // ปุ่มยกเลิก (Cancel) - สีแดง
                 FilledButton(
                   onPressed: () => Navigator.of(context).pop(),
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFFFF2147),
                     foregroundColor: Colors.white,
+                    textStyle: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   child: const Text('Cancel'),
                 ),
@@ -320,155 +379,190 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
     );
   }
 
-  // ----------------------------------------------------------
-  // ✅ Change Password
-  // ----------------------------------------------------------
+  // ----------------------------------------------------------------------
+  // 2. ฟังก์ชันแสดง AlertDialog Change Password
+  // ----------------------------------------------------------------------
+
   Future<void> _showChangePasswordAlert(BuildContext context) async {
-    final oldPassController = TextEditingController();
-    final newPassController = TextEditingController();
-    final confirmPassController = TextEditingController();
+    // สร้าง Controllers สำหรับการจัดการข้อความ
+    final TextEditingController oldPassController = TextEditingController();
+    final TextEditingController newPassController = TextEditingController();
+    final TextEditingController confirmPassController = TextEditingController();
+
     final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+    // Icon ตามภาพที่แนบมา
+    // NOTE: เปลี่ยนเป็น AssetImage ที่ถูกต้องของคุณ หรือใช้ Icon() แทน
+    Widget lockIcon = Image.asset(
+      'asset/icon/padlock.png',
+      width: 30,
+      height: 30,
+    );
 
     return showDialog<void>(
       context: context,
       barrierDismissible: true,
-      builder: (context) {
+      builder: (BuildContext dialogContext) {
+        // ใช้ StatefulBuilder เพื่อจัดการ State ภายใน Alert
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (BuildContext context, StateSetter setState) {
+            // ************ WIDGET HELPER: buildPasswordField ภายใน State ************
+            // เพื่อให้สามารถเข้าถึง Controller อื่นๆ ได้ในการทำ Validation
             Widget buildPasswordField({
               required TextEditingController controller,
               required String labelText,
             }) {
               return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8.0,
+                  horizontal: 0,
+                ),
                 child: TextFormField(
                   controller: controller,
                   obscureText: true,
-                  style: const TextStyle(fontSize: 16),
+                  style: const TextStyle(fontSize: 16, color: Colors.black87),
                   decoration: InputDecoration(
+                    // Textfield ที่โค้งมนและมีพื้นหลังสีเทาอ่อน
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 18,
+                    ),
                     labelText: labelText,
+                    labelStyle: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 16,
+                    ),
                     filled: true,
                     fillColor: Colors.grey.shade200,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(25),
                       borderSide: BorderSide.none,
                     ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(25),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(25),
+                      borderSide: const BorderSide(
+                        color: Colors.black12,
+                        width: 1.0,
+                      ),
+                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter $labelText';
+                      return 'Please enter the $labelText.';
                     }
+                    // ตรวจสอบความถูกต้องของ Confirm Password
                     if (labelText == 'Confirm new password' &&
                         newPassController.text != confirmPassController.text) {
-                      return 'Passwords do not match';
+                      return 'New password and confirm password do not match.';
                     }
                     return null;
                   },
                 ),
               );
             }
+            // *******************************************************************
 
             return AlertDialog(
+              titlePadding: EdgeInsets.zero,
+              contentPadding: EdgeInsets.zero,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(25),
               ),
-              content: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset(
-                      'asset/icon/padlock.png',
-                      width: 30,
-                      height: 30,
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Change Password',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+
+              // **ส่วน Content หลัก**
+              content: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 350.0),
+                child: SingleChildScrollView(
+                  child: Padding(
+                    // ปรับ Padding ด้านข้างให้น้อยลงเพื่อให้ปุ่มดู 'กว้าง' ขึ้น
+                    padding: const EdgeInsets.fromLTRB(15, 20, 15, 10),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: <Widget>[
+                          // Header Icon
+                          lockIcon,
+
+                          // Header Text
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 25, top: 8),
+                            child: Text(
+                              'Change Password',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ),
+
+                          // ช่องป้อน Current Password
+                          buildPasswordField(
+                            controller: oldPassController,
+                            labelText: 'Current password',
+                          ),
+
+                          // ช่องป้อน New Password
+                          buildPasswordField(
+                            controller: newPassController,
+                            labelText: 'New password',
+                          ),
+
+                          // ช่องป้อน Confirm New Password
+                          buildPasswordField(
+                            controller: confirmPassController,
+                            labelText: 'Confirm new password',
+                          ),
+
+                          const SizedBox(height: 30),
+                          // ปุ่ม CONFIRM
+                          SizedBox(
+                            width: 140, // ทำให้ปุ่มกว้างเต็มพื้นที่ตาม Padding
+                            height: 55,
+                            child: FilledButton(
+                              onPressed: () {
+                                if (_formKey.currentState!.validate()) {
+                                  // Logic การบันทึกรหัสผ่าน
+                                  final String oldPass = oldPassController.text;
+                                  final String newPass = newPassController.text;
+
+                                  debugPrint('Old Password: $oldPass');
+                                  debugPrint('New Password: $newPass');
+
+                                  // TODO:
+                                  // 1. ใส่ Logic ตรวจสอบ Old Password
+                                  // 2. ใส่ Logic อัปเดต New Password ใน Database
+
+                                  Navigator.of(context).pop();
+                                }
+                              },
+                              style: FilledButton.styleFrom(
+                                backgroundColor: const Color(0xFF37E451),
+                                foregroundColor: Colors.white,
+                                textStyle: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(25),
+                                ),
+                                elevation: 2,
+                              ),
+                              child: const Text('CONFIRM'),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    buildPasswordField(
-                      controller: oldPassController,
-                      labelText: 'Current password',
-                    ),
-                    buildPasswordField(
-                      controller: newPassController,
-                      labelText: 'New password',
-                    ),
-                    buildPasswordField(
-                      controller: confirmPassController,
-                      labelText: 'Confirm new password',
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        FilledButton(
-                          onPressed: () async {
-                            if (_formKey.currentState!.validate()) {
-                              try {
-                                final response = await http.put(
-                                  Uri.parse(
-                                    'http://$ip:3000/api/change-password/${widget.userData?['id']}',
-                                  ),
-                                  headers: {'Content-Type': 'application/json'},
-                                  body: jsonEncode({
-                                    'oldPassword': oldPassController.text
-                                        .trim(),
-                                    'newPassword': newPassController.text
-                                        .trim(),
-                                  }),
-                                );
-
-                                if (response.statusCode == 200) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        "✅ Password changed successfully",
-                                      ),
-                                    ),
-                                  );
-                                  Navigator.of(context).pop();
-                                } else {
-                                  final resData = jsonDecode(response.body);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        "⚠️ ${resData['message'] ?? 'Update failed'}",
-                                      ),
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text("❌ Error: $e")),
-                                );
-                              }
-                            }
-                          },
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF37E451),
-                            foregroundColor: Colors.white,
-                          ),
-                          child: const Text('CONFIRM'),
-                        ),
-                        FilledButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFFFF2147),
-                            foregroundColor: Colors.white,
-                          ),
-                          child: const Text('CANCEL'),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
               ),
+              actions: const [], // ไม่มี actions ด้านล่าง
             );
           },
         );
@@ -476,67 +570,134 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
     );
   }
 
-  // ----------------------------------------------------------
-  // ✅ เมนูหลัก
-  // ----------------------------------------------------------
+  // ----------------------------------------------------------------------
+  // 3. ฟังก์ชันจัดการเมื่อผู้ใช้เลือกรายการ (แก้ไข Logic Log-out)
+  // ----------------------------------------------------------------------
   void _onSelected(BuildContext context, ProfileMenuAction result) {
     if (result == ProfileMenuAction.profile) {
       _showProfileAlert(context);
     } else if (result == ProfileMenuAction.meatball) {
-      
     } else if (result == ProfileMenuAction.changepassword) {
       _showChangePasswordAlert(context);
     } else if (result == ProfileMenuAction.logout) {
+      // ** Logic Log-out: นำทางไปหน้า Login และล้าง Stack **
+      debugPrint('User is logging out...');
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const LoginPage()),
-        (Route<dynamic> route) => false,
+        (Route<dynamic> route) => false, // ล้างทุกหน้า
       );
     }
   }
 
+  // ----------------------------------------------------------------------
+  // 4. ฟังก์ชันสร้างรายการเมนูพร้อมไอคอน
+  // ----------------------------------------------------------------------
+  List<PopupMenuEntry<ProfileMenuAction>> _buildItems() {
+    // NOTE: เปลี่ยนเป็น AssetImage ที่ถูกต้องของคุณ หรือใช้ Icon() แทน
+    return <PopupMenuEntry<ProfileMenuAction>>[
+      const PopupMenuItem<ProfileMenuAction>(
+        // รายการว่างด้านบน
+        value: ProfileMenuAction.meatball,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [Icon(Icons.more_horiz, color: Colors.black, size: 48)],
+        ),
+      ),
+      PopupMenuItem<ProfileMenuAction>(
+        value: ProfileMenuAction.profile,
+        child: Row(
+          children: [
+            Image.asset('asset/icon/user.png', width: 24, height: 24),
+            const SizedBox(width: 8),
+            const Text('Profile'),
+          ],
+        ),
+      ),
+      PopupMenuItem<ProfileMenuAction>(
+        value: ProfileMenuAction.changepassword,
+        child: Row(
+          children: [
+            Image.asset('asset/icon/padlock.png', width: 24, height: 24),
+            const SizedBox(width: 8),
+            const Text('Change password'),
+          ],
+        ),
+      ),
+      const PopupMenuDivider(),
+      PopupMenuItem<ProfileMenuAction>(
+        value: ProfileMenuAction.logout,
+        child: Row(
+          children: [
+            Image.asset('asset/icon/switch.png', width: 24, height: 24),
+            const SizedBox(width: 8),
+            const Text('Log-out'),
+          ],
+        ),
+      ),
+    ];
+  }
+
+  // ----------------------------------------------------------------------
+  // 5. Widget build
+  // ----------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton<ProfileMenuAction>(
       onSelected: (result) => _onSelected(context, result),
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: ProfileMenuAction.profile,
-          child: Row(
-            children: [
-              Image.asset('asset/icon/user.png', width: 24, height: 24),
-              const SizedBox(width: 8),
-              const Text('Profile'),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: ProfileMenuAction.changepassword,
-          child: Row(
-            children: [
-              Image.asset('asset/icon/padlock.png', width: 24, height: 24),
-              const SizedBox(width: 8),
-              const Text('Change password'),
-            ],
-          ),
-        ),
-        const PopupMenuDivider(),
-        PopupMenuItem(
-          value: ProfileMenuAction.logout,
-          child: Row(
-            children: [
-              Image.asset('asset/icon/switch.png', width: 24, height: 24),
-              const SizedBox(width: 8),
-              const Text('Log-out'),
-            ],
-          ),
-        ),
-      ],
+      itemBuilder: (context) => _buildItems(),
       icon: const Padding(
         padding: EdgeInsets.only(top: 10),
         child: Icon(Icons.more_horiz, color: Colors.white, size: 48),
       ),
+      padding: EdgeInsets.zero,
+      offset: const Offset(10, 0),
       color: Colors.white,
       elevation: 8,
     );
   }
 }
+
+// ***************************************************************
+// ** ตัวอย่างการเรียกใช้ (ถ้าคุณต้องการทดสอบ Widget นี้ในแอป) **
+// ***************************************************************
+
+/*
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Profile Menu Demo',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: const MainScreen(),
+    );
+  }
+}
+
+class MainScreen extends StatelessWidget {
+  const MainScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Main App Screen'),
+        backgroundColor: Colors.blueGrey,
+        actions: [
+          UserProfileMenu(),
+        ],
+      ),
+      body: const Center(
+        child: Text('Click the menu button (···) to see the options.'),
+      ),
+    );
+  }
+}
+*/
