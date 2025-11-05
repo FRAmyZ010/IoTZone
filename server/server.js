@@ -337,8 +337,11 @@ app.get('/api/check-borrow-status/:userId', async (req, res) => {
         message: 'You can borrow a new asset.',
       });
     }
-  });
+  }catch(e){
+    console.log('error')
+  }
 });
+
 app.get('/api/check-borrow-status/:userId', async (req, res) => {
   const { userId } = req.params;
   const [rows] = await db.promise().query(

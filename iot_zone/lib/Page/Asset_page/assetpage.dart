@@ -265,8 +265,8 @@ class _AssetpageState extends State<Assetpage> {
                   }
 
                   // ✅ มีข้อมูลพร้อมใช้งาน
-                  
 
+                  final allAssets = snapshot.data!;
                   final filteredAssets = allAssets.where((a) {
                     final matchesType =
                         selectedType == 'All' || a.type == selectedType;
