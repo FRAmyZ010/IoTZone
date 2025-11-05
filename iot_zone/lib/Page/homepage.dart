@@ -1,141 +1,29 @@
-import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
-import 'package:iot_zone/Page/Widgets/meatball_menu/meatball_menu.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-// 🔧 import widget ย่อย
+import 'package:carousel_slider/carousel_slider.dart';
+
 import 'Widgets/buildBotttom_nav_bar/bottom_nav_bar.dart';
-import 'Widgets/buildTextContainer1/buildSlidehomepage_center.dart';
-import 'Widgets/buildTextContainer1/buildSlidehomepage_leftlow.dart';
-import 'Widgets/buildTextContainer1/buildSlidehomepage_rigthtop.dart';
 import 'Widgets/buildTextContainer2/buildTextContainar_rigthlow.dart';
 import 'Widgets/buildTextContainer2/buildTextContainer_rigthtop.dart';
-import 'AppConfig.dart';
+import 'Widgets/buildTextContainer1/buildSlidehomepage_center.dart';
+import 'Widgets/buildTextContainer1/buildSlidehomepage_rigthtop.dart';
+import 'Widgets/buildTextContainer1/buildSlidehomepage_leftlow.dart';
 
-/// 🏠 Homepage แสดงข้อมูลโปรไฟล์ + แบนเนอร์
+import 'Widgets/meatball_menu/meatball_menu.dart';
+
 class Homepage extends StatefulWidget {
-  final Map<String, dynamic>? userData;
-
-  const Homepage({super.key, this.userData});
+  const Homepage({super.key});
 
   @override
   State<Homepage> createState() => _HomepageState();
 }
 
-extension StringCasing on String {
-  String capitalize() =>
-      isEmpty ? this : '${this[0].toUpperCase()}${substring(1)}';
-}
-
 class _HomepageState extends State<Homepage> {
   final ScrollController _scrollController = ScrollController();
-  late Map<String, dynamic> _userData;
-
-  Future<void> _checkBorrowAndNavigate(BuildContext context, int userId) async {
-    final ip = AppConfig.serverIP;
-
-    try {
-      final response = await http.get(
-        Uri.parse('http://$ip:3000/api/check-borrow-status/$userId'),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-
-        if (data['hasActiveRequest'] == true) {
-          showDialog(
-            context: context,
-            barrierDismissible: true,
-            builder: (_) => Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              backgroundColor: Colors.white,
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.warning_amber_rounded,
-                      color: Colors.amber,
-                      size: 70,
-                    ),
-                    const SizedBox(height: 15),
-                    const Text(
-                      'Borrow Request Pending',
-                      style: TextStyle(
-                        color: Color(0xFF6B45FF),
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      data['message'] ??
-                          'You already have a pending or active borrow request.\nPlease wait until it’s approved or returned.',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: Colors.black87,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 25),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6B45FF),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 40,
-                          vertical: 14,
-                        ),
-                      ),
-                      child: const Text(
-                        "OK",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        } else {
-          StudentMain.of(context)?.changeTab(3);
-        }
-      } else {
-        throw Exception('Server responded with ${response.statusCode}');
-      }
-    } catch (e) {
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('❌ Connection Error'),
-          content: Text('Cannot connect to server:\n$e'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-    }
-  }
 
   @override
   void initState() {
     super.initState();
-    _userData = Map<String, dynamic>.from(widget.userData ?? {});
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollController.animateTo(
         300,
@@ -145,40 +33,25 @@ class _HomepageState extends State<Homepage> {
     });
   }
 
-  // ✅ เมื่ออัปเดตโปรไฟล์จากเมนู
-  void _onProfileUpdated(Map<String, dynamic> updatedUser) {
-    setState(() {
-      _userData = updatedUser;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    final username = _userData['username'] ?? 'Guest';
-    final name = _userData['name'] ?? username;
-    final role = (_userData['role'] ?? 'Student').toString().capitalize();
-    final imageUrl = _userData['image'];
-
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            // 🔹 ส่วนบน - โปรไฟล์
+            // 🔹 ส่วนบน 20% พร้อมรูปจาง + Gradient + โปรไฟล์
             Expanded(
               flex: 28,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // 🔸 พื้นหลัง
                   Opacity(
                     opacity: 0.5,
                     child: Image.asset(
-                      'asset/img/homepage-banner.jpg',
+                      './asset/img/homepage-banner.jpg',
                       fit: BoxFit.cover,
                     ),
                   ),
-
-                  // 🔸 ไล่สีพื้นหลัง
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -191,60 +64,43 @@ class _HomepageState extends State<Homepage> {
                       ),
                     ),
                   ),
-
-                  // 🔸 ข้อมูลโปรไฟล์
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ปุ่มเมนู (Meatball)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            UserProfileMenu(
-                              userData: _userData,
-                              onProfileUpdated: _onProfileUpdated,
-                            ),
+                            // 🚀 แทนที่ IconButton เดิมด้วย Custom Widget
+                            UserProfileMenu(),
                           ],
                         ),
-                        const SizedBox(height: 10),
-
-                        // 🔸 โปรไฟล์ผู้ใช้
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            CircleAvatar(
+                            const CircleAvatar(
                               radius: 26,
-                              backgroundColor: Colors.grey.shade300,
-                              backgroundImage:
-                                  (imageUrl != null &&
-                                      imageUrl.toString().isNotEmpty &&
-                                      imageUrl.toString() != "null")
-                                  ? NetworkImage(
-                                      'http://${AppConfig.serverIP}:3000$imageUrl?v=${DateTime.now().millisecondsSinceEpoch}',
-                                    )
-                                  : const AssetImage(
-                                          'asset/img/Icon_Profile.png',
-                                        )
-                                        as ImageProvider,
+                              backgroundImage: AssetImage(
+                                './asset/img/Icon_Profile.png',
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
+                              children: const [
                                 Text(
-                                  name,
-                                  style: const TextStyle(
+                                  'Doi_za007',
+                                  style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
                                   ),
                                 ),
                                 Text(
-                                  role,
-                                  style: const TextStyle(
+                                  'Student',
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                     color: Colors.white70,
@@ -254,10 +110,8 @@ class _HomepageState extends State<Homepage> {
                             ),
                           ],
                         ),
-
-                        // 🔹 โลโก้
                         Padding(
-                          padding: const EdgeInsets.only(top: 10),
+                          padding: const EdgeInsets.only(top: 5),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -266,13 +120,15 @@ class _HomepageState extends State<Homepage> {
                                 width: 60,
                                 height: 60,
                               ),
-                              const SizedBox(width: 5),
-                              const Text(
-                                "Zone",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
+                              Padding(
+                                padding: const EdgeInsets.only(left: 5),
+                                child: Text(
+                                  "Zone",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
@@ -287,7 +143,7 @@ class _HomepageState extends State<Homepage> {
 
             const SizedBox(height: 20),
 
-            // 🔹 ส่วนล่าง (carousel, ปุ่ม, etc.)
+            // 🔹 ส่วนล่าง (Carousel + Recommend)
             Expanded(
               flex: 72,
               child: Container(
@@ -296,11 +152,10 @@ class _HomepageState extends State<Homepage> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: SingleChildScrollView(
-                    controller: _scrollController,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Carousel 1
+                        // 🔹 Carousel
                         SizedBox(
                           height: 200,
                           child: CarouselSlider(
@@ -337,14 +192,13 @@ class _HomepageState extends State<Homepage> {
 
                         const SizedBox(height: 20),
 
-                        // ปุ่ม Browse Asset
+                        // 🔹 ปุ่ม Browse Asset
                         Center(
                           child: ElevatedButton(
-                            onPressed: () => _checkBorrowAndNavigate(
-                              context,
-                              _userData['id'] ?? 0,
-                            ),
-
+                            onPressed: () {
+                              // ✅ สลับแท็บใน Shell เดิม (ไม่เปิดหน้าใหม่)
+                              StudentMain.of(context)?.changeTab(3);
+                            },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF6B45FF),
                               foregroundColor: Colors.white,
@@ -368,9 +222,7 @@ class _HomepageState extends State<Homepage> {
                           ),
                         ),
 
-                        const SizedBox(height: 20),
-
-                        // Carousel 2 (recommend)
+                        // 🔹 Carousel Recommend
                         SizedBox(
                           height: 250,
                           child: CarouselSlider(
@@ -386,19 +238,19 @@ class _HomepageState extends State<Homepage> {
                             items: [
                               BuildTextContainerRightTop(
                                 text:
-                                    'Manage smarter, live easier. All your tools, sensors, and modules — right at your fingertips.',
+                                    'Manage smarter Live easier All your tools sensors and modules. right at your fingertips Fast. Clean. Powerful.',
                                 color: Colors.deepPurple[100]!,
                                 imagePath: 'asset/img/LAB_ROOM.jpg',
                               ),
                               BuildTextContainerRightLow(
                                 text:
-                                    '“Think ahead. Work smarter. SAFEAREA — The next generation of asset management.”',
+                                    '“Think ahead\nWork smarter.\nSAFEAREA — The next generation of asset management.”',
                                 color: Colors.deepPurple[100]!,
                                 imagePath: 'asset/img/LAB_ROOM2.jpg',
                               ),
                               BuildTextContainerRightTop(
                                 text:
-                                    '“Power up your lab. Manage smart. Borrow easy. Your tools, your control — anytime, anywhere.”',
+                                    '“Power up your lab.\nManage smart.\n Borrow easy.\nYour tools, your control — anytime, anywhere.”',
                                 color: Colors.deepPurple[100]!,
                                 imagePath: 'asset/img/LAB_ROOM3.jpg',
                               ),

@@ -6,7 +6,7 @@ const db = require('./db.js');
 const bcrypt = require('bcrypt');
 const cors = require('cors');
 const multer = require('multer');
-const path = require('path');const argon2 = require('@node-rs/argon2');
+const path = require('path');
 
 const app = express();
 const PORT = 3000;
@@ -45,7 +45,6 @@ app.post('/upload', upload.single('image'), (req, res) => {
 });
 
 // ------------------ Register ------------------
-
 app.post('/register', async (req, res) => {
   const { username, password, name, phone, email, role = 'student' } = req.body;
 
@@ -75,7 +74,6 @@ app.post('/register', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
-
 // ------------------ Login ------------------
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
@@ -125,98 +123,6 @@ app.post('/login', async (req, res) => {
   } catch (err) {
     console.error("❌ Login error:", err);
     res.status(500).json({ message: "Internal server error" });
-  }
-});
-// ------------------ Change  password ------------------
-app.put("/api/change-password/:id", async (req, res) => {
-  const { id } = req.params;
-  const { oldPassword, newPassword } = req.body;
-
-  try {
-    const [rows] = await db.promise().query("SELECT password FROM user WHERE id = ?", [id]);
-    if (rows.length === 0) return res.status(404).json({ message: "User not found" });
-
-    const user = rows[0];
-    const storedHash = user.password;
-    let isMatch = false;
-
-    try {
-      // ✅ ลอง verify ด้วย argon2 ก่อน
-      isMatch = await argon2.verify(storedHash, oldPassword);
-    } catch {
-      // ถ้า error → ลอง bcrypt อีกที
-      isMatch = await bcrypt.compare(oldPassword, storedHash);
-    }
-
-    if (!isMatch) {
-      return res.status(401).json({ message: "Incorrect current password" });
-    }
-
-    const newHash = await argon2.hash(newPassword);
-    await db.promise().query("UPDATE user SET password = ? WHERE id = ?", [newHash, id]);
-
-    res.json({ message: "Password updated successfully" });
-  } catch (err) {
-    console.error("❌ Change password error:", err);
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
-
-// ------------------ Update Profile ------------------
-app.put("/api/update-profile/:id", upload.single("image"), async (req, res) => {
-  try {
-    const userId = req.params.id;
-    const { username, name, phone, email } = req.body;
-
-    let imagePath = null;
-    if (req.file) {
-      imagePath = `/uploads/${req.file.filename}`;
-    }
-
-    const sql = `
-      UPDATE user 
-      SET username = ?, name = ?, phone = ?, email = ?, image = COALESCE(?, image)
-      WHERE id = ?
-    `;
-
-    // ✅ ใช้ db.query() แทน con.query()
-    db.query(sql, [username, name, phone, email, imagePath, userId], (err) => {
-      if (err) {
-        console.error("❌ Database update failed:", err);
-        return res.status(500).json({ message: "Database update failed" });
-      }
-
-      // ✅ ดึงข้อมูล user ใหม่กลับไปให้ Flutter
-      db.query("SELECT * FROM user WHERE id = ?", [userId], (err, result) => {
-        if (err) {
-          console.error("❌ Fetch failed:", err);
-          return res.status(500).json({ message: "Fetch failed" });
-        }
-
-        console.log("✅ Updated user:", result[0]);
-        res.json(result[0]); // ✅ ส่งข้อมูล user ล่าสุดกลับไป Flutter
-      });
-    });
-  } catch (err) {
-    console.error("❌ Unexpected error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-
-
-// ---------------- get user -------------------
-app.get('/api/get-user/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    const [rows] = await db.promise().query('SELECT * FROM user WHERE id = ?', [id]);
-    if (rows.length === 0)
-      return res.status(404).json({ message: 'User not found' });
-
-    res.json({ user: rows[0] });
-  } catch (err) {
-    console.error('❌ Get user error:', err);
-    res.status(500).json({ message: 'Internal server error' });
   }
 });
 // ------------------ Get All Assets ------------------
@@ -431,10 +337,7 @@ app.get('/api/check-borrow-status/:userId', async (req, res) => {
         message: 'You can borrow a new asset.',
       });
     }
-  } catch (err) {
-    console.error('❌ Check borrow status error:', err);
-    res.status(500).json({ message: 'Internal server error' });
-  }
+  });
 });
 app.get('/api/check-borrow-status/:userId', async (req, res) => {
   const { userId } = req.params;
@@ -450,6 +353,29 @@ app.get('/api/check-borrow-status/:userId', async (req, res) => {
   }
 });
 
+
+// =================== API Edit Profile =======================
+
+app.put('/api/edit-profile/:uid',(req,res)=>{
+  const uid = req.params.uid;
+  const {name,phone,email,image} = req.body;
+
+  console.log('📩 API called: /api/edit-profile/' + uid);
+
+  const sql = "UPDATE user SET name = ?, phone = ?, email = ?, image = ? WHERE id = ?"
+
+  db.query(sql,[name,phone,email,image,uid],(err,result)=>{
+    if(err){
+      console.error('❌ Error fetching User ID:',err);
+      return res.status(500).json({error:'Database query failed',details:err});
+
+    }else{
+      console.log('✅ Query success, rows:',result.length);
+      res.json(result);
+    }
+  })
+  
+})
 
 // ------------------ Root ------------------
 app.get('/', (req, res) => {
