@@ -6,6 +6,7 @@
   "name": "server",
   "version": "1.0.0",
   "dependencies": {
+    "@node-rs/argon2": "^2.0.2",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "express": "^5.1.0",
