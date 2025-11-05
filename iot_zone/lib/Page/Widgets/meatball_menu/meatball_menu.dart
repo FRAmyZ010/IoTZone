@@ -109,6 +109,7 @@ class UserProfileMenu extends StatelessWidget {
     String initialFullName = userProfile[0]['name']; // column: name
     String initialPhone = userProfile[0]['phone']; // column: phone
     String initialEmail = userProfile[0]['email']; // column: email
+    String initialImage = userProfile[0]['image'];
     // *****************************************************************
 
     File? _tempImageFile;
@@ -225,14 +226,17 @@ class UserProfileMenu extends StatelessWidget {
                           child: CircleAvatar(
                             radius: 60,
                             backgroundColor: Colors.grey.shade300,
-                            backgroundImage: _tempImageFile == null
-                                ? null
-                                : FileImage(_tempImageFile!) as ImageProvider,
+                            backgroundImage: _tempImageFile != null
+                                // 1. ถ้ามีรูปใหม่ที่เลือก ให้ใช้ FileImage
+                                ? FileImage(_tempImageFile!) as ImageProvider
+                                // 2. ถ้าไม่มีรูปใหม่ ให้ใช้ชื่อไฟล์ที่ดึงมาจาก DB/หรือค่า Default (initialImage)
+                                : AssetImage('asset/$initialImage')
+                                      as ImageProvider, // ** ใช้ AssetImage **
                             child: _tempImageFile == null
                                 ? const Icon(
                                     Icons.camera_alt,
                                     size: 40,
-                                    color: Colors.grey,
+                                    color: Color.fromARGB(216, 158, 158, 158),
                                   )
                                 : null,
                           ),
@@ -297,6 +301,7 @@ class UserProfileMenu extends StatelessWidget {
                           'name': newFullName.trim(),
                           'phone': newPhone.trim(),
                           'email': newEmail.trim(),
+                          'image': _tempFileName,
                         };
 
                         http.Response response = await http

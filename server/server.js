@@ -307,7 +307,7 @@ app.get('/api/get-profile/:uid',(req,res)=>{
     console.log('🪪 full-name : ',result[0]['name'])
     console.log('☎️ phone : ',result[0]['phone'])
     console.log('📧 email : ',result[0]['email'])
-    console.log('📷 image : ',result[0]['img'])
+    console.log('📷 image : ',result[0]['image'])
     res.json(result);
   })
 })
@@ -318,13 +318,13 @@ app.get('/api/get-profile/:uid',(req,res)=>{
 
 app.put('/api/edit-profile/:uid',(req,res)=>{
   const uid = req.params.uid;
-  const {name,phone,email} = req.body;
+  const {name,phone,email,image} = req.body;
 
   console.log('📩 API called: /api/edit-profile/' + uid);
 
-  const sql = "UPDATE user SET name = ?, phone = ?, email = ? WHERE id = ?"
+  const sql = "UPDATE user SET name = ?, phone = ?, email = ?, image = ? WHERE id = ?"
 
-  db.query(sql,[name,phone,email,uid],(err,result)=>{
+  db.query(sql,[name,phone,email,image,uid],(err,result)=>{
     if(err){
       console.error('❌ Error fetching User ID:',err);
       return res.status(500).json({error:'Database query failed',details:err});

@@ -95,6 +95,9 @@ flutter:
     - asset/img/login_bg.jpg
     - asset/icon/register.png
     - asset/icon/check.png
+    - asset/scaled_boy.jpg
+    - asset/scaled_boy2.jpg
+
 
 
   # An image asset can refer to one or more resolution-specific "variants", see
