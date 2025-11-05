@@ -113,7 +113,7 @@ class UserProfileMenu extends StatelessWidget {
     // *****************************************************************
 
     File? _tempImageFile;
-    String? _tempFileName;
+    String _tempFileName = initialImage;
 
     // Mock icons (เพื่อให้คล้ายกับรูปที่แนบมา)
     // NOTE: เปลี่ยนเป็น AssetImage ที่ถูกต้องของคุณ หรือใช้ Icon() แทน
@@ -295,31 +295,61 @@ class UserProfileMenu extends StatelessWidget {
                       // TODO:
                       // 1. ใส่ Logic อัปโหลดรูป (ถ้ามี) (_tempImageFile, _tempFileName -> column: img)
                       // 2. ใส่ Logic Update ข้อมูลใน Database (ใช้ newUsername, newFullName, newPhone, newEmail, _tempFileName)
-                      try {
-                        Uri uri = Uri.parse('$url/api/edit-profile/$uid');
-                        Map updateProfile = {
-                          'name': newFullName.trim(),
-                          'phone': newPhone.trim(),
-                          'email': newEmail.trim(),
-                          'image': _tempFileName,
-                        };
+                      if (_tempFileName == null) {
+                        try {
+                          Uri uri = Uri.parse('$url/api/edit-profile/$uid');
 
-                        http.Response response = await http
-                            .put(
-                              uri,
-                              body: jsonEncode(updateProfile),
-                              headers: {'Content-Type': 'application/json'},
-                            )
-                            .timeout(const Duration(seconds: 10));
+                          Map updateProfile = {
+                            'name': newFullName.trim(),
+                            'phone': newPhone.trim(),
+                            'email': newEmail.trim(),
+                          };
 
-                        if (response.statusCode == 200) {
-                          debugPrint('Edit profile success!!');
-                        } else {
-                          debugPrint('Edit profile failed');
+                          http.Response response = await http
+                              .put(
+                                uri,
+                                body: jsonEncode(updateProfile),
+                                headers: {'Content-Type': 'application/json'},
+                              )
+                              .timeout(const Duration(seconds: 10));
+
+                          if (response.statusCode == 200) {
+                            debugPrint('Edit profile success!!');
+                          } else {
+                            debugPrint('Edit profile failed');
+                          }
+                        } catch (e) {
+                          debugPrint(e.toString());
                         }
-                      } catch (e) {
-                        debugPrint(e.toString());
+                      } else if (_tempFileName != null) {
+                        try {
+                          Uri uri = Uri.parse('$url/api/edit-profile/$uid');
+
+                          Map updateProfile = {
+                            'name': newFullName.trim(),
+                            'phone': newPhone.trim(),
+                            'email': newEmail.trim(),
+                            'image': _tempFileName,
+                          };
+
+                          http.Response response = await http
+                              .put(
+                                uri,
+                                body: jsonEncode(updateProfile),
+                                headers: {'Content-Type': 'application/json'},
+                              )
+                              .timeout(const Duration(seconds: 10));
+
+                          if (response.statusCode == 200) {
+                            debugPrint('Edit profile success!!');
+                          } else {
+                            debugPrint('Edit profile failed');
+                          }
+                        } catch (e) {
+                          debugPrint(e.toString());
+                        }
                       }
+
                       // ปิด Alert
                       Navigator.of(context).pop();
                     }
