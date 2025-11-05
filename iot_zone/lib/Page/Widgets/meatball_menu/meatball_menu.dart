@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:iot_zone/Page/Login/login_page.dart';
 import 'package:path/path.dart' as path;
+import 'package:iot_zone/Page/AppConfig.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 // ***************************************************************
 // ** WIDGETS จำลอง: หน้าจอ Login (สำหรับ Logout) **
@@ -16,6 +19,9 @@ enum ProfileMenuAction { profile, changepassword, logout, meatball }
 
 class UserProfileMenu extends StatelessWidget {
   UserProfileMenu({super.key});
+  String url = AppConfig.baseUrl;
+  String uid = '1';
+  List<dynamic> userProfile = [];
 
   final ImagePicker _picker = ImagePicker();
 
@@ -82,12 +88,28 @@ class UserProfileMenu extends StatelessWidget {
   // 1. ฟังก์ชันแสดง AlertDialog Profile (มีการจัดการ State ภายใน)
   // ----------------------------------------------------------------------
   Future<void> _showProfileAlert(BuildContext context) async {
-    // Mock Data (จำลองข้อมูลที่ได้จากการ Get จาก DB/Session)
+    try {
+      Uri uri = Uri.parse('$url/api/get-profile/$uid');
+      http.Response response = await http
+          .get(uri)
+          .timeout(const Duration(seconds: 10));
+
+      // check server's response
+      if (response.statusCode == 200) {
+        userProfile = jsonDecode(response.body);
+      } else {
+        debugPrint('⚠️ Server error: Status ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+
     // *****************************************************************
-    String initialUsername = 'Doi,za007'; // column: user
-    String initialFullName = 'Parinthon Somphakdee'; // column: name
-    String initialPhone = '0xx-xxxxxxx'; // column: phone
-    String initialEmail = 'doiza007@gmai.com'; // column: email
+    String initialUsername = userProfile[0]['username']; // column: user
+    String initialFullName = userProfile[0]['name']; // column: name
+    String initialPhone = userProfile[0]['phone']; // column: phone
+    String initialEmail = userProfile[0]['email']; // column: email
+    String initialImage = userProfile[0]['image'];
     // *****************************************************************
 
     File? _tempImageFile;
@@ -204,14 +226,17 @@ class UserProfileMenu extends StatelessWidget {
                           child: CircleAvatar(
                             radius: 60,
                             backgroundColor: Colors.grey.shade300,
-                            backgroundImage: _tempImageFile == null
-                                ? null
-                                : FileImage(_tempImageFile!) as ImageProvider,
+                            backgroundImage: _tempImageFile != null
+                                // 1. ถ้ามีรูปใหม่ที่เลือก ให้ใช้ FileImage
+                                ? FileImage(_tempImageFile!) as ImageProvider
+                                // 2. ถ้าไม่มีรูปใหม่ ให้ใช้ชื่อไฟล์ที่ดึงมาจาก DB/หรือค่า Default (initialImage)
+                                : AssetImage('asset/$initialImage')
+                                      as ImageProvider, // ** ใช้ AssetImage **
                             child: _tempImageFile == null
                                 ? const Icon(
                                     Icons.camera_alt,
                                     size: 40,
-                                    color: Colors.grey,
+                                    color: Color.fromARGB(216, 158, 158, 158),
                                   )
                                 : null,
                           ),
@@ -250,7 +275,7 @@ class UserProfileMenu extends StatelessWidget {
               actions: <Widget>[
                 // ปุ่ม CONFIRM
                 FilledButton(
-                  onPressed: () {
+                  onPressed: () async {
                     // **Logic การบันทึกข้อมูล**
                     if (_formKey.currentState!.validate()) {
                       // 1. ดึงข้อมูลใหม่จาก Controller (ใช้สำหรับ UPDATE DB)
@@ -270,7 +295,31 @@ class UserProfileMenu extends StatelessWidget {
                       // TODO:
                       // 1. ใส่ Logic อัปโหลดรูป (ถ้ามี) (_tempImageFile, _tempFileName -> column: img)
                       // 2. ใส่ Logic Update ข้อมูลใน Database (ใช้ newUsername, newFullName, newPhone, newEmail, _tempFileName)
+                      try {
+                        Uri uri = Uri.parse('$url/api/edit-profile/$uid');
+                        Map updateProfile = {
+                          'name': newFullName.trim(),
+                          'phone': newPhone.trim(),
+                          'email': newEmail.trim(),
+                          'image': _tempFileName,
+                        };
 
+                        http.Response response = await http
+                            .put(
+                              uri,
+                              body: jsonEncode(updateProfile),
+                              headers: {'Content-Type': 'application/json'},
+                            )
+                            .timeout(const Duration(seconds: 10));
+
+                        if (response.statusCode == 200) {
+                          debugPrint('Edit profile success!!');
+                        } else {
+                          debugPrint('Edit profile failed');
+                        }
+                      } catch (e) {
+                        debugPrint(e.toString());
+                      }
                       // ปิด Alert
                       Navigator.of(context).pop();
                     }
@@ -498,7 +547,6 @@ class UserProfileMenu extends StatelessWidget {
     if (result == ProfileMenuAction.profile) {
       _showProfileAlert(context);
     } else if (result == ProfileMenuAction.meatball) {
-      
     } else if (result == ProfileMenuAction.changepassword) {
       _showChangePasswordAlert(context);
     } else if (result == ProfileMenuAction.logout) {

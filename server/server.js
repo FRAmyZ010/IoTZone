@@ -213,6 +213,12 @@ app.patch('/assets/:id/status', (req, res) => {
   });
 });
 
+
+
+
+
+
+
 // ================== History API
 
 app.get('/api/history/:studentId', (req, res) => {
@@ -283,6 +289,53 @@ app.get('/api/request-status/:studentId', (req, res) => {
     }
   });
 });
+
+
+
+// =================== API Get user's profile ====================
+app.get('/api/get-profile/:uid',(req,res)=>{
+  const uid = req.params.uid;
+  const sql = 'SELECT * FROM user WHERE id = ?';
+
+  db.query(sql,[uid],(err,result)=>{
+    if(err){
+        console.log('❌ Internal server error [Get profile system]')
+        return res.status(500).json({message:'Internal server error:'+err.toSting()})
+    }
+    console.log('✅ Edit profile success, rows: ',result.length);
+    console.log('👤 username : ',result[0]['username'])
+    console.log('🪪 full-name : ',result[0]['name'])
+    console.log('☎️ phone : ',result[0]['phone'])
+    console.log('📧 email : ',result[0]['email'])
+    console.log('📷 image : ',result[0]['image'])
+    res.json(result);
+  })
+})
+
+
+
+// =================== API Edit Profile =======================
+
+app.put('/api/edit-profile/:uid',(req,res)=>{
+  const uid = req.params.uid;
+  const {name,phone,email,image} = req.body;
+
+  console.log('📩 API called: /api/edit-profile/' + uid);
+
+  const sql = "UPDATE user SET name = ?, phone = ?, email = ?, image = ? WHERE id = ?"
+
+  db.query(sql,[name,phone,email,image,uid],(err,result)=>{
+    if(err){
+      console.error('❌ Error fetching User ID:',err);
+      return res.status(500).json({error:'Database query failed',details:err});
+
+    }else{
+      console.log('✅ Query success, rows:',result.length);
+      res.json(result);
+    }
+  })
+  
+})
 
 // ------------------ Root ------------------
 app.get('/', (req, res) => {
