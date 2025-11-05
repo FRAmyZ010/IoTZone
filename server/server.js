@@ -45,39 +45,86 @@ app.post('/upload', upload.single('image'), (req, res) => {
 });
 
 // ------------------ Register ------------------
-app.post('/register', (req, res) => {
-  const { username, password, name, phone, email } = req.body;
+app.post('/register', async (req, res) => {
+  const { username, password, name, phone, email, role = 'student' } = req.body;
 
   if (!username || !password || !name || !phone || !email) {
     return res.status(400).json({ message: 'All fields are required' });
   }
 
-  bcrypt.hash(password, 10, (err, hash) => {
-    if (err) {
-      console.error('Error hashing password:', err);
-      return res.status(500).json({ message: 'Internal server error' });
+  try {
+    const [rows] = await db.promise().query(
+      'SELECT * FROM user WHERE username = ? OR email = ?',
+      [username, email]
+    );
+
+    if (rows.length > 0)
+      return res.status(409).json({ message: 'Username or email already exists' });
+
+    const hash = await argon2.hash(password);
+
+    await db.promise().query(
+      'INSERT INTO user (username, password, name, phone, email, role) VALUES (?, ?, ?, ?, ?, ?)',
+      [username, hash, name, phone, email, role]
+    );
+
+    res.status(201).json({ message: 'User registered successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+// ------------------ Login ------------------
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ message: 'Username and password are required' });
+  }
+
+  try {
+    const [rows] = await db.promise().query("SELECT * FROM user WHERE username = ?", [username]);
+    if (rows.length === 0) return res.status(404).json({ message: "User not found" });
+
+    const user = rows[0];
+    const storedHash = user.password;
+
+    let isMatch = false;
+
+    try {
+      // ✅ ลองตรวจด้วย argon2 ก่อน
+      isMatch = await argon2.verify(storedHash, password);
+    } catch (err) {
+      // ❗ ถ้าไม่ใช่ hash ของ argon2 → ลอง bcrypt อีกที
+      try {
+        isMatch = await bcrypt.compare(password, storedHash);
+      } catch (err2) {
+        console.error("⚠️ bcrypt error:", err2);
+      }
     }
 
-    const sql =
-      'INSERT INTO user (username, password, name, phone, email) VALUES (?, ?, ?, ?, ?)';
-    db.query(sql, [username, hash, name, phone, email], (err, result) => {
-      if (err) {
-        if (err.code === 'ER_DUP_ENTRY') {
-          return res.status(409).json({ message: 'Username already exists' });
-        }
-        console.error('Database error:', err);
-        return res.status(500).json({ message: 'Internal server error' });
-      }
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid password" });
+    }
 
-      res.status(201).json({
-        message: 'User registered successfully',
-        userId: result.insertId,
-        username: username,
-      });
-    });
-  });
+    // ✅ ถ้า password ถูกต้อง
+  res.status(200).json({
+  message: 'Login successful',
+  user: {
+    id: user.id,
+    username: user.username,
+    name: user.name,
+    role: user.role,
+    email: user.email,
+    phone: user.phone,
+    image: user.image, // ✅ เพิ่มบรรทัดนี้
+  },
 });
-
+  } catch (err) {
+    console.error("❌ Login error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
 // ------------------ Get All Assets ------------------
 app.get('/assets', (req, res) => {
   const sql = 'SELECT * FROM asset';
@@ -212,106 +259,99 @@ app.patch('/assets/:id/status', (req, res) => {
     res.json({ message: `Status updated to ${status}` });
   });
 });
+// ------------------ Borrow Asset ------------------
+app.post('/api/borrow', async (req, res) => {
+  const { asset_id, borrower_id } = req.body;
 
+  try {
+    // ✅ ตรวจว่าสินทรัพย์นี้ถูกยืมหรือรออนุมัติอยู่ไหม
+    const [rows] = await db.promise().query(
+      `SELECT * FROM history 
+       WHERE asset_id = ? 
+       AND status IN (1, 2, 4) 
+       LIMIT 1`,
+      [asset_id]
+    );
 
+    if (rows.length > 0) {
+      return res.status(400).json({
+        message:
+          'This asset is already borrowed or waiting for approval. Please try again later.',
+      });
+    }
 
+    // ✅ ตรวจว่านักศึกษายืมครบ 1 ชิ้นแล้วในวันนี้หรือยัง
+    const [checkUser] = await db.promise().query(
+      `SELECT * FROM history 
+       WHERE borrower_id = ? 
+       AND DATE(borrow_date) = CURDATE()
+       AND status IN (1, 2, 4)`,
+      [borrower_id]
+    );
 
+    if (checkUser.length > 0) {
+      return res.status(400).json({
+        message:
+          'You already have a pending or active borrow request. Please wait until it is approved or returned.',
+      });
+    }
 
+    // ✅ ถ้ายังไม่มีการยืม → insert record ใหม่ใน history
+    await db.promise().query(
+      `INSERT INTO history (asset_id, borrower_id, status, borrow_date)
+       VALUES (?, ?, 1, NOW())`,
+      [asset_id, borrower_id]
+    );
 
+    // ✅ เปลี่ยนสถานะสินทรัพย์เป็น Pending (status = 3)
+    await db.promise().query(`UPDATE asset SET status = 3 WHERE id = ?`, [asset_id]);
 
-// ================== History API
+    res.json({ message: 'Borrow request submitted successfully!' });
+  } catch (err) {
+    console.error('❌ Borrow error:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+// ------------------ Check if user already borrowed ------------------
+app.get('/api/check-borrow-status/:userId', async (req, res) => {
+  const { userId } = req.params;
 
-app.get('/api/history/:studentId', (req, res) => {
-  const studentId = req.params.studentId;
-  console.log('📩 API called: /api/history/' + studentId);
+  try {
+    const [rows] = await db.promise().query(
+      `SELECT * FROM history 
+       WHERE borrower_id = ? 
+       AND status IN (1, 2, 4)
+       LIMIT 1`,
+      [userId]
+    );
 
-  const sql = `
-    SELECT 
-      a.asset_name AS name,
-      CASE 
-        WHEN h.status = 3 THEN 'Rejected'
-        WHEN h.status = 4 THEN 'Returned'
-        ELSE 'Pending'
-      END AS status,
-      h.borrow_date AS borrowDate,
-      h.return_date AS returnDate,
-      h.reason,
-      a.img AS image -- ✅ ใช้คอลัมน์ img จากฐานข้อมูล
-    FROM history h
-    JOIN asset a ON h.asset_id = a.id
-    WHERE h.borrower_id = ?
-      AND (h.status = 3 OR h.status = 4)
-    ORDER BY h.borrow_date DESC;
-  `;
-
-  db.query(sql, [studentId], (err, results) => {
-    if (err) {
-      console.error('❌ Error fetching history:', err);
-      res.status(500).json({ error: 'Database query failed', details: err });
+    if (rows.length > 0) {
+      return res.json({
+        hasActiveRequest: true,
+        message:
+          'You already have a borrow request pending or active. Please wait for approval or return the asset first.',
+      });
     } else {
-      console.log('✅ Query success, rows:', results.length);
-      res.json(results);
+      return res.json({
+        hasActiveRequest: false,
+        message: 'You can borrow a new asset.',
+      });
     }
   });
 });
+app.get('/api/check-borrow-status/:userId', async (req, res) => {
+  const { userId } = req.params;
+  const [rows] = await db.promise().query(
+    'SELECT * FROM history WHERE borrower_id = ? AND status IN (1,2,4)', 
+    [userId]
+  );
 
-// ================= Request Status API
-
-app.get('/api/request-status/:studentId', (req, res) => {
-  const studentId = req.params.studentId;
-  console.log('📩 API called: /api/request-status/' + studentId);
-
-  const sql = `
-    SELECT 
-      a.asset_name AS name,
-      CASE 
-        WHEN h.status = 1 THEN 'Pending'
-        WHEN h.status = 2 THEN 'Borrowed'
-        ELSE 'Other'
-      END AS status,
-      h.borrow_date AS borrowDate,
-      h.return_date AS returnDate,
-      a.img AS image
-    FROM history h
-    JOIN asset a ON h.asset_id = a.id
-    WHERE h.borrower_id = ?
-      AND (h.status = 1 OR h.status = 2)
-    ORDER BY h.borrow_date DESC;
-  `;
-
-  db.query(sql, [studentId], (err, results) => {
-    if (err) {
-      console.error('❌ Error fetching request status:', err);
-      res.status(500).json({ error: 'Database query failed', details: err });
-    } else {
-      console.log('✅ Query success, rows:', results.length);
-      res.json(results);
-    }
-  });
+  if (rows.length > 0) {
+    return res.json({ hasActiveRequest: true, message: "You already have an active or pending borrow request." });
+  } else {
+    return res.json({ hasActiveRequest: false });
+  }
 });
-
-
-
-// =================== API Get user's profile ====================
-app.get('/api/get-profile/:uid',(req,res)=>{
-  const uid = req.params.uid;
-  const sql = 'SELECT * FROM user WHERE id = ?';
-
-  db.query(sql,[uid],(err,result)=>{
-    if(err){
-        console.log('❌ Internal server error [Get profile system]')
-        return res.status(500).json({message:'Internal server error:'+err.toSting()})
-    }
-    console.log('✅ Edit profile success, rows: ',result.length);
-    console.log('👤 username : ',result[0]['username'])
-    console.log('🪪 full-name : ',result[0]['name'])
-    console.log('☎️ phone : ',result[0]['phone'])
-    console.log('📧 email : ',result[0]['email'])
-    console.log('📷 image : ',result[0]['image'])
-    res.json(result);
-  })
-})
-
 
 
 // =================== API Edit Profile =======================
