@@ -292,6 +292,26 @@ app.get('/api/request-status/:studentId', (req, res) => {
 
 
 
+// =================== API Get user's profile ====================
+app.get('/api/get-profile/:uid',(req,res)=>{
+  const uid = req.params.uid;
+  const sql = 'SELECT * FROM user WHERE id = ?';
+
+  db.query(sql,[uid],(err,result)=>{
+    if(err){
+        console.log('❌ Internal server error [Get profile system]')
+        return res.status(500).json({message:'Internal server error:'+err.toSting()})
+    }
+    console.log('✅ Edit profile success, rows: ',result.length);
+    console.log('👤 username : ',result[0]['username'])
+    console.log('🪪 full-name : ',result[0]['name'])
+    console.log('☎️ phone : ',result[0]['phone'])
+    console.log('📧 email : ',result[0]['email'])
+    console.log('📷 image : ',result[0]['img'])
+    res.json(result);
+  })
+})
+
 
 
 // =================== API Edit Profile =======================

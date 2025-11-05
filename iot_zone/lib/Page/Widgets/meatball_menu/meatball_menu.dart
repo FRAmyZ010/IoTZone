@@ -19,9 +19,9 @@ enum ProfileMenuAction { profile, changepassword, logout, meatball }
 
 class UserProfileMenu extends StatelessWidget {
   UserProfileMenu({super.key});
-
   String url = AppConfig.baseUrl;
   String uid = '1';
+  List<dynamic> userProfile = [];
 
   final ImagePicker _picker = ImagePicker();
 
@@ -88,12 +88,27 @@ class UserProfileMenu extends StatelessWidget {
   // 1. ฟังก์ชันแสดง AlertDialog Profile (มีการจัดการ State ภายใน)
   // ----------------------------------------------------------------------
   Future<void> _showProfileAlert(BuildContext context) async {
-    // Mock Data (จำลองข้อมูลที่ได้จากการ Get จาก DB/Session)
+    try {
+      Uri uri = Uri.parse('$url/api/get-profile/$uid');
+      http.Response response = await http
+          .get(uri)
+          .timeout(const Duration(seconds: 10));
+
+      // check server's response
+      if (response.statusCode == 200) {
+        userProfile = jsonDecode(response.body);
+      } else {
+        debugPrint('⚠️ Server error: Status ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+
     // *****************************************************************
-    String initialUsername = 'Doi,za007'; // column: user
-    String initialFullName = 'Parinthon Somphakdee'; // column: name
-    String initialPhone = '0xx-xxxxxxx'; // column: phone
-    String initialEmail = 'doiza007@gmai.com'; // column: email
+    String initialUsername = userProfile[0]['username']; // column: user
+    String initialFullName = userProfile[0]['name']; // column: name
+    String initialPhone = userProfile[0]['phone']; // column: phone
+    String initialEmail = userProfile[0]['email']; // column: email
     // *****************************************************************
 
     File? _tempImageFile;
