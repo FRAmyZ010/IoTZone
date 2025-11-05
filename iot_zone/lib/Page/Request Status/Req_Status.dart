@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:iot_zone/Page/AppConfig.dart';
 import 'package:iot_zone/Page/Asset_page/showAssetDialog/showAssetDialog_student.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RequestStatusPage extends StatefulWidget {
   const RequestStatusPage({super.key});
@@ -20,24 +21,28 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
 
   @override
   @override
-void initState() {
-  super.initState();
-  _fetchRequests();
+  void initState() {
+    super.initState();
+    _fetchRequests();
 
-  // ✅ ผูกฟังก์ชันรีเฟรชกับ static ตัวนี้
-  RequestStatusPage.refreshRequestPage = () {
-    if (mounted) _fetchRequests();
-  };
-}
+    // ✅ ผูกฟังก์ชันรีเฟรชกับ static ตัวนี้
+    RequestStatusPage.refreshRequestPage = () {
+      if (mounted) _fetchRequests();
+    };
+  }
 
   // ✅ ดึงข้อมูลจาก API จริง
   Future<void> _fetchRequests() async {
     setState(() => _isLoading = true);
+
     try {
+      // ✅ ดึง user_id จาก SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id');
+
+      // ✅ เรียก API โดยใช้ userId จาก session
       final response = await http.get(
-        Uri.parse(
-          '${AppConfig.baseUrl}/api/request-status/1',
-        ), // 🔹 ตัวอย่าง studentId = 1
+        Uri.parse('${AppConfig.baseUrl}/api/request-status/$userId'),
       );
 
       if (response.statusCode == 200) {
@@ -48,7 +53,9 @@ void initState() {
           _isLoading = false;
         });
       } else {
-        throw Exception('Failed to load request status');
+        throw Exception(
+          'Failed to load request status (status ${response.statusCode})',
+        );
       }
     } catch (e) {
       print('⚠️ Error fetching request status: $e');

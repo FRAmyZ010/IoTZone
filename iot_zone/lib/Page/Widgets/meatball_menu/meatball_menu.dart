@@ -5,7 +5,8 @@ import 'package:iot_zone/Page/Login/login_page.dart';
 import 'package:path/path.dart' as path;
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:image/image.dart' as img; // ✅ ใช้แปลงภาพเป็น PNG
+import 'package:image/image.dart' as img;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../AppConfig.dart';
 
 enum ProfileMenuAction { profile, changepassword, logout }
@@ -69,22 +70,24 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
   }
 
   // ----------------------------------------------------------
-  // ✅ Alert แก้ไขโปรไฟล์ (พร้อมอัปเดตรูปทันที)
+  // ✅ Alert แก้ไขโปรไฟล์ (ใช้ SharedPreferences)
   // ----------------------------------------------------------
   Future<void> _showProfileAlert(BuildContext context) async {
-    String initialUsername = widget.userData?['username'] ?? 'Unknown';
-    String initialFullName = widget.userData?['name'] ?? 'N/A';
-    String initialPhone = widget.userData?['phone'] ?? 'N/A';
-    String initialEmail = widget.userData?['email'] ?? 'N/A';
-    String? profileImageUrl = widget.userData?['image'];
+    final prefs = await SharedPreferences.getInstance();
+
+    final storedUsername = prefs.getString('username') ?? 'Unknown';
+    final storedFullName = prefs.getString('name') ?? 'N/A';
+    final storedPhone = prefs.getString('phone') ?? 'N/A';
+    final storedEmail = prefs.getString('email') ?? 'N/A';
+    final storedImage = prefs.getString('image');
+    final userId = prefs.getInt('user_id');
 
     File? _tempImageFile;
-    String? _tempFileName;
 
-    final userController = TextEditingController(text: initialUsername);
-    final nameController = TextEditingController(text: initialFullName);
-    final phoneController = TextEditingController(text: initialPhone);
-    final emailController = TextEditingController(text: initialEmail);
+    final userController = TextEditingController(text: storedUsername);
+    final nameController = TextEditingController(text: storedFullName);
+    final phoneController = TextEditingController(text: storedPhone);
+    final emailController = TextEditingController(text: storedEmail);
 
     final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
@@ -94,7 +97,6 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setDialogState) {
-            // ✅ ใช้ setDialogState() เพื่ออัปเดตรูปใน dialog ทันที
             Future<void> _alertPickImage(ImageSource source) async {
               final pickedFile = await _picker.pickImage(
                 source: source,
@@ -103,7 +105,6 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
               if (pickedFile != null) {
                 setDialogState(() {
                   _tempImageFile = File(pickedFile.path);
-                  _tempFileName = path.basename(pickedFile.path);
                 });
               }
             }
@@ -133,11 +134,11 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
             ImageProvider<Object>? _getProfileImage() {
               if (_tempImageFile != null) {
                 return FileImage(_tempImageFile!);
-              } else if (profileImageUrl != null &&
-                  profileImageUrl.isNotEmpty &&
-                  profileImageUrl != "null") {
+              } else if (storedImage != null &&
+                  storedImage.isNotEmpty &&
+                  storedImage != "null") {
                 return NetworkImage(
-                  'http://$ip:3000$profileImageUrl?v=${DateTime.now().millisecondsSinceEpoch}',
+                  'http://$ip:3000$storedImage?v=${DateTime.now().millisecondsSinceEpoch}',
                 );
               } else {
                 return null;
@@ -183,8 +184,8 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
                         _buildProfileEditableItem(
                           icon: Image.asset(
                             'asset/icon/user.png',
-                            width: 5,
-                            height: 5,
+                            width: 20,
+                            height: 20,
                           ),
                           labelText: 'Username',
                           controller: userController,
@@ -192,8 +193,8 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
                         _buildProfileEditableItem(
                           icon: Image.asset(
                             'asset/icon/id-card.png',
-                            width: 5,
-                            height: 5,
+                            width: 20,
+                            height: 20,
                           ),
                           labelText: 'Full Name',
                           controller: nameController,
@@ -201,8 +202,8 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
                         _buildProfileEditableItem(
                           icon: Image.asset(
                             'asset/icon/phone.png',
-                            width: 5,
-                            height: 5,
+                            width: 20,
+                            height: 20,
                           ),
                           labelText: 'Phone',
                           controller: phoneController,
@@ -211,8 +212,8 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
                         _buildProfileEditableItem(
                           icon: Image.asset(
                             'asset/icon/gmail.png',
-                            width: 5,
-                            height: 5,
+                            width: 20,
+                            height: 20,
                           ),
                           labelText: 'Email',
                           controller: emailController,
@@ -231,7 +232,7 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
                         var request = http.MultipartRequest(
                           'PUT',
                           Uri.parse(
-                            'http://$ip:3000/api/update-profile/${widget.userData?['id']}',
+                            'http://$ip:3000/api/update-profile/$userId',
                           ),
                         );
 
@@ -267,6 +268,19 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
                           final resData = jsonDecode(
                             await response.stream.bytesToString(),
                           );
+
+                          // ✅ อัปเดต SharedPreferences หลังแก้ไขสำเร็จ
+                          await prefs.setString(
+                            'username',
+                            userController.text,
+                          );
+                          await prefs.setString('name', nameController.text);
+                          await prefs.setString('phone', phoneController.text);
+                          await prefs.setString('email', emailController.text);
+                          if (resData['image'] != null) {
+                            await prefs.setString('image', resData['image']);
+                          }
+
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text("✅ Profile updated successfully"),
@@ -318,6 +332,60 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
         );
       },
     );
+  }
+
+  // ----------------------------------------------------------
+  // ✅ ฟังก์ชัน Logout
+  // ----------------------------------------------------------
+  Future<void> _handleLogout(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Confirm Logout"),
+        content: const Text("Do you really want to log out?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text("Logout"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      await prefs.setBool('isLoggedIn', false);
+      await prefs.commit();
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("🚪 Logged out successfully")),
+        );
+
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+          (route) => false,
+        );
+      }
+    }
+  }
+
+  // ----------------------------------------------------------
+  // ✅ เมนูหลัก
+  // ----------------------------------------------------------
+  void _onSelected(BuildContext context, ProfileMenuAction result) {
+    if (result == ProfileMenuAction.profile) {
+      _showProfileAlert(context);
+    } else if (result == ProfileMenuAction.changepassword) {
+      _showChangePasswordAlert(context);
+    } else if (result == ProfileMenuAction.logout) {
+      _handleLogout(context);
+    }
   }
 
   // ----------------------------------------------------------
@@ -411,9 +479,12 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
                           onPressed: () async {
                             if (_formKey.currentState!.validate()) {
                               try {
+                                final prefs =
+                                    await SharedPreferences.getInstance();
+                                final userId = prefs.getInt('user_id');
                                 final response = await http.put(
                                   Uri.parse(
-                                    'http://$ip:3000/api/change-password/${widget.userData?['id']}',
+                                    'http://$ip:3000/api/change-password/$userId',
                                   ),
                                   headers: {'Content-Type': 'application/json'},
                                   body: jsonEncode({
@@ -477,21 +548,8 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
   }
 
   // ----------------------------------------------------------
-  // ✅ เมนูหลัก
+  // ✅ Popup Menu UI
   // ----------------------------------------------------------
-  void _onSelected(BuildContext context, ProfileMenuAction result) {
-    if (result == ProfileMenuAction.profile) {
-      _showProfileAlert(context);
-    } else if (result == ProfileMenuAction.changepassword) {
-      _showChangePasswordAlert(context);
-    } else if (result == ProfileMenuAction.logout) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-        (Route<dynamic> route) => false,
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton<ProfileMenuAction>(

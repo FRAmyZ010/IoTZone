@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // 🔧 ปรับ path ตามโครงโปรเจกต์ของคุณ
 import 'package:iot_zone/Page/homepage.dart';
 import 'package:iot_zone/Page/Asset_page/assetpage.dart';
 import 'package:iot_zone/Page/History_page/history_student.dart';
 import 'package:iot_zone/Page/Request Status/Req_Status.dart';
+import 'package:iot_zone/Page/Login/login_page.dart';
 
 class StudentMain extends StatefulWidget {
   final Map<String, dynamic>? userData; // ✅ รับข้อมูล user จาก login
@@ -60,6 +62,15 @@ class _StudentMainState extends State<StudentMain> {
       default:
         break;
     }
+  }
+
+  Future<void> logout(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear(); // 🧹 ล้างทุกค่า
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+    );
   }
 
   @override
