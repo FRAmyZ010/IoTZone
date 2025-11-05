@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:iot_zone/Page/AppConfig.dart';
 
 class RequestStatusPage extends StatefulWidget {
   const RequestStatusPage({super.key});
@@ -10,6 +13,7 @@ class RequestStatusPage extends StatefulWidget {
 
 class _RequestStatusPageState extends State<RequestStatusPage> {
   final TextEditingController _searchCtrl = TextEditingController();
+  bool _isLoading = false;
   List<Map<String, dynamic>> requestList = [];
   List<Map<String, dynamic>> filteredList = [];
 
@@ -19,46 +23,35 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
     _fetchRequests();
   }
 
-  // ✅ Mock Data
-  void _fetchRequests() async {
-    List<Map<String, dynamic>> apiData = [
-      {
-        "name": "Multimeter",
-        "status": "Pending",
-        "borrowDate": "2025-10-24",
-        "approvedBy": "",
-        "note": "Waiting for an approval",
-        "image": "asset/img/Multimeter.png",
-      },
-      {
-        "name": "Capacitor",
-        "status": "Rejected",
-        "borrowDate": "2025-10-22",
-        "approvedBy": "Prof. John Doe",
-        "reason": "Can borrow only one asset a day",
-        "image": "asset/img/Capacitor.png",
-      },
-      {
-        "name": "Resistor",
-        "status": "Approved",
-        "borrowDate": "2025-10-22",
-        "returnDate": "2025-10-23",
-        "approvedBy": "Prof. John Doe",
-        "image": "asset/img/Resistor.png",
-      },
-    ];
+  // ✅ ดึงข้อมูลจาก API จริง
+  Future<void> _fetchRequests() async {
+    setState(() => _isLoading = true);
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConfig.baseUrl}/api/request-status/1'), // 🔹 ตัวอย่าง studentId = 1
+      );
 
-    setState(() {
-      requestList = apiData;
-      filteredList = apiData;
-    });
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        setState(() {
+          requestList = List<Map<String, dynamic>>.from(data);
+          filteredList = requestList;
+          _isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load request status');
+      }
+    } catch (e) {
+      print('⚠️ Error fetching request status: $e');
+      setState(() => _isLoading = false);
+    }
   }
 
-  // ฟังก์ชันค้นหา
+  // ✅ ฟังก์ชันค้นหา
   void _searchItem(String query) {
     setState(() {
       filteredList = requestList.where((item) {
-        final name = item["name"].toLowerCase();
+        final name = item["name"].toString().toLowerCase();
         final q = query.toLowerCase();
         return name.contains(q);
       }).toList();
@@ -67,103 +60,97 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
 
   @override
   Widget build(BuildContext context) {
+    const purple = Color(0xFFC368FF);
+
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(56),
         child: SafeArea(
           bottom: false,
           child: AppBar(
-            automaticallyImplyLeading: false,
-            backgroundColor: Colors.deepPurpleAccent,
+            backgroundColor: purple,
             elevation: 0,
+            automaticallyImplyLeading: false,
             titleSpacing: 0,
-            title: Row(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(left: 20),
-                  child: const Text(
-                    "Request Status",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 25,
-                    ),
-                  ),
-                ),
-              ],
+            title: const Padding(
+              padding: EdgeInsets.only(left: 20),
+              child: Text(
+                "Request Status",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 24),
+              ),
             ),
           ),
         ),
       ),
 
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Search
-            Container(
-              height: 48,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Colors.black12),
-              ),
-              child: Row(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
                 children: [
-                  const SizedBox(width: 12),
-                  const Icon(Icons.search, color: Colors.black54, size: 22),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: _searchCtrl,
-                      decoration: const InputDecoration(
-                        hintText: 'Search your request',
-                        border: InputBorder.none,
-                        hintStyle: TextStyle(color: Colors.black54),
-                      ),
-                      onChanged: _searchItem,
+                  // 🔍 Search Bar
+                  Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(color: Colors.black12),
                     ),
+                    child: Row(
+                      children: [
+                        const SizedBox(width: 12),
+                        const Icon(Icons.search,
+                            color: Colors.black54, size: 22),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _searchCtrl,
+                            decoration: const InputDecoration(
+                              hintText: 'Search your request',
+                              border: InputBorder.none,
+                              hintStyle: TextStyle(color: Colors.black54),
+                            ),
+                            onChanged: _searchItem,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // 🧾 แสดงรายการ
+                  Expanded(
+                    child: filteredList.isEmpty
+                        ? const Center(
+                            child: Text("No requests found",
+                                style: TextStyle(color: Colors.black54)))
+                        : ListView.builder(
+                            itemCount: filteredList.length,
+                            itemBuilder: (context, index) {
+                              var item = filteredList[index];
+                              return _buildRequestCard(item);
+                            },
+                          ),
                   ),
                 ],
               ),
             ),
-
-            const SizedBox(height: 16),
-
-            //รายการ
-            Expanded(
-              child: filteredList.isEmpty
-                  ? const Center(
-                      child: Text(
-                        "No requests found",
-                        style: TextStyle(color: Colors.black54),
-                      ),
-                    )
-                  : ListView.builder(
-                      itemCount: filteredList.length,
-                      itemBuilder: (context, index) {
-                        var item = filteredList[index];
-                        return _buildRequestCard(item);
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
-  // Card Builder
+  // ✅ Card Builder
   Widget _buildRequestCard(Map<String, dynamic> item) {
     const purple = Color(0xFFC368FF);
 
-    // กำหนดสีสถานะ
     Color getStatusColor(String status) {
       switch (status) {
-        case "Approved":
+        case "Borrowed":
           return Colors.green;
-        case "Rejected":
-          return Colors.red;
         case "Pending":
           return Colors.orange;
         default:
@@ -190,25 +177,27 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.asset(
-              item["image"],
-              width: 64,
-              height: 64,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  width: 64,
-                  height: 64,
-                  color: Colors.grey[200],
-                  child: const Icon(Icons.broken_image, color: Colors.red),
-                );
-              },
-            ),
-          ),
+  borderRadius: BorderRadius.circular(8),
+  child: Image.asset(
+    item["image"].toString().startsWith('asset/img/')
+        ? item["image"]
+        : 'asset/img/${item["image"]}',
+    width: 64,
+    height: 64,
+    fit: BoxFit.cover,
+    errorBuilder: (context, error, stackTrace) {
+      return Container(
+        width: 64,
+        height: 64,
+        color: Colors.grey[200],
+        child: const Icon(Icons.broken_image, color: Colors.red),
+      );
+    },
+  ),
+),
+
           const SizedBox(width: 12),
 
-          //เนื้อหาการ์ด
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,32 +205,23 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
                 Row(
                   children: [
                     Text(
-                      item["name"],
+                      item["name"] ?? "Unknown",
                       style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                          fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const Spacer(),
                     RichText(
                       text: TextSpan(
                         style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
+                            fontSize: 13, fontWeight: FontWeight.bold),
                         children: [
                           const TextSpan(
-                            text: 'Status : ',
-                            style: TextStyle(
-                              color: Colors.black,
-                            ), // ✅ คำว่า Status เป็นสีดำ
-                          ),
+                              text: "Status: ",
+                              style: TextStyle(color: Colors.black)),
                           TextSpan(
-                            text: item["status"],
+                            text: item["status"] ?? "Unknown",
                             style: TextStyle(
-                              color: getStatusColor(
-                                item["status"],
-                              ), // ✅ สีของสถานะยังเปลี่ยนได้
+                              color: getStatusColor(item["status"]),
                             ),
                           ),
                         ],
@@ -250,34 +230,14 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  "Borrowed on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item["borrowDate"]))}",
-                ),
 
-                if (item["status"] == "Approved" &&
-                    item.containsKey("returnDate"))
+                if (item["borrowDate"] != null)
+                  Text(
+                    "Borrowed on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item["borrowDate"]))}",
+                  ),
+                if (item["returnDate"] != null)
                   Text(
                     "Returned on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item["returnDate"]))}",
-                  ),
-
-                if (item["status"] == "Pending" && item["note"] != null)
-                  Text(
-                    item["note"],
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-
-                if (item["status"] == "Rejected" && item["reason"] != null)
-                  Text(
-                    "Reason : ${item["reason"]}",
-                    style: const TextStyle(color: Colors.redAccent),
-                  ),
-
-                if (item.containsKey("approvedBy") &&
-                    item["approvedBy"].toString().isNotEmpty)
-                  Text(
-                    item["status"] == "Rejected"
-                        ? "Rejected by ${item["approvedBy"]}"
-                        : "Approved by ${item["approvedBy"]}",
                   ),
               ],
             ),
