@@ -9,6 +9,7 @@ import 'package:iot_zone/Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar_staff.
 import 'package:iot_zone/Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar_lender.dart';
 
 import 'package:iot_zone/Page/Login/register_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -52,11 +53,14 @@ class _LoginPageState extends State<LoginPage> {
       if (response.statusCode == 200 && data['user'] != null) {
         final role = data['user']['role'];
 
+        // ✅ บันทึก session ก่อน
+        await _saveSession(data['user']);
+
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('✅ เข้าสู่ระบบสำเร็จ!')));
 
-        // 🧭 นำทางไปหน้าแต่ละ role และส่งข้อมูล userData ไปด้วย
+        // 🧭 ไปหน้าตาม role
         switch (role) {
           case 'student':
             Navigator.pushReplacement(
@@ -66,16 +70,15 @@ class _LoginPageState extends State<LoginPage> {
               ),
             );
             break;
-
           case 'staff':
-            Navigator.pushReplacement(
+            Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(
-                builder: (_) => StaffMain(userData: data['user']),
+                builder: (_) => StudentMain(userData: data['user']),
               ),
+              (route) => false,
             );
             break;
-
           case 'lender':
             Navigator.pushReplacement(
               context,
@@ -84,7 +87,6 @@ class _LoginPageState extends State<LoginPage> {
               ),
             );
             break;
-
           default:
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('⚠️ ไม่พบสิทธิ์ผู้ใช้ (role)')),
@@ -106,6 +108,18 @@ class _LoginPageState extends State<LoginPage> {
         ),
       );
     }
+  }
+
+  Future<void> _saveSession(Map<String, dynamic> user) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', true);
+    await prefs.setString('role', user['role']);
+    await prefs.setString('username', user['username']);
+    await prefs.setInt('user_id', user['id']);
+    await prefs.setString('name', user['name']);
+    await prefs.setString('image', user['image'] ?? '');
+    await prefs.commit();
+    print('✅ Session saved: ${user['username']} (${user['role']})');
   }
 
   @override

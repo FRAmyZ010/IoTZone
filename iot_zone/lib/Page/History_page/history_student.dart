@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:iot_zone/Page/AppConfig.dart';
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HistoryStudentPage extends StatefulWidget {
   const HistoryStudentPage({super.key});
@@ -27,31 +28,36 @@ class _HistoryStudentPageState extends State<HistoryStudentPage> {
 
   // ✅ ฟังก์ชันดึงข้อมูลจาก API จริง
   Future<void> _fetchHistory() async {
-    setState(() {
-      _isLoading = true;
-    });
-    try {
-      final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/history/1'),
-      );
+  setState(() {
+    _isLoading = true;
+  });
 
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        setState(() {
-          historyList = List<Map<String, dynamic>>.from(data);
-          filteredList = historyList;
-          _isLoading = false;
-        });
-      } else {
-        throw Exception('Failed to load history data');
-      }
-    } catch (e) {
-      print('⚠️ Error fetching history: $e');
+  try {
+    // ✅ ดึง user_id จาก SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('user_id'); // ถ้าไม่มีจะได้ null
+
+    final response = await http.get(
+      Uri.parse('${AppConfig.baseUrl}/api/history/$userId'),
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
       setState(() {
+        historyList = List<Map<String, dynamic>>.from(data);
+        filteredList = historyList;
         _isLoading = false;
       });
+    } else {
+      throw Exception('Failed to load history data (status ${response.statusCode})');
     }
+  } catch (e) {
+    print('⚠️ Error fetching history: $e');
+    setState(() {
+      _isLoading = false;
+    });
   }
+}
 
   // ✅ ฟังก์ชันค้นหา
   void _searchItem(String query) {

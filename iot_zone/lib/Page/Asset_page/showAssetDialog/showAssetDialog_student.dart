@@ -4,6 +4,7 @@ import 'package:iot_zone/Page/AppConfig.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:iot_zone/Page/Request Status/Req_Status.dart'; // ✅ แก้ path ให้ตรงไฟล์จริง
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BorrowAssetDialog extends StatefulWidget {
   final Map<String, dynamic> asset;
@@ -46,7 +47,8 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
           alignment: Alignment.center,
           child: FittedBox(
             fit: BoxFit.contain,
-            child: imagePath.startsWith('/uploads/') || imagePath.contains('http')
+            child:
+                imagePath.startsWith('/uploads/') || imagePath.contains('http')
                 ? Image.network(
                     'http://$ip:3000$imagePath',
                     height: 120,
@@ -81,25 +83,43 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
     setState(() => _isBorrowing = true);
 
     try {
+      // ✅ ดึง id จาก SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final id = prefs.getInt('user_id'); // ← ดึงค่า id ของผู้ใช้
+
+      if (id == null) {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('⚠ Session Expired'),
+            content: const Text('ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        setState(() => _isBorrowing = false);
+        return;
+      }
+
+      // ✅ ใช้ตัวแปร id แทน borrower_id: 1
       final response = await http.post(
         Uri.parse('http://$ip:3000/api/borrow'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'asset_id': widget.asset['id'],
-          'borrower_id': 1, // ← TODO: เปลี่ยนเป็น user id จริงจากระบบ login
+          'borrower_id': id, // ✅ ใช้ค่าจาก session
         }),
       );
 
       final body = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        // ✅ เรียก callback ใน dialog เอง
         widget.onBorrowSuccess?.call();
-
-        // ✅ เรียกให้หน้า RequestStatusPage รีเฟรช (ข้ามหน้า)
         RequestStatusPage.refreshRequestPage?.call();
-
-        // ✅ ปิด dialog
         Navigator.of(context).pop(true);
       } else {
         showDialog(
@@ -200,7 +220,9 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.deepPurpleAccent,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 36, vertical: 14),
+                        horizontal: 36,
+                        vertical: 14,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(22),
                       ),
@@ -240,7 +262,9 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey.shade600,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 32, vertical: 14),
+                        horizontal: 32,
+                        vertical: 14,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(22),
                       ),
