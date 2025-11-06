@@ -532,7 +532,8 @@ app.get('/api/check-borrow-status/:userId', async (req, res) => {
 // ------------------ Update Borrow Status ------------------
 app.put('/api/history/:id/status', async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body;
+  const { status, reason } = req.body;
+  
 
   try {
     // ✅ ดึง asset_id จาก history
@@ -559,15 +560,18 @@ app.put('/api/history/:id/status', async (req, res) => {
       case 1: // Pending (รออนุมัติ)
         await db.promise().query(
           `UPDATE asset SET status = 3 WHERE id = ?`,
-          [assetId]
+          [assetId],
+          
         );
         break;
 
       case 2: // Approved (อนุมัติแล้ว → กำลังถูกยืม)
         await db.promise().query(
           `UPDATE asset SET status = 4 WHERE id = ?`,
-          [assetId]
+          [assetId],
+          
         );
+         db.query('UPDATE history SET approver_id = 3 WHERE id = ?',[id]);
         break;
 
       case 3: // Rejected (ถูกปฏิเสธ)
@@ -575,6 +579,7 @@ app.put('/api/history/:id/status', async (req, res) => {
           `UPDATE asset SET status = 1 WHERE id = ?`,
           [assetId]
         );
+        db.query('UPDATE history SET approver_id = 3, reason = ? WHERE id = ?',[id,reason]);
         break; // ✅ ต้องมี break ตรงนี้!
 
       case 4: // Returned (คืนแล้ว)
@@ -582,6 +587,7 @@ app.put('/api/history/:id/status', async (req, res) => {
           `UPDATE asset SET status = 1 WHERE id = ?`,
           [assetId]
         );
+        db.query('UPDATE history SET approver_id = 3, approver_id = 2 WHERE id = ?',[id]);
         break; // ✅ ต้องมี break ตรงนี้ด้วย!
 
       case 5: // Expired (หมดอายุ)
