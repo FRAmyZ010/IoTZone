@@ -171,13 +171,11 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
                             radius: 60,
                             backgroundColor: Colors.grey.shade300,
                             backgroundImage: _getProfileImage(),
-                            child: _getProfileImage() == null
-                                ? const Icon(
-                                    Icons.camera_alt,
-                                    size: 40,
-                                    color: Colors.grey,
-                                  )
-                                : null,
+                            child: const Icon(
+                              Icons.camera_alt,
+                              size: 40,
+                              color: Color.fromARGB(221, 158, 158, 158),
+                            ),
                           ),
                         ),
                         const SizedBox(height: 10),
