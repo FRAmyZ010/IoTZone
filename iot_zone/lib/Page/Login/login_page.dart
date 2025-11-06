@@ -117,6 +117,8 @@ class _LoginPageState extends State<LoginPage> {
     await prefs.setString('username', user['username']);
     await prefs.setInt('user_id', user['id']);
     await prefs.setString('name', user['name']);
+    await prefs.setString('phone', user['phone']);
+    await prefs.setString('email', user['email']);
     await prefs.setString('image', user['image'] ?? '');
     await prefs.commit();
     print('✅ Session saved: ${user['username']} (${user['role']})');

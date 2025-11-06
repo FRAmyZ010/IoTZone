@@ -34,6 +34,8 @@ class _CheckSessionPageState extends State<CheckSessionPage> {
       final userId = prefs.getInt('user_id');
       final name = prefs.getString('name');
       final image = prefs.getString('image');
+      final phone = prefs.getString('phone');
+      final email = prefs.getString('email');
 
       debugPrint('🔹 Restore session for $name ($role)');
 
@@ -44,6 +46,8 @@ class _CheckSessionPageState extends State<CheckSessionPage> {
         'name': name,
         'role': role,
         'image': image,
+        'phone': phone,
+        'email': email,
       };
 
       Widget nextPage;

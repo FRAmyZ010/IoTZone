@@ -165,7 +165,7 @@ class _HomepageState extends State<Homepage> {
           children: [
             // 🔹 ส่วนบน - โปรไฟล์
             Expanded(
-              flex: 28,
+              flex: 30,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -289,7 +289,7 @@ class _HomepageState extends State<Homepage> {
 
             // 🔹 ส่วนล่าง (carousel, ปุ่ม, etc.)
             Expanded(
-              flex: 72,
+              flex: 70,
               child: Container(
                 color: Colors.white,
                 alignment: Alignment.topCenter,
