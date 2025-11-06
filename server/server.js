@@ -579,7 +579,7 @@ app.put('/api/history/:id/status', async (req, res) => {
           `UPDATE asset SET status = 1 WHERE id = ?`,
           [assetId]
         );
-        db.query('UPDATE history SET approver_id = 3, reason = ? WHERE id = ?',[id,reason]);
+        db.query('UPDATE history SET approver_id = 3, reason = ? WHERE id = ?',[reason,id]);
         break; // ✅ ต้องมี break ตรงนี้!
 
       case 4: // Returned (คืนแล้ว)
