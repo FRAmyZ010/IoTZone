@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-
-// 🔧 import widgets ย่อย
+import 'AppConfig.dart';
 import 'Widgets/buildBotttom_nav_bar/bottom_nav_bar_staff.dart';
 import 'Widgets/buildTextContainer2/buildTextContainar_rigthlow.dart';
 import 'Widgets/buildTextContainer2/buildTextContainer_rigthtop.dart';
@@ -9,7 +8,6 @@ import 'Widgets/buildTextContainer1/buildSlidehomepage_center.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_rigthtop.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_leftlow.dart';
 import 'Widgets/meatball_menu/meatball_menu.dart';
-import 'AppConfig.dart';
 
 class Homepagestaff extends StatefulWidget {
   final Map<String, dynamic>? userData;
@@ -32,7 +30,10 @@ class _HomepagestaffState extends State<Homepagestaff> {
   @override
   void initState() {
     super.initState();
+
+    // ✅ โหลด userData จาก CheckSessionPage ถ้ามี
     _userData = Map<String, dynamic>.from(widget.userData ?? {});
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollController.animateTo(
         300,
@@ -42,7 +43,7 @@ class _HomepagestaffState extends State<Homepagestaff> {
     });
   }
 
-  // ✅ อัปเดตข้อมูลใน state ทันทีหลังแก้ไขโปรไฟล์
+  // ✅ อัปเดตข้อมูลหลังแก้ไขโปรไฟล์
   void _onProfileUpdated(Map<String, dynamic> updatedData) {
     setState(() {
       _userData.addAll(updatedData);
@@ -102,7 +103,7 @@ class _HomepagestaffState extends State<Homepagestaff> {
                           ],
                         ),
 
-                        // 🔹 แสดงโปรไฟล์
+                        // 🔹 โปรไฟล์ผู้ใช้
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -231,7 +232,13 @@ class _HomepagestaffState extends State<Homepagestaff> {
                         Center(
                           child: ElevatedButton(
                             onPressed: () {
-                              StaffMain.of(context)?.changeTab(4);
+                              // ✅ เปลี่ยนแท็บไปหน้า Asset โดยใช้ context ของ StaffMain
+                              final parent = StaffMain.of(context);
+                              if (parent != null) {
+                                parent.changeTab(3); // tab index 3 = Asset
+                              } else {
+                                debugPrint('⚠️ StaffMain not found in context');
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF6B45FF),
