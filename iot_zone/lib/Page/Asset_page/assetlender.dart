@@ -209,135 +209,140 @@ class _AssetlenderState extends State<Assetlender> {
 
             // ✅ โหลดข้อมูลจาก API
             Expanded(
-              child: FutureBuilder<List<AssetModel>>(
-                future: futureAssets,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: Colors.deepPurpleAccent,
-                      ),
-                    );
-                  } else if (snapshot.hasError) {
-                    return Center(
-                      child: Text(
-                        'Error: ${snapshot.error}',
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                    );
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(child: Text('No assets found.'));
-                  }
-
-                  final allAssets = snapshot.data!;
-                  final filteredAssets = allAssets.where((a) {
-                    final matchesType =
-                        selectedType == 'All' ||
-                        a.type.toLowerCase() == selectedType.toLowerCase();
-                    final matchesSearch =
-                        searchQuery.isEmpty ||
-                        a.name.toLowerCase().contains(searchQuery);
-                    return matchesType && matchesSearch;
-                  }).toList();
-
-                  return GridView.builder(
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: filteredAssets.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 16,
-                          crossAxisSpacing: 16,
-                          childAspectRatio: 0.6,
-                        ),
-                    itemBuilder: (context, index) {
-                      final asset = filteredAssets[index];
-                      return GestureDetector(
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) =>
-                                ShowAssetDialogLender(asset: asset.toMap()),
-                          );
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.15),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: _buildImage(asset.image),
-                              ),
-                              const SizedBox(height: 8),
-
-                              // 🔹 ชื่ออุปกรณ์
-                              Text(
-                                asset.name,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-
-                              // 🔹 สถานะ
-                              Text(
-                                asset.status,
-                                style: TextStyle(
-                                  color: asset.statusColor,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Container(
-                                margin: const EdgeInsets.only(top: 6),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFF6B45FF,
-                                  ), // พื้นหลังม่วง
-                                  borderRadius: BorderRadius.circular(
-                                    12,
-                                  ), // มุมโค้งมน
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: const [
-                                    SizedBox(width: 4),
-                                    Text(
-                                      "See item",
-                                      style: TextStyle(
-                                        color: Colors.white, // ตัวอักษรสีขาว
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+              child: RefreshIndicator(
+                color: const Color(0xFF6B45FF), // สีม่วงของ progress ตอนรีเฟรช
+                onRefresh: () async {
+                  setState(() {
+                    // โหลดข้อมูลใหม่
+                    futureAssets = fetchAssets();
+                  });
+                  await Future.delayed(
+                    const Duration(seconds: 1),
+                  ); // รอให้ smooth ขึ้น
+                },
+                child: FutureBuilder<List<AssetModel>>(
+                  future: futureAssets,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: Colors.deepPurpleAccent,
                         ),
                       );
-                    },
-                  );
-                },
+                    } else if (snapshot.hasError) {
+                      return Center(
+                        child: Text(
+                          'Error: ${snapshot.error}',
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      );
+                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return const Center(child: Text('No assets found.'));
+                    }
+
+                    final allAssets = snapshot.data!;
+                    final filteredAssets = allAssets.where((a) {
+                      final matchesType =
+                          selectedType == 'All' ||
+                          a.type.toLowerCase() == selectedType.toLowerCase();
+                      final matchesSearch =
+                          searchQuery.isEmpty ||
+                          a.name.toLowerCase().contains(searchQuery);
+                      return matchesType && matchesSearch;
+                    }).toList();
+
+                    return GridView.builder(
+                      physics:
+                          const AlwaysScrollableScrollPhysics(), // ✅ ต้องใช้แบบนี้เพื่อให้ลากลงได้
+                      itemCount: filteredAssets.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                            childAspectRatio: 0.6,
+                          ),
+                      itemBuilder: (context, index) {
+                        final asset = filteredAssets[index];
+                        return GestureDetector(
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) =>
+                                  ShowAssetDialogLender(asset: asset.toMap()),
+                            );
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.15),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: _buildImage(asset.image),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  asset.name,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  asset.status,
+                                  style: TextStyle(
+                                    color: asset.statusColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Container(
+                                  margin: const EdgeInsets.only(top: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF6B45FF),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: const [
+                                      SizedBox(width: 4),
+                                      Text(
+                                        "See item",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ),
           ],
