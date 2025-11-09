@@ -31,7 +31,10 @@ class _HomepagelenderState extends State<Homepagelender> {
   @override
   void initState() {
     super.initState();
+
+    // ✅ โหลด userData จาก CheckSessionPage หรือ Login
     _userData = Map<String, dynamic>.from(widget.userData ?? {});
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollController.animateTo(
         300,
@@ -41,7 +44,7 @@ class _HomepagelenderState extends State<Homepagelender> {
     });
   }
 
-  // ✅ เมื่อมีการอัปเดตโปรไฟล์จากเมนู
+  // ✅ อัปเดตข้อมูลหลังแก้ไขโปรไฟล์
   void _onProfileUpdated(Map<String, dynamic> updatedData) {
     setState(() {
       _userData.addAll(updatedData);
@@ -59,7 +62,7 @@ class _HomepagelenderState extends State<Homepagelender> {
       body: SafeArea(
         child: Column(
           children: [
-            // 🔹 ส่วนบน (โปรไฟล์)
+            // 🔹 ส่วนบน (โปรไฟล์ + แบนเนอร์)
             Expanded(
               flex: 28,
               child: Stack(
@@ -89,7 +92,7 @@ class _HomepagelenderState extends State<Homepagelender> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // 🔸 ปุ่ม 3 จุด (Meatball Menu)
+                        // 🔸 ปุ่มเมนูโปรไฟล์ (สามจุด)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
@@ -100,7 +103,7 @@ class _HomepagelenderState extends State<Homepagelender> {
                           ],
                         ),
 
-                        // 🔸 แสดงโปรไฟล์ผู้ใช้
+                        // 🔸 โปรไฟล์ผู้ใช้
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -147,7 +150,7 @@ class _HomepagelenderState extends State<Homepagelender> {
 
                         // 🔸 โลโก้ IoT Zone
                         Padding(
-                          padding: const EdgeInsets.only(top: 5),
+                          padding: const EdgeInsets.only(top: 8),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -177,7 +180,7 @@ class _HomepagelenderState extends State<Homepagelender> {
 
             const SizedBox(height: 20),
 
-            // 🔹 ส่วนล่าง (Carousel + Recommend)
+            // 🔹 ส่วนล่าง (Carousel + ปุ่ม + แนะนำ)
             Expanded(
               flex: 72,
               child: Container(
@@ -190,7 +193,7 @@ class _HomepagelenderState extends State<Homepagelender> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // 🔹 Carousel
+                        // 🔸 Carousel Slide 1
                         SizedBox(
                           height: 200,
                           child: CarouselSlider(
@@ -227,11 +230,17 @@ class _HomepagelenderState extends State<Homepagelender> {
 
                         const SizedBox(height: 20),
 
-                        // 🔹 ปุ่ม Browse Asset
+                        // 🔸 ปุ่ม Browse Asset
                         Center(
                           child: ElevatedButton(
                             onPressed: () {
-                              LenderMain.of(context)?.changeTab(4);
+                              // ✅ เชื่อมกับ LenderMain
+                              final parent = LenderMain.of(context);
+                              if (parent != null) {
+                                parent.changeTab(4); // index 3 = Asset
+                              } else {
+                                debugPrint('⚠️ LenderMain context not found');
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF6B45FF),
@@ -258,7 +267,7 @@ class _HomepagelenderState extends State<Homepagelender> {
 
                         const SizedBox(height: 20),
 
-                        // 🔹 Carousel Recommend
+                        // 🔸 Carousel Slide 2
                         SizedBox(
                           height: 250,
                           child: CarouselSlider(
