@@ -235,7 +235,7 @@ class _HomepagestaffState extends State<Homepagestaff> {
                               // ✅ เปลี่ยนแท็บไปหน้า Asset โดยใช้ context ของ StaffMain
                               final parent = StaffMain.of(context);
                               if (parent != null) {
-                                parent.changeTab(3); // tab index 3 = Asset
+                                parent.changeTab(4); // tab index 4 = Asset
                               } else {
                                 debugPrint('⚠️ StaffMain not found in context');
                               }
