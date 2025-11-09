@@ -229,7 +229,7 @@ class _AssetlenderState extends State<Assetlender> {
                           crossAxisCount: 2,
                           mainAxisSpacing: 16,
                           crossAxisSpacing: 16,
-                          childAspectRatio: 0.8,
+                          childAspectRatio: 0.6,
                         ),
                     itemBuilder: (context, index) {
                       final asset = filteredAssets[index];
@@ -261,6 +261,8 @@ class _AssetlenderState extends State<Assetlender> {
                                 child: _buildImage(asset.image),
                               ),
                               const SizedBox(height: 8),
+
+                              // 🔹 ชื่ออุปกรณ์
                               Text(
                                 asset.name,
                                 textAlign: TextAlign.center,
@@ -270,11 +272,44 @@ class _AssetlenderState extends State<Assetlender> {
                                 ),
                               ),
                               const SizedBox(height: 4),
+
+                              // 🔹 สถานะ
                               Text(
                                 asset.status,
                                 style: TextStyle(
                                   color: asset.statusColor,
                                   fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                margin: const EdgeInsets.only(top: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF6B45FF,
+                                  ), // พื้นหลังม่วง
+                                  borderRadius: BorderRadius.circular(
+                                    12,
+                                  ), // มุมโค้งมน
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: const [
+                                    SizedBox(width: 4),
+                                    Text(
+                                      "See item",
+                                      style: TextStyle(
+                                        color: Colors.white, // ตัวอักษรสีขาว
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
