@@ -680,7 +680,32 @@ app.put('/api/history/:id/status', async (req, res) => {
   }
 });
 
+app.get("/api/dashboard-summary", async (req, res) => {
+  try {
+    // ✅ Query นับจำนวนแต่ละสถานะ
+    const [rows] = await db.promise().query(`
+      SELECT 
+        SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) AS available,
+        SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END) AS pending,
+        SUM(CASE WHEN status = 4 THEN 1 ELSE 0 END) AS borrowed,
+        SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) AS disabled
+      FROM asset
+    `);
 
+    const result = rows[0];
+    console.log("📊 Dashboard summary:", result);
+
+    res.json({
+      available: result.available || 0,
+      pending: result.pending || 0,
+      borrowed: result.borrowed || 0,
+      disabled: result.disabled || 0,
+    });
+  } catch (err) {
+    console.error("❌ Dashboard summary error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
 
 
 // ------------------ Root ------------------
