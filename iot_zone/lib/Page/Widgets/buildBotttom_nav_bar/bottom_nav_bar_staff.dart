@@ -28,7 +28,7 @@ class _StaffMainState extends State<StaffMain> {
       HistoryStaffPage(), // 1
       DashboardStaff(), // 2
       Center(child: Text('⚙️ Settings')), // 3
-      AssetStaff(), // 3
+      AssetStaff(), // 4
     ];
   }
 
