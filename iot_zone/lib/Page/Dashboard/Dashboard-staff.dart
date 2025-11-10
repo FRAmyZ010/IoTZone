@@ -54,7 +54,6 @@ class DashboardPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-        
             Text(
               'Today’s Asset Summary',
               style: TextStyle(
@@ -65,7 +64,6 @@ class DashboardPage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-          
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -105,29 +103,27 @@ class DashboardPage extends StatelessWidget {
         ),
       ),
 
-
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(25),
-            topRight: Radius.circular(25),
-          ),
-          color: Colors.grey.shade200,
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Icon(Icons.home, size: 28, color: Colors.black),
-            Icon(Icons.dashboard, size: 28, color: Colors.deepPurple),
-            Icon(Icons.settings, size: 28, color: Colors.black),
-          ],
-        ),
-      ),
+      // bottomNavigationBar: Container(
+      //   decoration: BoxDecoration(
+      //     borderRadius: const BorderRadius.only(
+      //       topLeft: Radius.circular(25),
+      //       topRight: Radius.circular(25),
+      //     ),
+      //     color: Colors.grey.shade200,
+      //   ),
+      //   padding: const EdgeInsets.symmetric(vertical: 8),
+      //   child: const Row(
+      //     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      //     children: [
+      //       Icon(Icons.home, size: 28, color: Colors.black),
+      //       Icon(Icons.dashboard, size: 28, color: Colors.deepPurple),
+      //       Icon(Icons.settings, size: 28, color: Colors.black),
+      //     ],
+      //   ),
+      // ),
     );
   }
 }
-
 
 class StatusCard extends StatelessWidget {
   final String label;
@@ -157,7 +153,7 @@ class StatusCard extends StatelessWidget {
               color: Colors.black.withOpacity(0.05),
               blurRadius: 4,
               offset: const Offset(2, 2),
-            )
+            ),
           ],
         ),
         child: Column(
