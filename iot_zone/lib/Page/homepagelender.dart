@@ -55,7 +55,7 @@ class _HomepagelenderState extends State<Homepagelender> {
   Widget build(BuildContext context) {
     final username = _userData['username'] ?? 'Guest';
     final name = _userData['name'] ?? username;
-    final role = (_userData['role'] ?? 'lender').toString().capitalize();
+    final role = (_userData['role'] ?? 'Student').toString().capitalize();
     final imageUrl = _userData['image'];
 
     return Scaffold(
