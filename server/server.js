@@ -268,12 +268,83 @@ app.get('/assets', (req, res) => {
 });
 
 
+// =================== API Staff History ===================
+app.get('/api/staff-history/:staffId', (req, res) => {
+  const staffId = req.params.staffId;
+  console.log('📩 API called: /api/staff-history/' + staffId);
+
+  const sql = `
+    SELECT 
+      a.asset_name AS name,
+      CASE 
+        WHEN h.status = 3 THEN 'Rejected'
+        WHEN h.status = 4 THEN 'Returned'
+      END AS status,
+      h.borrow_date AS borrowDate,
+      h.return_date AS returnDate,
+      h.reason,
+      a.img AS image,
+      u.name AS borrowedBy,
+      s.name AS receivedBy,
+      l.name AS approvedBy
+    FROM history h
+    JOIN asset a ON h.asset_id = a.id
+    JOIN user u ON h.borrower_id = u.id
+    LEFT JOIN user s ON h.receiver_id = s.id       
+    LEFT JOIN user l ON h.approver_id = l.id       
+    WHERE h.status IN (3,4)
+    ORDER BY h.borrow_date DESC;
+  `;
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('❌ Error fetching staff history:', err);
+      return res.status(500).json({ error: 'Database query failed', details: err });
+    }
+
+    console.log(`✅ Staff History Found: ${results.length} rows`);
+    res.json(results);
+  });
+});
+
+// =================== API Lender History ===================
+app.get('/api/lender-history/:lenderId', (req, res) => {
+  const lenderId = req.params.lenderId;
+  console.log('📩 API called: /api/lender-history/' + lenderId);
+
+  const sql = `
+    SELECT
+      a.asset_name AS name,
+      CASE
+        WHEN h.status = '2' THEN 'Approved'
+        WHEN h.status = '3' THEN 'Rejected'
+      END AS status,
+      h.borrow_date AS borrowDate,
+      h.return_date AS returnDate,
+      h.reason,
+      a.img AS image,
+      u.name AS borrowedBy
+    FROM history h
+    JOIN asset a ON h.asset_id = a.id
+    JOIN user u ON h.borrower_id = u.id
+    WHERE h.approver_id = ?
+      AND (h.status = '2' OR h.status = '3')
+    ORDER BY h.borrow_date DESC;
+  `;
+
+  db.query(sql, [lenderId], (err, results) => {
+    if (err) {
+      console.error('❌ Error fetching lender history:', err);
+      return res.status(500).json({ error: 'Database query failed', details: err });
+    }
+
+    console.log(`✅ Lender History Found: ${results.length} rows`);
+    res.json(results);
+  });
+});
 
 
-// =================== API Student History ==================
 // ==================== API Student History ===================
-
-
 app.get('/api/history/:studentId', (req, res) => {
   const studentId = req.params.studentId;
   console.log('📩 API called: /api/history/' + studentId);
