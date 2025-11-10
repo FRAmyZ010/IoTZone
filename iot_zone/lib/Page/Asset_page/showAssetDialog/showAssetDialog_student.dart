@@ -1,174 +1,280 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:iot_zone/Page/AppConfig.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:iot_zone/Page/Request Status/Req_Status.dart'; // ✅ แก้ path ให้ตรงไฟล์จริง
+import 'package:shared_preferences/shared_preferences.dart';
 
-class BorrowAssetDialog extends StatelessWidget {
+class BorrowAssetDialog extends StatefulWidget {
   final Map<String, dynamic> asset;
+  final VoidCallback? onBorrowSuccess; // ✅ callback สำหรับ refresh หน้า
 
-  const BorrowAssetDialog({super.key, required this.asset});
+  const BorrowAssetDialog({
+    super.key,
+    required this.asset,
+    this.onBorrowSuccess,
+  });
+
+  @override
+  State<BorrowAssetDialog> createState() => _BorrowAssetDialogState();
+}
+
+class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
+  final String ip = AppConfig.serverIP;
+  bool _isBorrowing = false;
+
+  // ✅ โหลดรูปภาพสินทรัพย์
+  Widget _buildImage(String imagePath) {
+    final borderRadius = BorderRadius.circular(18);
+    return Container(
+      height: 160,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: borderRadius,
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.deepPurple.withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: borderRadius,
+        child: Align(
+          alignment: Alignment.center,
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child:
+                imagePath.startsWith('/uploads/') || imagePath.contains('http')
+                ? Image.network(
+                    'http://$ip:3000$imagePath',
+                    height: 120,
+                    width: 120,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.broken_image,
+                      size: 70,
+                      color: Colors.grey,
+                    ),
+                  )
+                : Image.asset(
+                    imagePath,
+                    height: 120,
+                    width: 120,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.image_not_supported_outlined,
+                      size: 70,
+                      color: Colors.grey,
+                    ),
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ✅ ฟังก์ชันยืมอุปกรณ์
+  Future<void> _borrowToday() async {
+    if (_isBorrowing) return;
+    setState(() => _isBorrowing = true);
+
+    try {
+      // ✅ ดึง id จาก SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final id = prefs.getInt('user_id'); // ← ดึงค่า id ของผู้ใช้
+
+      if (id == null) {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('⚠ Session Expired'),
+            content: const Text('ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        setState(() => _isBorrowing = false);
+        return;
+      }
+
+      // ✅ ใช้ตัวแปร id แทน borrower_id: 1
+      final response = await http.post(
+        Uri.parse('http://$ip:3000/api/borrow'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'asset_id': widget.asset['id'],
+          'borrower_id': id, // ✅ ใช้ค่าจาก session
+        }),
+      );
+
+      final body = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        widget.onBorrowSuccess?.call();
+        RequestStatusPage.refreshRequestPage?.call();
+        Navigator.of(context).pop(true);
+      } else {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('⚠ Cannot Borrow'),
+            content: Text(body['message'] ?? 'Borrow failed'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('❌ Server Error'),
+          content: Text('Cannot connect to server: $e'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      setState(() => _isBorrowing = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final asset = widget.asset;
+
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       backgroundColor: Colors.white,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 30, vertical: 60),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 70),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // 🔹 ชื่ออุปกรณ์
-            Text(
-              asset['name'],
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 22,
-                color: Colors.black87,
+        padding: const EdgeInsets.all(24),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                asset['name'] ?? "Unknown Asset",
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurpleAccent,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ),
+              const SizedBox(height: 14),
+              _buildImage(asset['image'] ?? ''),
+              const SizedBox(height: 14),
 
-            const SizedBox(height: 14),
-
-            // 🔹 รูปภาพ
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(16),
+              const Text(
+                "* You can only borrow 1 asset per day",
+                style: TextStyle(
+                  color: Colors.redAccent,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
               ),
-              padding: const EdgeInsets.all(10),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  asset['image'],
-                  height: 160,
-                  fit: BoxFit.contain,
+              const SizedBox(height: 16),
+
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  asset['description'] ?? 'No description available.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    height: 1.4,
+                    color: Colors.black87,
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(height: 26),
 
-            const SizedBox(height: 16),
-
-            // 🔹 ข้อความเตือน
-            const Text(
-              "*You can only borrow 1 asset a day",
-              style: TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-                fontSize: 13.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-
-            const SizedBox(height: 20),
-
-            // 🔹 คำอธิบาย
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  const Text(
-                    "Description:",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15.5,
-                      color: Colors.black87,
+                  // ปุ่ม Borrow
+                  ElevatedButton(
+                    onPressed: _isBorrowing ? null : _borrowToday,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurpleAccent,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 36,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                      elevation: 5,
                     ),
+                    child: _isBorrowing
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            'Borrow',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    asset['description'],
-                    style: TextStyle(
-                      fontSize: 14.5,
-                      color: Colors.grey.shade800,
-                      height: 1.5,
+
+                  // ปุ่ม Cancel
+                  ElevatedButton.icon(
+                    onPressed: () => Navigator.pop(context, false),
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    label: const Text(
+                      'Cancel',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey.shade600,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                      elevation: 3,
                     ),
                   ),
                 ],
               ),
-            ),
-
-            const SizedBox(height: 26),
-
-            // 🔹 ปุ่ม Borrow / Cancel
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                // ✅ Borrow
-                ElevatedButton(
-                  onPressed: () async {
-                    final pickedDate = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime(2100),
-                    );
-
-                    if (pickedDate != null) {
-                      Navigator.of(context).pop();
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            '✅ You borrowed "${asset['name']}" on ${pickedDate.toLocal().toString().split(' ')[0]}',
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                          backgroundColor: Colors.green,
-                          duration: const Duration(seconds: 3),
-                        ),
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    elevation: 3,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  child: const Text(
-                    'Borrow',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ),
-
-                // ❌ Cancel
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    elevation: 3,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
