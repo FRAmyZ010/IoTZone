@@ -11,7 +11,7 @@ class SafeAreaApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: DashboardStaff(),
+      home: Dashboard(),
     );
   }
 }
@@ -19,8 +19,8 @@ class SafeAreaApp extends StatelessWidget {
 // -------------------------------------------------------
 // 🔹 DASHBOARD PAGE (หน้าแยกแสดงสรุปสถานะประจำวัน)
 // -------------------------------------------------------
-class DashboardStaff extends StatelessWidget {
-  const DashboardStaff({super.key});
+class Dashboard extends StatelessWidget {
+  const Dashboard({super.key});
 
   // 🔸 Mock data ตัวอย่างสรุปสถานะของ asset วันนี้
   final int availableCount = 5;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:iot_zone/Page/homepagelender.dart';
-import 'package:iot_zone/Page/Dashboard/Dashboard-lecture.dart';
+import 'package:iot_zone/Page/Dashboard/Dashboard.dart';
 import 'package:iot_zone/Page/Asset_page/assetlender.dart';
 import 'package:iot_zone/Page/History_page/history_lender.dart';
 
@@ -30,7 +30,7 @@ class _LenderMainState extends State<LenderMain> {
       Homepagelender(userData: widget.userData), // 0
       HistoryLenderPage(), // 1
       Center(child: Text('⚙️ Settings')), // 2
-      DashboardLender(), // 3
+      Dashboard(), // 3
       Assetlender(), // 4
     ];
   }
