@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:iot_zone/Page/homepagestaff.dart';
-import 'package:iot_zone/Page/Dashboard/Dashboard-staff.dart';
+import 'package:iot_zone/Page/Dashboard/Dashboard.dart';
 import 'package:iot_zone/Page/Asset_page/assetstaff.dart';
 import 'package:iot_zone/Page/History_page/history_staff.dart';
 
@@ -26,7 +26,7 @@ class _StaffMainState extends State<StaffMain> {
     _pages = [
       Homepagestaff(userData: widget.userData), // 0
       HistoryStaffPage(), // 1
-      DashboardStaff(), // 2
+      Dashboard(), // 2
       Center(child: Text('⚙️ Settings')), // 3
       AssetStaff(), // 4
     ];
