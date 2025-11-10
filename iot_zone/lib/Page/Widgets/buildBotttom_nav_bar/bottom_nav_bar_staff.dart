@@ -5,11 +5,10 @@ import 'package:iot_zone/Page/Asset_page/assetstaff.dart';
 import 'package:iot_zone/Page/History_page/history_staff.dart';
 
 class StaffMain extends StatefulWidget {
-  final Map<String, dynamic>? userData; // ✅ เพิ่มรับข้อมูล user จาก login
+  final Map<String, dynamic>? userData;
 
   const StaffMain({super.key, this.userData});
 
-  // ✅ ใช้ให้หน้าอื่นเรียกเปลี่ยนแท็บได้ เช่น StaffMain.of(context)?.changeTab(2)
   static _StaffMainState? of(BuildContext context) =>
       context.findAncestorStateOfType<_StaffMainState>();
 
@@ -19,19 +18,17 @@ class StaffMain extends StatefulWidget {
 
 class _StaffMainState extends State<StaffMain> {
   int _selectedIndex = 0;
-
   late final List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
-    // ✅ ส่ง userData ไปหน้าที่ต้องใช้ (homepage / dashboard)
     _pages = [
       Homepagestaff(userData: widget.userData), // 0
-      const HistoryStaffPage(), // 1
+      HistoryStaffPage(), // 1
       DashboardStaff(), // 2
-      const Center(child: Text('⚙️ Settings')), // 3
-      const AssetStaff(), // 4
+      Center(child: Text('⚙️ Settings')), // 3
+      AssetStaff(), // 3
     ];
   }
 
@@ -40,19 +37,22 @@ class _StaffMainState extends State<StaffMain> {
     setState(() => _selectedIndex = i);
   }
 
+  // ✅ ใช้ switch เหมือนเดิม
   void _handleBottomTap(int index) {
     switch (index) {
       case 0:
-        changeTab(0);
+        changeTab(0); // Home
         break;
       case 1:
-        changeTab(1);
+        changeTab(1); // History
         break;
       case 2:
-        changeTab(2);
+        changeTab(2); // Request Status (Dashboard)
         break;
       case 3:
-        changeTab(3);
+        changeTab(3); // Asset
+        break;
+      default:
         break;
     }
   }
@@ -64,7 +64,7 @@ class _StaffMainState extends State<StaffMain> {
       body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: CustomBottomNavBarStaff(
         currentIndex: _selectedIndex,
-        onTap: _handleBottomTap,
+        onTap: _handleBottomTap, // ✅ เรียกผ่าน switch
       ),
     );
   }

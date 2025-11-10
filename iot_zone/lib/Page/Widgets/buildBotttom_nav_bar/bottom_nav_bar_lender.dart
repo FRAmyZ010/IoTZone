@@ -5,11 +5,11 @@ import 'package:iot_zone/Page/Asset_page/assetlender.dart';
 import 'package:iot_zone/Page/History_page/history_lender.dart';
 
 class LenderMain extends StatefulWidget {
-  final Map<String, dynamic>? userData; // ✅ รับข้อมูลผู้ใช้จากหน้า login
+  final Map<String, dynamic>?
+  userData; // ✅ ข้อมูลผู้ใช้จาก CheckSession หรือ Login
 
   const LenderMain({super.key, this.userData});
 
-  // ✅ ใช้ให้หน้าอื่นเรียกเปลี่ยนแท็บได้ เช่น LenderMain.of(context)?.changeTab(2)
   static _LenderMainState? of(BuildContext context) =>
       context.findAncestorStateOfType<_LenderMainState>();
 
@@ -28,10 +28,10 @@ class _LenderMainState extends State<LenderMain> {
     // ✅ ส่ง userData ไปหน้าที่ต้องใช้
     _pages = [
       Homepagelender(userData: widget.userData), // 0
-      const HistoryLenderPage(), // 1
-      const Center(child: Text('⚙️ Settings')), // 2
+      HistoryLenderPage(), // 1
+      Center(child: Text('⚙️ Settings')), // 2
       DashboardLender(), // 3
-      const Assetlender(), // 4
+      Assetlender(), // 4
     ];
   }
 
@@ -43,16 +43,18 @@ class _LenderMainState extends State<LenderMain> {
   void _handleBottomTap(int index) {
     switch (index) {
       case 0:
-        changeTab(0);
+        changeTab(0); // Home
         break;
       case 1:
-        changeTab(1);
+        changeTab(1); // History
         break;
       case 2:
-        changeTab(2);
+        changeTab(2); // Dashboard
         break;
       case 3:
-        changeTab(3);
+        changeTab(3); // Asset
+        break;
+      default:
         break;
     }
   }
