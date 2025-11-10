@@ -162,7 +162,11 @@ class _HistoryStaffPageState extends State<HistoryStaffPage> {
                           child: Row(
                             children: [
                               const SizedBox(width: 12),
-                              const Icon(Icons.search, color: Colors.black54, size: 22),
+                              const Icon(
+                                Icons.search,
+                                color: Colors.black54,
+                                size: 22,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: TextField(
@@ -190,7 +194,11 @@ class _HistoryStaffPageState extends State<HistoryStaffPage> {
                             color: Colors.yellow,
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Icon(Icons.calendar_month, color: Colors.black, size: 26),
+                          child: const Icon(
+                            Icons.calendar_month,
+                            color: Colors.black,
+                            size: 26,
+                          ),
                         ),
                       ),
                     ],
@@ -201,7 +209,12 @@ class _HistoryStaffPageState extends State<HistoryStaffPage> {
                   // History list
                   Expanded(
                     child: filteredList.isEmpty
-                        ? const Center(child: Text("No records found", style: TextStyle(color: Colors.black54)))
+                        ? const Center(
+                            child: Text(
+                              "No records found",
+                              style: TextStyle(color: Colors.black54),
+                            ),
+                          )
                         : ListView.builder(
                             itemCount: filteredList.length,
                             itemBuilder: (context, index) =>
@@ -224,7 +237,13 @@ class _HistoryStaffPageState extends State<HistoryStaffPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: purple.withOpacity(0.2)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -251,21 +270,33 @@ class _HistoryStaffPageState extends State<HistoryStaffPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item["name"] ?? "Unknown Item",
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Text(
+                  item["name"] ?? "Unknown Item",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 if (item["borrowDate"] != null)
-                  Text("Borrowed on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item["borrowDate"]))}"),
+                  Text(
+                    "Borrowed on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item["borrowDate"]))}",
+                  ),
                 if (item["returnDate"] != null)
-                  Text("Returned on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item["returnDate"]))}"),
+                  Text(
+                    "Returned on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item["returnDate"]))}",
+                  ),
                 if (item["borrowedBy"] != null)
                   Text("Borrowed by ${item["borrowedBy"]}"),
-                if (item["receivedBy"] != null)
-                  Text("Received by ${item["receivedBy"]}"),
                 if (item["approvedBy"] != null)
                   Text("Approved by ${item["approvedBy"]}"),
+                if (item["receivedBy"] != null)
+                  Text("Received by ${item["receivedBy"]}"),
                 if (item["status"] == "Rejected" && item["reason"] != null)
-                  Text("Reason: ${item["reason"]}", style: const TextStyle(color: Colors.redAccent)),
+                  Text(
+                    "Reason: ${item["reason"]}",
+                    style: const TextStyle(color: Colors.redAccent),
+                  ),
               ],
             ),
           ),

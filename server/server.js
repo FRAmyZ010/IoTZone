@@ -284,9 +284,9 @@ app.get('/api/staff-history/:staffId', (req, res) => {
       h.return_date AS returnDate,
       h.reason,
       a.img AS image,
-      u.username AS borrowedBy,
-      s.username AS receivedBy,
-      l.username AS approvedBy
+      u.name AS borrowedBy,
+      s.name AS receivedBy,
+      l.name AS approvedBy
     FROM history h
     JOIN asset a ON h.asset_id = a.id
     JOIN user u ON h.borrower_id = u.id
@@ -296,7 +296,7 @@ app.get('/api/staff-history/:staffId', (req, res) => {
     ORDER BY h.borrow_date DESC;
   `;
 
-  db.query(sql, [staffId], (err, results) => {
+  db.query(sql, (err, results) => {
     if (err) {
       console.error('❌ Error fetching staff history:', err);
       return res.status(500).json({ error: 'Database query failed', details: err });
@@ -323,7 +323,7 @@ app.get('/api/lender-history/:lenderId', (req, res) => {
       h.return_date AS returnDate,
       h.reason,
       a.img AS image,
-      u.username AS borrowedBy
+      u.name AS borrowedBy
     FROM history h
     JOIN asset a ON h.asset_id = a.id
     JOIN user u ON h.borrower_id = u.id
