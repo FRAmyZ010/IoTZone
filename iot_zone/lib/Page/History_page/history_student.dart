@@ -132,30 +132,18 @@ class _HistoryStudentPageState extends State<HistoryStudentPage> {
     const purple = Color(0xFFC368FF);
     const bg = Color(0xFFF9F9FF);
 
-    return Scaffold(
-      backgroundColor: bg,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(56),
-        child: SafeArea(
-          bottom: false,
-          child: AppBar(
-            backgroundColor: purple,
-            elevation: 0,
-            automaticallyImplyLeading: false,
-            titleSpacing: 0,
-            title: const Padding(
-              padding: EdgeInsets.only(left: 20),
-              child: Text(
-                "History",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 24,
-                ),
-              ),
-            ),
+      return Scaffold(
+      backgroundColor: const Color(0xFFF6F2FB),
+      appBar: AppBar(
+        title: const Text(
+          'History', // หัวข้อหน้า
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+            color: Colors.white,
           ),
         ),
+        backgroundColor: Colors.deepPurpleAccent, // พื้นหลัง AppBar
       ),
 
       // ✅ แสดงผลใน Body
