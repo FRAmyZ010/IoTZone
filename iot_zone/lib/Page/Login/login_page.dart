@@ -36,7 +36,9 @@ class _LoginPageState extends State<LoginPage> {
 
     if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('⚠️ โปรดกรอกชื่อผู้ใช้และรหัสผ่าน')),
+        const SnackBar(
+          content: Text('⚠️ Please enter both username and password'),
+        ),
       );
       return;
     }
@@ -53,14 +55,14 @@ class _LoginPageState extends State<LoginPage> {
       if (response.statusCode == 200 && data['user'] != null) {
         final role = data['user']['role'];
 
-        // ✅ บันทึก session ก่อน
+        // ✅ Save session before navigation
         await _saveSession(data['user']);
 
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('✅ เข้าสู่ระบบสำเร็จ!')));
+        ).showSnackBar(const SnackBar(content: Text('✅ Login successful!')));
 
-        // 🧭 ไปหน้าตาม role
+        // 🧭 Navigate by role
         switch (role) {
           case 'student':
             Navigator.pushReplacement(
@@ -89,14 +91,14 @@ class _LoginPageState extends State<LoginPage> {
             break;
           default:
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('⚠️ ไม่พบสิทธิ์ผู้ใช้ (role)')),
+              const SnackBar(content: Text('⚠️ User role not found')),
             );
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '❌ ${data['message'] ?? 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'}',
+              '❌ ${data['message'] ?? 'Invalid username or password'}',
             ),
           ),
         );
@@ -104,7 +106,7 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์\n$e'),
+          content: Text('❌ Connection error. Unable to reach the server.\n$e'),
         ),
       );
     }
