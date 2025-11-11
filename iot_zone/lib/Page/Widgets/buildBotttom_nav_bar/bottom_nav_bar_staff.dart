@@ -33,8 +33,32 @@ class _StaffMainState extends State<StaffMain> {
   }
 
   void changeTab(int i) {
-    if (_selectedIndex == i) return;
-    setState(() => _selectedIndex = i);
+    setState(() {
+      if (_selectedIndex == i) {
+        // 🔁 ถ้ากดแท็บเดิม → รีโหลดหน้า (สร้าง widget ใหม่)
+        switch (i) {
+          case 0:
+            _pages[0] = Homepagestaff(
+              userData: widget.userData,
+              key: UniqueKey(),
+            );
+            break;
+          case 1:
+            _pages[1] = HistoryStaffPage(key: UniqueKey());
+            break;
+          case 2:
+            _pages[2] = Dashboard(key: UniqueKey());
+            break;
+          case 3:
+            _pages[3] = Center(key: UniqueKey());
+            break;
+          case 4:
+            _pages[4] = AssetStaff(key: UniqueKey());
+            break;
+        }
+      }
+      _selectedIndex = i;
+    });
   }
 
   // ✅ ใช้ switch เหมือนเดิม
