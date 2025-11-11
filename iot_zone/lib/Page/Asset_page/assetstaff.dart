@@ -16,6 +16,7 @@ class AssetStaff extends StatefulWidget {
 
 class _AssetStaffState extends State<AssetStaff> {
   // 🔸 รายการประเภทของสินทรัพย์
+  String searchQuery = '';
   final List<String> types = const [
     'Type',
     'Board',
@@ -202,9 +203,17 @@ class _AssetStaffState extends State<AssetStaff> {
   @override
   Widget build(BuildContext context) {
     // 🔹 กรองรายการสินทรัพย์ตามประเภทที่เลือก
-    final filteredAssets = selectedType == 'All'
-        ? assets
-        : assets.where((a) => a.type == selectedType).toList();
+    
+    final filteredAssets = assets.where((a) {
+      final matchesType =
+          selectedType == 'All' ||
+          a.type.toLowerCase() == selectedType.toLowerCase();
+
+      final matchesSearch =
+          searchQuery.isEmpty || a.name.toLowerCase().contains(searchQuery);
+
+      return matchesType && matchesSearch;
+    }).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -337,17 +346,44 @@ class _AssetStaffState extends State<AssetStaff> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(25),
-                              border: Border.all(color: Colors.grey.shade300),
-                            ),
-                            child: const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 16),
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  'Search your item',
-                                  style: TextStyle(color: Colors.black54),
-                                ),
+                              border: Border.all(
+                                color: Colors.grey.shade300,
+                                width: 1.2,
                               ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.15),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                const SizedBox(width: 12),
+                                const Icon(
+                                  Icons.search,
+                                  color: Colors.black54,
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: TextField(
+                                    decoration: const InputDecoration(
+                                      hintText: 'Search your item',
+                                      border: InputBorder.none,
+                                      hintStyle: TextStyle(
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        searchQuery = value.toLowerCase();
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
