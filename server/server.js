@@ -490,21 +490,45 @@ app.delete('/assets/:id', (req, res) => {
 });
 
 // 🔄 เปลี่ยนสถานะ
-app.patch('/assets/:id/status', (req, res) => {
+// 🔄 เปลี่ยนสถานะ
+app.patch('/assets/:id/status', async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   console.log(`🟢 Update status of ID ${id} → ${status}`);
 
-  db.query('UPDATE asset SET status=? WHERE id=?', [status, id], (err) => {
-    if (err) {
-      console.error('❌ Error:', err);
-      return res
-        .status(500)
-        .json({ message: 'Status update failed', error: err });
+  try {
+    // 🛑 ถ้าจะเปลี่ยนเป็น Disabled (2)
+    if (Number(status) === 2) {
+      // ตรวจสอบก่อนว่าสินทรัพย์นี้มีการจองหรือยืมอยู่ไหม
+      const [rows] = await db.promise().query(
+        `SELECT * FROM history 
+         WHERE asset_id = ? 
+         AND status IN (1, 2)  -- Pending หรือ Borrowed
+         LIMIT 1`,
+        [id]
+      );
+
+      if (rows.length > 0) {
+        return res.status(400).json({
+          message:
+            "❌ Cannot disable this asset because it is currently borrowed or pending approval.",
+        });
+      }
     }
-    res.json({ message: `Status updated to ${status}` });
-  });
+
+    // ✅ ถ้าไม่มีการจอง → อนุญาตให้เปลี่ยนสถานะ
+    await db.promise().query('UPDATE asset SET status = ? WHERE id = ?', [
+      status,
+      id,
+    ]);
+
+    res.json({ message: `✅ Status updated to ${status}` });
+  } catch (err) {
+    console.error('❌ Error:', err);
+    res.status(500).json({ message: 'Status update failed', error: err });
+  }
 });
+
 // ------------------ Borrow Asset ------------------
 app.post('/api/borrow', async (req, res) => {
   const { asset_id, borrower_id } = req.body;
@@ -597,6 +621,27 @@ app.get('/api/check-borrow-status/:userId', async (req, res) => {
     }
   } catch (err) {
     console.error('❌ Check borrow status error:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+// ------------------ Check if asset is being borrowed or pending ------------------
+app.get('/api/check-asset-usage/:assetId', async (req, res) => {
+  const { assetId } = req.params;
+  try {
+    const [rows] = await db.promise().query(
+      `SELECT * FROM history 
+       WHERE asset_id = ? 
+       AND status IN (1, 2)  -- Pending หรือ Borrowed
+       LIMIT 1`,
+      [assetId]
+    );
+
+    if (rows.length > 0) {
+      return res.json({ inUse: true, message: 'Asset is currently in use or pending approval' });
+    }
+    res.json({ inUse: false });
+  } catch (err) {
+    console.error('❌ check-asset-usage error:', err);
     res.status(500).json({ message: 'Internal server error' });
   }
 });

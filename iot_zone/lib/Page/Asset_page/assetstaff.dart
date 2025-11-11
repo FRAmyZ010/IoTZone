@@ -121,6 +121,17 @@ class _AssetStaffState extends State<AssetStaff> {
     fetchAssets(); // โหลดข้อมูลใหม่หลังเพิ่มเสร็จ
   }
 
+  Future<bool> checkAssetInUse(int assetId) async {
+    final response = await http.get(
+      Uri.parse('http://$ip:3000/api/check-asset-usage/$assetId'),
+    );
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data['inUse'] == true;
+    }
+    return false;
+  }
+
   // 🔹 อัปเดตข้อมูลสินทรัพย์เดิม
   Future<void> updateAsset(AssetModel asset) async {
     await http.put(
@@ -154,12 +165,25 @@ class _AssetStaffState extends State<AssetStaff> {
 
   // 🔹 เปลี่ยนสถานะของสินทรัพย์ (Enable / Disable)
   void _toggleStatus(AssetModel asset) async {
-    final newStatus = asset.status == 'Disabled'
-        ? 'Available'
-        : 'Disabled'; // ถ้า Disabled → Available, ถ้าไม่ → Disabled
-    await updateStatusInAPI(asset.id, newStatus); // อัปเดตใน API
+    // 🛑 เช็คก่อน disable
+    if (asset.status != 'Disabled') {
+      bool inUse = await checkAssetInUse(asset.id);
+      if (inUse) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              '⚠️ Cannot disable this asset because it is currently borrowed or pending approval.',
+            ),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        return;
+      }
+    }
 
-    // อัปเดตสถานะในหน้า UI (ไม่ต้องโหลดใหม่ทั้งหมด)
+    final newStatus = asset.status == 'Disabled' ? 'Available' : 'Disabled';
+    await updateStatusInAPI(asset.id, newStatus);
+
     setState(() {
       assets = assets.map((a) {
         if (a.id == asset.id) {
@@ -421,18 +445,32 @@ class _AssetStaffState extends State<AssetStaff> {
                                 const SizedBox(height: 6),
                                 // ปุ่มเปิด/ปิดการใช้งาน
                                 ElevatedButton(
-                                  onPressed: () => _toggleStatus(asset),
+                                  onPressed:
+                                      (asset.status == 'Pending' ||
+                                          asset.status == 'Borrowed')
+                                      ? null // ❌ ปิดการกด
+                                      : () => _toggleStatus(asset),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: asset.status == 'Disabled'
+                                    backgroundColor:
+                                        (asset.status == 'Pending' ||
+                                            asset.status == 'Borrowed')
+                                        ? Colors.grey
+                                        : asset.status == 'Disabled'
                                         ? Colors.green
                                         : Colors.redAccent,
                                     foregroundColor: Colors.white,
                                   ),
                                   child: Text(
-                                    asset.status == 'Disabled'
+                                    (asset.status == 'Pending' ||
+                                            asset.status == 'Borrowed')
+                                        ? 'UNAVAILABLE (IN USE)'
+                                        : asset.status == 'Disabled'
                                         ? 'ENABLE'
                                         : 'DISABLE',
-                                    style: const TextStyle(color: Colors.white),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                    ),
                                   ),
                                 ),
                               ],
