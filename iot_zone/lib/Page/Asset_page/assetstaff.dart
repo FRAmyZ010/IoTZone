@@ -448,28 +448,46 @@ class _AssetStaffState extends State<AssetStaff> {
                                   onPressed:
                                       (asset.status == 'Pending' ||
                                           asset.status == 'Borrowed')
-                                      ? null // ❌ ปิดการกด
+                                      ? null // ปิดปุ่ม
                                       : () => _toggleStatus(asset),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor:
                                         (asset.status == 'Pending' ||
                                             asset.status == 'Borrowed')
-                                        ? Colors.grey
+                                        ? Colors
+                                              .grey
+                                              .shade600 // เทาเข้ม
                                         : asset.status == 'Disabled'
                                         ? Colors.green
                                         : Colors.redAccent,
-                                    foregroundColor: Colors.white,
+                                    foregroundColor:
+                                        (asset.status == 'Pending' ||
+                                            asset.status == 'Borrowed')
+                                        ? Colors
+                                              .white // สีเหลืองเมื่อ In Use
+                                        : Colors.white,
+                                    disabledBackgroundColor: Colors
+                                        .grey
+                                        .shade600, // ให้สีเทาเข้มคงอยู่แม้ปิดปุ่ม
+                                    disabledForegroundColor: Colors
+                                        .white, // ตัวอักษรเหลืองตอนปิดปุ่ม
                                   ),
                                   child: Text(
                                     (asset.status == 'Pending' ||
                                             asset.status == 'Borrowed')
-                                        ? 'UNAVAILABLE (IN USE)'
+                                        ? 'IN USE'
                                         : asset.status == 'Disabled'
                                         ? 'ENABLE'
                                         : 'DISABLE',
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color:
+                                          (asset.status == 'Pending' ||
+                                              asset.status == 'Borrowed')
+                                          ? Colors.white
+                                          : Colors.white,
                                       fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
                                     ),
                                   ),
                                 ),
