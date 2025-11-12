@@ -859,6 +859,90 @@ app.get("/api/dashboard-summary", async (req, res) => {
   }
 });
 
+app.get('/show/return-asset', (req, res) => {
+  // SQL Query:
+  // 1. ดึงข้อมูลจาก history (h) ที่มี status = '2' (รอรับคืน) และกำหนดวันคืนเป็นวันนี้
+  // 2. LEFT JOIN กับ asset (a) เพื่อดึง asset_name และ img
+  // 3. LEFT JOIN กับ user (ub) เพื่อดึงชื่อผู้ยืม (borrower_name)
+  // 4. LEFT JOIN กับ user (ua) เพื่อดึงชื่อผู้อนุมัติ (approver_name)
+  const sql = `
+    SELECT
+      h.*,
+      a.asset_name,
+      a.img,
+      ub.name AS borrower_name,
+      ua.name AS approver_name
+    
+    FROM
+      history h
+    LEFT JOIN
+      asset a ON h.asset_id = a.id
+    LEFT JOIN
+      user ub ON h.borrower_id = ub.id  -- JOIN สำหรับ Borrower
+    LEFT JOIN
+      user ua ON h.approver_id = ua.id  -- JOIN ใหม่สำหรับ Approver
+    WHERE
+      h.status = '2'
+      AND DATE(h.return_date) = DATE(NOW());
+  `;
+
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.error('Error fetching return assets with JOIN:', err);
+      return res.status(500).json({ message: "Error database failure" });
+    }
+    // ผลลัพธ์ที่ได้จะมีฟิลด์: h.*, asset_name, img, borrower_name, และ approver_name
+    res.status(200).json(result);
+  });
+});
+
+app.put('/accept/return_asset/:id/:asset_id/:receiver_id', (req, res) => {
+  const id = req.params.id; // ID ของ history
+  const asset_id = req.params.asset_id;
+  // 🎉 ดึง receiver_id จาก Params
+  const receiver_id = req.params.receiver_id; 
+
+  // SQL เพื่ออัปเดต history: status = '4' (คืนเรียบร้อย) และตั้งค่า receiver_id
+  const updtHist = "UPDATE history SET status = '4', receiver_id = ? WHERE id = ?";
+  
+  // SQL เพื่ออัปเดต asset: status = 1 (พร้อมใช้งาน)
+  const updtAsset = "UPDATE asset SET status = 1 WHERE id = ?";
+
+  // 1. อัปเดต History ก่อน (status และ receiver_id)
+  db.query(updtHist, [receiver_id, id], (err, result) => { 
+    if (err) {
+      console.error("Error updating history status/receiver_id:", err);
+      // ส่ง Response Error กลับไปทันที
+      return res.status(500).json({ 
+        message: "Error updating history status/receiver_id", 
+        error: err 
+      });
+    }
+
+    // 2. ถ้า History อัปเดตสำเร็จ ให้ดำเนินการอัปเดต Asset ต่อ
+    console.log("History status and receiver_id updated successfully. Proceeding to update asset status.");
+    
+    db.query(updtAsset, [asset_id], (err2, result2) => {
+      if (err2) {
+        console.error("Error updating asset status | Get Return Asset system:", err2);
+        // ส่ง Response Error กลับไปทันที
+        return res.status(500).json({ 
+          message: "Error updating asset status | Get Return Asset system", 
+          error: err2 
+        });
+      }
+
+      // 3. ถ้าทุกอย่างสำเร็จ ให้ส่ง Response Success เพียงครั้งเดียว
+      console.log("Asset return successfully accepted and asset status updated.");
+      return res.status(200).json({ 
+        message: "Asset return successfully accepted and asset status updated.",
+        history_update: result,
+        asset_update: result2
+      });
+    });
+  });
+});
+
 
 // ------------------ Root ------------------
 app.get('/', (req, res) => {
@@ -869,3 +953,5 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
+
+
