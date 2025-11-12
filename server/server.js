@@ -748,39 +748,42 @@ app.post('/borrow_requests/:id/approve', async (req, res) => {
 
 // =================== API Reject Request ===================
 app.post('/borrow_requests/:id/reject', async (req, res) => {
-  const historyId = req.params.id;
-  const approverId = 3; // ❗ สมมติว่าเป็น ID ของผู้ดูแลที่ทำการปฏิเสธ
+  const historyId = req.params.id;
+  const { approverId, reason } = req.body; // ✅ ดึง approverId และ reason จาก Request Body
 
-  try {
-    // 1. อัปเดตสถานะใน history เป็น Rejected (3)
-    // คุณสามารถเพิ่มเหตุผล (reason) ในอนาคตได้ ถ้าต้องการ
-    await db.promise().query(
-      `UPDATE history SET status = 3, approver_id = ? WHERE id = ?`,
-      [approverId, historyId]
-    );
+  // ❗ ตรวจสอบ approverId ที่ถูกส่งมาจาก client (หรือใช้ค่าคงที่หากยังไม่ได้จัดการ Session)
+  // const approverId = approverIdFromSession || 3; 
 
-    // 2. ดึง asset_id
-    const [historyRows] = await db.promise().query(
-      `SELECT asset_id FROM history WHERE id = ?`,
-      [historyId]
-    );
-    if (historyRows.length === 0) {
-      return res.status(404).json({ message: 'History record not found' });
-    }
-    const assetId = historyRows[0].asset_id;
+  try {
+    // 1. อัปเดตสถานะใน history เป็น Rejected (3)
+    // ✅ เพิ่มการอัปเดตคอลัมน์ reason ลงในตาราง history
+    await db.promise().query(
+      `UPDATE history SET status = 3, approver_id = ?, reason = ? WHERE id = ?`,
+      [approverId, reason, historyId]
+    );
 
-    // 3. อัปเดตสถานะ asset กลับเป็น Available (1)
-    await db.promise().query(
-      `UPDATE asset SET status = 1 WHERE id = ?`,
-      [assetId]
-    );
+    // 2. ดึง asset_id
+    const [historyRows] = await db.promise().query(
+      `SELECT asset_id FROM history WHERE id = ?`,
+      [historyId]
+    );
+    if (historyRows.length === 0) {
+      return res.status(404).json({ message: 'History record not found' });
+    }
+    const assetId = historyRows[0].asset_id;
 
-    console.log(`❌ Request ${historyId} Rejected.`);
-    res.status(200).json({ message: 'Rejected successfully' });
-  } catch (err) {
-    console.error('❌ Reject error:', err);
-    res.status(500).json({ message: 'Internal server error' });
-  }
+    // 3. อัปเดตสถานะ asset กลับเป็น Available (1)
+    await db.promise().query(
+      `UPDATE asset SET status = 1 WHERE id = ?`,
+      [assetId]
+    );
+
+    console.log(`❌ Request ${historyId} Rejected. Reason: ${reason}`);
+    res.status(200).json({ message: 'Rejected successfully' });
+  } catch (err) {
+    console.error('❌ Reject error:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 });
 
 

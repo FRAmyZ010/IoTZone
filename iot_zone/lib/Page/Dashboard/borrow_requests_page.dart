@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'borrow_request_card.dart';
 import 'package:iot_zone/Page/AppConfig.dart';
 
-//รายการคำขอยืมหนังสือ
+// รายการคำขอยืมหนังสือ
 class BorrowRequestsPage extends StatefulWidget {
   const BorrowRequestsPage({super.key});
 
@@ -17,7 +17,7 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
   bool loading = true;
   String url = AppConfig.baseUrl;
 
-  // ❗ สมมติ ID ผู้ดูแล (Approver ID) ชั่วคราว คุณควรดึงมาจาก Session/Login State จริง
+  // ❗ สมมติ ID ผู้ดูแล (Approver ID) ชั่วคราว
   final int approverId = 3;
 
   @override
@@ -45,20 +45,19 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
     }
   }
 
-  // 🔸 ระบบ “อนุมัติ”
+  // 🔸 ระบบ “อนุมัติ” (ไม่มีการเปลี่ยนแปลง)
   Future<void> approveRequest(int id) async {
     try {
       final response = await http.post(
         Uri.parse('$url/borrow_requests/$id/approve'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'approverId': approverId}), // ✅ ส่ง approverId ไป
+        body: json.encode({'approverId': approverId}),
       );
 
       if (response.statusCode == 200) {
         setState(() {
           final index = requests.indexWhere((r) => r['id'] == id);
-          if (index != -1)
-            requests[index]['status'] = 2; // ✅ อัปเดตเป็น 2 (Approved)
+          if (index != -1) requests[index]['status'] = 2;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('✅ Approved successfully')),
@@ -74,24 +73,22 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
     }
   }
 
-  // 🔸 ระบบ “ปฏิเสธ” (ส่ง reason ไปด้วย)
+  // 🔸 ระบบ “ปฏิเสธ” (ยืนยันว่าส่ง reason ไป Backend)
   Future<void> rejectRequest(int id, {String reason = ''}) async {
     try {
       final response = await http.post(
         Uri.parse('$url/borrow_requests/$id/reject'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'approverId': approverId, // ✅ ส่ง approverId ไป
-          'reason': reason, // ✅ ส่งเหตุผลไป
-        }),
+        // ✅ บรรทัดนี้ยืนยันว่า reason ถูกส่งไปใน Body ของ Request
+        body: json.encode({'approverId': approverId, 'reason': reason}),
       );
 
       if (response.statusCode == 200) {
         setState(() {
           final index = requests.indexWhere((r) => r['id'] == id);
           if (index != -1) {
-            requests[index]['status'] = 3; // ✅ อัปเดตเป็น 3 (Rejected)
-            requests[index]['reason'] = reason; // ✅ บันทึกเหตุผลใน State
+            requests[index]['status'] = 3;
+            requests[index]['reason'] = reason;
           }
         });
         ScaffoldMessenger.of(context).showSnackBar(
@@ -108,39 +105,107 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
     }
   }
 
-  // 📝 ฟังก์ชันแสดง Dialog เพื่อใส่เหตุผลในการปฏิเสธ
-  Future<void> rejectRequestWithReason(int id) async {
+  // 📝 ฟังก์ชันแสดง Dialog เพื่อใส่เหตุผลในการปฏิเสธ (UI ตามดีไซน์ที่ต้องการ)
+  Future<void> rejectRequestWithReason(int id, String borrowerName) async {
     final TextEditingController reasonController = TextEditingController();
 
     return showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Reject Request'),
-          content: TextField(
-            controller: reasonController,
-            decoration: const InputDecoration(
-              hintText: "Enter rejection reason (Optional)",
-            ),
-            minLines: 1,
-            maxLines: 3,
+          // 1. หัวข้อ Dialog (แสดงชื่อผู้ยืม)
+          title: Text(
+            'Borrower: $borrowerName',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            textAlign: TextAlign.center,
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                rejectRequest(id, reason: reasonController.text.trim());
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text(
-                'Reject',
-                style: TextStyle(color: Colors.white),
+          contentPadding: const EdgeInsets.fromLTRB(24.0, 10.0, 24.0, 0.0),
+
+          // 2. เนื้อหา Dialog (Label Reject reason + TextField)
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Reject reason',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: TextField(
+                  controller: reasonController,
+                  decoration: const InputDecoration(
+                    hintText: "Enter rejection reason",
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.all(12),
+                  ),
+                  minLines: 4,
+                  maxLines: 4,
+                ),
+              ),
+            ],
+          ),
+
+          // 3. ปรับปุ่ม Action (จัดเรียงและเปลี่ยนสีตามภาพ)
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // ปุ่ม Send (Reject/ยืนยัน) - สีเขียว
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    // เรียก rejectRequest พร้อมส่งเหตุผลที่ผู้ใช้กรอก
+                    rejectRequest(id, reason: reasonController.text.trim());
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green, // 🎨 สีเขียว
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 30,
+                      vertical: 15,
+                    ),
+                    minimumSize: const Size(120, 50),
+                  ),
+                  child: const Text(
+                    'Send',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(width: 20),
+                // ปุ่ม Cancel - สีแดง
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red, // 🎨 สีแดง
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 30,
+                      vertical: 15,
+                    ),
+                    minimumSize: const Size(120, 50),
+                  ),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
             ),
+            const SizedBox(height: 20),
           ],
         );
       },
@@ -162,12 +227,12 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
               itemCount: requests.length,
               itemBuilder: (context, index) {
                 final req = requests[index];
+                final borrowerName = req['borrowerName'] ?? 'Unknown Requester';
                 return BorrowRequestCard(
                   request: req,
-                  // ⚙️ เรียกฟังก์ชันที่รับ ID
                   onApprove: approveRequest,
-                  // 📝 เรียกฟังก์ชัน Dialog สำหรับใส่เหตุผล
-                  onReject: rejectRequestWithReason,
+                  // ✅ ส่ง id และ borrowerName ไปยัง Dialog
+                  onReject: (id) => rejectRequestWithReason(id, borrowerName),
                 );
               },
             ),
