@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'return_asset_card.dart'; // Component แสดงผลแต่ละรายการ
+import 'package:shared_preferences/shared_preferences.dart';
+import 'return_asset_card.dart';
 import 'package:iot_zone/Page/AppConfig.dart';
 
-// ❗ Placeholder สำหรับ ID ผู้รับคืน (Receiver ID)
-// ในแอปพลิเคชันจริง: ค่านี้ควรถูกดึงมาจากระบบ Authenticate ของผู้ใช้งานที่ Logged in
-const int RECEIVER_ID =
-    5; // **กรุณาเปลี่ยนเป็น ID ของผู้ใช้ที่กำลังใช้งานระบบจริง (User ที่กำลังรับคืน)**
-
-// 📚 หน้าสำหรับจัดการครุภัณฑ์ที่ถูกนำมาคืน (รอการรับคืน)
+// 📚 หน้าสำหรับจัดการครุภัณฑ์ที่รอการรับคืน
 class ReturnAssetsPage extends StatefulWidget {
   const ReturnAssetsPage({super.key});
 
@@ -22,10 +18,26 @@ class _ReturnAssetsPageState extends State<ReturnAssetsPage> {
   bool loading = true;
   String url = AppConfig.baseUrl;
 
+  int? receiverId; // ✅ ดึงจาก session จริง
+  String? receiverName;
+
   @override
   void initState() {
     super.initState();
+    _loadReceiverFromSession(); // ✅ โหลด user_id จาก session
     fetchRequests();
+  }
+
+  // ✅ โหลดข้อมูลผู้รับคืนจาก SharedPreferences
+  Future<void> _loadReceiverFromSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final id = prefs.getInt('user_id');
+    final name = prefs.getString('name');
+    setState(() {
+      receiverId = id;
+      receiverName = name;
+    });
+    debugPrint('🟢 Receiver ID Loaded: $receiverId ($receiverName)');
   }
 
   // 🔹 ดึงข้อมูลครุภัณฑ์ที่รอรับคืนจาก backend
@@ -34,10 +46,9 @@ class _ReturnAssetsPageState extends State<ReturnAssetsPage> {
       final response = await http.get(Uri.parse('$url/show/return-asset'));
 
       if (response.statusCode == 200) {
-        // ตรวจสอบข้อมูลก่อนนำมาใช้
         final List fetchedData = json.decode(response.body);
 
-        // กรองเฉพาะสถานะ '2' ที่รอรับคืน
+        // ✅ กรองเฉพาะสถานะที่ "รอรับคืน" (เช่น status == 2)
         final List pendingReturns = fetchedData.where((r) {
           final status = r['status'].toString();
           return status == '2';
@@ -63,37 +74,34 @@ class _ReturnAssetsPageState extends State<ReturnAssetsPage> {
     }
   }
 
-  // 🔸 ระบบ “รับคืนครุภัณฑ์” (Accept Return)
-  // ✅ เพิ่ม receiverId เข้ามาใน parameter
-  Future<void> acceptReturnAsset(
-    int historyId,
-    int assetId,
-    int receiverId,
-  ) async {
+  // 🔸 ระบบ “รับคืนครุภัณฑ์”
+  Future<void> acceptReturnAsset(int historyId, int assetId) async {
+    if (receiverId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ No session found. Please log in again.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     try {
-      // ✅ สร้าง URL ใหม่โดยเพิ่ม receiverId เป็น Parameter ตัวสุดท้าย
-      // URL: /accept/return_asset/:id/:asset_id/:receiver_id
+      // ✅ ส่ง receiverId จริงไปใน URL
       final endpoint =
           '$url/accept/return_asset/$historyId/$assetId/$receiverId';
 
-      final response = await http.put(
-        Uri.parse(endpoint),
-        // ไม่ต้องส่ง body แล้ว เพราะข้อมูลถูกส่งผ่าน URL Params
-      );
+      final response = await http.put(Uri.parse(endpoint));
 
       if (response.statusCode == 200) {
-        // 🔄 อัปเดตสถานะในหน้าจอทันที (ลบรายการที่คืนเรียบร้อยแล้วออกจาก List)
+        // 🔄 อัปเดตสถานะในหน้าจอทันที
         setState(() {
-          // ลบรายการที่เพิ่งรับคืนสำเร็จออกจากรายการที่รออยู่
           requests.removeWhere((r) => r['id'] == historyId);
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Asset received successfully. Status updated.'),
-          ),
+          const SnackBar(content: Text('✅ Asset received successfully.')),
         );
       } else {
-        // แสดงข้อความ error จาก Backend หากมี
         final errorBody = json.decode(response.body);
         final errorMessage = errorBody['message'] ?? 'Failed to accept return.';
         throw Exception(errorMessage);
@@ -116,6 +124,15 @@ class _ReturnAssetsPageState extends State<ReturnAssetsPage> {
         ),
         backgroundColor: const Color(0xFFC386FF),
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              setState(() => loading = true);
+              fetchRequests();
+            },
+          ),
+        ],
       ),
       body: loading
           ? const Center(child: CircularProgressIndicator())
@@ -125,16 +142,11 @@ class _ReturnAssetsPageState extends State<ReturnAssetsPage> {
               itemCount: requests.length,
               itemBuilder: (context, index) {
                 final req = requests[index];
-
-                // 💡 ใช้ ReturnAssetCard
                 return ReturnAssetCard(
                   request: req,
-                  // ✅ ส่งฟังก์ชัน acceptReturnAsset ที่รับ receiverId เข้าไปด้วย
-                  onAcceptReturn: (historyId, assetId) => acceptReturnAsset(
-                    historyId,
-                    assetId,
-                    RECEIVER_ID, // <-- ใช้ ID ผู้รับคืนจาก Global Constant
-                  ),
+                  // ✅ ส่งฟังก์ชันรับคืนจริง พร้อม receiverId จาก session
+                  onAcceptReturn: (historyId, assetId) =>
+                      acceptReturnAsset(historyId, assetId),
                 );
               },
             ),
