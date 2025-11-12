@@ -61,22 +61,16 @@ class _DashboardState extends State<Dashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F2FB),
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(70),
-        child: Container(
-          color: const Color(0xFF7C4DFF),
-          padding: const EdgeInsets.only(top: 25, left: 16),
-          alignment: Alignment.centerLeft,
-          child: const Text(
-            'Dashboard Overview',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              height: 1.3,
-            ),
+      appBar: AppBar(
+        title: const Text(
+          'Dashboard', // หัวข้อหน้า
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+            color: Colors.white,
           ),
         ),
+        backgroundColor: Colors.deepPurpleAccent, // พื้นหลัง AppBar
       ),
       body: isLoading
           ? const Center(

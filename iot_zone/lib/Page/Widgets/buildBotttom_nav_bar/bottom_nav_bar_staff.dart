@@ -168,8 +168,8 @@ class _CustomBottomNavBarStaffState extends State<CustomBottomNavBarStaff> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _buildNavItem(Icons.home, 0),
-                  _buildNavItem(Icons.history, 1),
                   _buildNavItem(Icons.check_circle_outline, 3),
+                  _buildNavItem(Icons.history, 1),
                   _buildNavItem(Icons.window, 2),
                 ],
               ),

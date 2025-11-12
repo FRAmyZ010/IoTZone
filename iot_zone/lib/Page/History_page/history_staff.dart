@@ -135,12 +135,17 @@ class _HistoryStaffPageState extends State<HistoryStaffPage> {
   Widget build(BuildContext context) {
     const purple = Color(0xFFC368FF);
     return Scaffold(
+      backgroundColor: const Color(0xFFF6F2FB),
       appBar: AppBar(
-        backgroundColor: purple,
         title: const Text(
-          "History",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          'History', // หัวข้อหน้า
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+            color: Colors.white,
+          ),
         ),
+        backgroundColor: Colors.deepPurpleAccent, // พื้นหลัง AppBar
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
