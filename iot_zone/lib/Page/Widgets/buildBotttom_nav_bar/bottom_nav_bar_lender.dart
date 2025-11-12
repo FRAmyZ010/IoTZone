@@ -36,8 +36,34 @@ class _LenderMainState extends State<LenderMain> {
   }
 
   void changeTab(int i) {
-    if (_selectedIndex == i) return;
-    setState(() => _selectedIndex = i);
+    setState(() {
+      if (_selectedIndex == i) {
+        // 🔁 รีโหลดหน้าเดิม (สร้าง widget ใหม่)
+        switch (i) {
+          case 0:
+            _pages[0] = Homepagelender(
+              userData: widget.userData,
+              key: UniqueKey(),
+            );
+            break;
+          case 1:
+            _pages[1] = HistoryLenderPage(key: UniqueKey());
+            break;
+          case 2:
+            _pages[2] = const Center(
+              // child: Text('⚙️ Settings', key: UniqueKey()),
+            );
+            break;
+          case 3:
+            _pages[3] = Dashboard(key: UniqueKey());
+            break;
+          case 4:
+            _pages[4] = Assetlender(key: UniqueKey());
+            break;
+        }
+      }
+      _selectedIndex = i;
+    });
   }
 
   void _handleBottomTap(int index) {
