@@ -216,8 +216,12 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Borrow Requests'),
-        backgroundColor: const Color(0xFF7C4DFF),
+        title: const Text(
+          'Borrow Requests',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Color.fromARGB(255, 130, 77, 255),
+        foregroundColor: Colors.white,
       ),
       body: loading
           ? const Center(child: CircularProgressIndicator())
