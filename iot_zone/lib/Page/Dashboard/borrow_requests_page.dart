@@ -26,9 +26,7 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
   // 🔹 ดึงข้อมูลคำขอยืมหนังสือจาก backend
   Future<void> fetchRequests() async {
     try {
-      final response = await http.get(
-        Uri.parse('$url/borrow_requests'),
-      );
+      final response = await http.get(Uri.parse('$url/borrow_requests'));
 
       if (response.statusCode == 200) {
         setState(() {
@@ -48,7 +46,7 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
   Future<void> approveRequest(int id) async {
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/borrow_requests/$id/approve'),
+        Uri.parse('$url/borrow_requests/$id/approve'),
       );
 
       if (response.statusCode == 200) {
@@ -69,7 +67,7 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
   Future<void> rejectRequest(int id) async {
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/borrow_requests/$id/reject'),
+        Uri.parse('$url/borrow_requests/$id/reject'),
       );
 
       if (response.statusCode == 200) {

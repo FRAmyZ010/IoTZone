@@ -38,8 +38,6 @@ class BorrowRequestCard extends StatelessWidget {
       case '1':
         statusColor = Colors.orange;
         statusString = 'pending';
-      default:
-        statusColor = Colors.orange;
     }
 
     return {'status': statusString, 'color': statusColor};
@@ -97,7 +95,11 @@ class BorrowRequestCard extends StatelessWidget {
                   ),
                   backgroundColor: statusColor.withOpacity(0.15),
                   labelStyle: TextStyle(
-                    color: statusColor,
+                    color: status == 'approved'
+                        ? Colors.green
+                        : status == 'rejected'
+                        ? Colors.red
+                        : Colors.orange,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
