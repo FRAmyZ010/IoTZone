@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 class BorrowRequestCard extends StatelessWidget {
   final Map request;
-  final VoidCallback onApprove;
-  final VoidCallback onReject;
+  final void Function(int id) onApprove; // เปลี่ยนเป็น function รับ id
+  final void Function(int id) onReject; // เปลี่ยนเป็น function รับ id
 
   // มีปุ่ม อนุมัติ / ปฏิเสธ
   const BorrowRequestCard({
@@ -17,30 +17,36 @@ class BorrowRequestCard extends StatelessWidget {
   Map<String, dynamic> _getStatus(dynamic rawStatus) {
     String statusString = 'pending';
     Color statusColor = Colors.orange;
+    int statusInt = 1; // สถานะตัวเลขเริ่มต้นเป็น 1 (pending)
 
     if (rawStatus is String) {
-      // ใช้สถานะที่เป็น String จากการอัปเดต State ในหน้า BorrowRequestsPage
-      statusString = rawStatus;
+      // พยายามแปลง String เป็น Integer
+      statusInt = int.tryParse(rawStatus) ?? 1;
     } else if (rawStatus is int) {
-      // ใช้สถานะที่เป็น Integer (1) จากการโหลดข้อมูลครั้งแรก
-      if (rawStatus == 1) statusString = 'pending';
+      // ใช้สถานะที่เป็น Integer
+      statusInt = rawStatus;
     }
 
-    switch (statusString) {
-      case '2':
+    // 💡 ใช้ statusInt ในการกำหนดสถานะและสี (1: Pending, 2: Approved, 3: Rejected)
+    switch (statusInt) {
+      case 2:
         statusString = 'approved';
         statusColor = Colors.green;
         break;
-      case '3':
+      case 3:
         statusString = 'rejected';
         statusColor = Colors.red;
         break;
-      case '1':
-        statusColor = Colors.orange;
+      default: // 1 หรือค่าอื่น ๆ ที่ไม่รู้จัก
         statusString = 'pending';
+        statusColor = Colors.orange;
     }
 
-    return {'status': statusString, 'color': statusColor};
+    return {
+      'status': statusString,
+      'color': statusColor,
+      'rawStatus': statusInt,
+    };
   }
 
   @override
@@ -48,15 +54,59 @@ class BorrowRequestCard extends StatelessWidget {
     final statusData = _getStatus(request['status']);
     final status = statusData['status'] as String;
     final statusColor = statusData['color'] as Color;
+    final rawStatus = statusData['rawStatus'] as int;
 
-    // ✅ แก้ไข: ใช้ 'name' (สำหรับ Asset Name) และ 'borrowerName' (สำหรับชื่อผู้ขอยืม)
-    final assetName = request['name'] ?? 'Unknown Asset';
+    final assetName =
+        request['asset_name'] ??
+        request['name'] ??
+        'Unknown Asset'; // 💡 ใช้ asset_name จาก DB
     final borrowerName = request['borrowerName'] ?? 'Unknown Requester';
+    final imagePath =
+        'asset/img/${request['img'] ?? 'default.png'}'; // 🖼️ กำหนด path รูป
 
     // จัดรูปแบบวันที่ให้สั้นลง
-    final borrowDate = request['borrowDate'] != null
+    final borrowDate =
+        request['borrowDate'] !=
+            null // 💡 ใช้ borrow_date จาก DB
         ? request['borrowDate'].toString().substring(0, 10)
         : '-';
+
+    final returnDate =
+        request['returnDate'] !=
+            null // 🗓️ เพิ่ม return_date
+        ? request['returnDate'].toString().substring(0, 10)
+        : 'N/A';
+
+    final reason = request['reason'] ?? ''; // 📝 เพิ่ม reason
+
+    // 🔹 ฟังก์ชันสำหรับสร้าง Text Row
+    Widget _buildInfoRow(String title, String value, {Color? valueColor}) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 90,
+              child: Text(
+                '$title:',
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: valueColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -64,86 +114,119 @@ class BorrowRequestCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              'Request No. #${request['id']}',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 4),
-            Text('Asset: $assetName', style: const TextStyle(fontSize: 14)),
-            Text(
-              'Borrower: $borrowerName',
-              style: const TextStyle(fontSize: 14),
-            ),
-            Text(
-              'Borrow date: $borrowDate',
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Chip(
-                  label: Text(
-                    status == 'approved'
-                        ? 'Approved'
-                        : status == 'rejected'
-                        ? 'Rejected'
-                        : 'Pending',
-                  ),
-                  backgroundColor: statusColor.withOpacity(0.15),
-                  labelStyle: TextStyle(
-                    color: status == 'approved'
-                        ? Colors.green
-                        : status == 'rejected'
-                        ? Colors.red
-                        : Colors.orange,
-                    fontWeight: FontWeight.bold,
-                  ),
+            // 🖼️ ส่วนแสดงรูปภาพ
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.asset(
+                imagePath,
+                width: 80,
+                height: 80,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.image_not_supported,
+                  size: 80,
+                  color: Colors.grey,
                 ),
-                Row(
-                  children: [
-                    // เปลี่ยนเป็น ElevatedButton.icon เพื่อให้ปุ่มใช้งานง่ายขึ้น
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.check, size: 18),
-                      label: const Text('APPROVE'),
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: Colors.green.shade600,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // 📝 ส่วนแสดงข้อมูล
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    assetName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  _buildInfoRow(
+                    'ID',
+                    '#${request['id']}',
+                    valueColor: Colors.purple,
+                  ),
+                  _buildInfoRow('Borrower', borrowerName),
+                  _buildInfoRow('Borrow Date', borrowDate),
+                  _buildInfoRow(
+                    'Return Date',
+                    returnDate,
+                    valueColor: status == 'approved'
+                        ? Colors.blue.shade700
+                        : Colors.grey,
+                  ),
+
+                  // 📝 แสดงเหตุผลการปฏิเสธ (ถ้ามี)
+                  if (status == 'rejected' && reason.isNotEmpty)
+                    _buildInfoRow('Reason', reason, valueColor: Colors.red),
+
+                  const SizedBox(height: 8),
+                  // ⚙️ ส่วนสถานะและปุ่ม
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Chip(
+                        label: Text(status.toUpperCase()),
+                        backgroundColor: statusColor.withOpacity(0.15),
+                        labelStyle: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      // ปุ่มจะใช้งานได้เมื่อสถานะเป็น pending เท่านั้น
-                      onPressed: status == 'pending' ? onApprove : null,
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.close, size: 18),
-                      label: const Text('Reject'),
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: Colors.red.shade600,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
-                        ),
+                      Row(
+                        children: [
+                          // ปุ่ม Approve
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.check, size: 18),
+                            label: const Text(
+                              'APPROVE',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              backgroundColor: Colors.green.shade600,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 6,
+                              ),
+                            ),
+                            // ปุ่มจะใช้งานได้เมื่อสถานะเป็น pending (1) เท่านั้น
+                            onPressed: rawStatus == 1
+                                ? () => onApprove(request['id'])
+                                : null,
+                          ),
+                          const SizedBox(width: 8),
+                          // ปุ่ม Reject
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.close, size: 18),
+                            label: const Text(
+                              'REJECT',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              backgroundColor: Colors.red.shade600,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 6,
+                              ),
+                            ),
+                            // ปุ่มจะใช้งานได้เมื่อสถานะเป็น pending (1) เท่านั้น
+                            onPressed: rawStatus == 1
+                                ? () => onReject(request['id'])
+                                : null,
+                          ),
+                        ],
                       ),
-                      // ปุ่มจะใช้งานได้เมื่อสถานะเป็น pending เท่านั้น
-                      onPressed: status == 'pending' ? onReject : null,
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
