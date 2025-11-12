@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'borrow_request_card.dart';
+import 'package:iot_zone/Page/AppConfig.dart';
 
 //รายการคำขอยืมหนังสือ
 class BorrowRequestsPage extends StatefulWidget {
@@ -14,6 +15,7 @@ class BorrowRequestsPage extends StatefulWidget {
 class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
   List requests = [];
   bool loading = true;
+  String url = AppConfig.baseUrl;
 
   @override
   void initState() {
@@ -25,7 +27,7 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
   Future<void> fetchRequests() async {
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:3000/borrow_requests'),
+        Uri.parse('$url/borrow_requests'),
       );
 
       if (response.statusCode == 200) {

@@ -680,6 +680,109 @@ app.put('/api/history/:id/status', async (req, res) => {
   }
 });
 
+// =================== API Get All Pending Borrow Requests ===================
+app.get('/borrow_requests', (req, res) => {
+console.log('📩 API called: /borrow_requests (Pending)');
+
+const sql = `
+SELECT
+h.id,
+a.asset_name AS name,
+u.name AS borrowerName,
+h.borrow_date AS borrowDate,
+h.return_date AS returnDate,a.img AS image,
+h.status
+FROM history h
+JOIN asset a ON h.asset_id = a.id
+JOIN user u ON h.borrower_id = u.id
+WHERE h.status = 1
+ORDER BY h.borrow_date ASC;
+`;
+
+db.query(sql, (err, results) => {
+if (err) {
+console.error('❌ Error fetching pending requests:', err);
+return res.status(500).json({ error: 'Database query failed', details: err });
+}
+
+ console.log(`✅ Pending Requests Found: ${results.length} rows`);
+res.json(results); // ส่งรายการกลับไปให้ Flutter
+});
+});
+
+// =================== API Approve Request ===================
+app.post('/borrow_requests/:id/approve', async (req, res) => {
+  const historyId = req.params.id;
+  const approverId = 3; // ❗ สมมติว่าเป็น ID ของผู้ดูแลที่ทำการอนุมัติ
+
+  try {
+    // 1. อัปเดตสถานะใน history เป็น Approved (2)
+    await db.promise().query(
+      `UPDATE history SET status = 2, approver_id = ? WHERE id = ?`,
+      [approverId, historyId]
+    );
+
+    // 2. ดึง asset_id
+    const [historyRows] = await db.promise().query(
+      `SELECT asset_id FROM history WHERE id = ?`,
+      [historyId]
+    );
+    if (historyRows.length === 0) {
+      return res.status(404).json({ message: 'History record not found' });
+    }
+    const assetId = historyRows[0].asset_id;
+
+    // 3. อัปเดตสถานะ asset เป็น Borrowed (4)
+    await db.promise().query(
+      `UPDATE asset SET status = 4 WHERE id = ?`,
+      [assetId]
+    );
+
+    console.log(`✅ Request ${historyId} Approved.`);
+    res.status(200).json({ message: 'Approved successfully' });
+  } catch (err) {
+    console.error('❌ Approve error:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// =================== API Reject Request ===================
+app.post('/borrow_requests/:id/reject', async (req, res) => {
+  const historyId = req.params.id;
+  const approverId = 3; // ❗ สมมติว่าเป็น ID ของผู้ดูแลที่ทำการปฏิเสธ
+
+  try {
+    // 1. อัปเดตสถานะใน history เป็น Rejected (3)
+    // คุณสามารถเพิ่มเหตุผล (reason) ในอนาคตได้ ถ้าต้องการ
+    await db.promise().query(
+      `UPDATE history SET status = 3, approver_id = ? WHERE id = ?`,
+      [approverId, historyId]
+    );
+
+    // 2. ดึง asset_id
+    const [historyRows] = await db.promise().query(
+      `SELECT asset_id FROM history WHERE id = ?`,
+      [historyId]
+    );
+    if (historyRows.length === 0) {
+      return res.status(404).json({ message: 'History record not found' });
+    }
+    const assetId = historyRows[0].asset_id;
+
+    // 3. อัปเดตสถานะ asset กลับเป็น Available (1)
+    await db.promise().query(
+      `UPDATE asset SET status = 1 WHERE id = ?`,
+      [assetId]
+    );
+
+    console.log(`❌ Request ${historyId} Rejected.`);
+    res.status(200).json({ message: 'Rejected successfully' });
+  } catch (err) {
+    console.error('❌ Reject error:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 
 
 
