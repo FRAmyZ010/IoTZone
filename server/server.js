@@ -690,12 +690,13 @@ h.id,
 a.asset_name AS name,
 u.name AS borrowerName,
 h.borrow_date AS borrowDate,
+h.reason AS reason,
 h.return_date AS returnDate,a.img AS img ,
 h.status
 FROM history h
 JOIN asset a ON h.asset_id = a.id
 JOIN user u ON h.borrower_id = u.id
-WHERE DATE(h.borrow_date) = DATE(NOW())
+WHERE h.status = '1'
 ORDER BY h.id ASC;
 `;
 

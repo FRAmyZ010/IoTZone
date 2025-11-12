@@ -146,11 +146,11 @@ class BorrowRequestCard extends StatelessWidget {
                       fontSize: 16,
                     ),
                   ),
-                  _buildInfoRow(
-                    'ID',
-                    '#${request['id']}',
-                    valueColor: Colors.purple,
-                  ),
+                  // _buildInfoRow(
+                  //   'ID',
+                  //   '#${request['id']}',
+                  //   valueColor: Colors.purple,
+                  // ),
                   _buildInfoRow('Borrower', borrowerName),
                   _buildInfoRow('Borrow Date', borrowDate),
                   _buildInfoRow(
@@ -161,8 +161,8 @@ class BorrowRequestCard extends StatelessWidget {
                         : Colors.grey,
                   ),
 
-                  // 📝 แสดงเหตุผลการปฏิเสธ (ถ้ามี)
-                  if (status == 'rejected' && reason.isNotEmpty)
+                  // ✅ โค้ดส่วนนี้จะแสดงเหตุผลการปฏิเสธ (ถ้ามี)
+                  if (status == 'rejected' && reason != null)
                     _buildInfoRow('Reason', reason, valueColor: Colors.red),
 
                   const SizedBox(height: 8),
