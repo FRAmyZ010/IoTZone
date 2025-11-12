@@ -240,102 +240,99 @@ class _AssetlenderState extends State<Assetlender> {
                     return matchesType && matchesSearch;
                   }).toList();
 
-                  return GridView.builder(
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: filteredAssets.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 16,
-                          crossAxisSpacing: 16,
-                          childAspectRatio: 0.6,
-                        ),
-                    itemBuilder: (context, index) {
-                      final asset = filteredAssets[index];
-                      return GestureDetector(
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) =>
-                                ShowAssetDialogLender(asset: asset.toMap()),
-                          );
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.15),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
+                  return RefreshIndicator(
+                    onRefresh: fetchAssets, // ฟังก์ชันโหลดข้อมูลใหม่
+                    color: Colors.deepPurpleAccent, // สีตอนโหลด
+                    child: GridView.builder(
+                      physics: const BouncingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics(),
+                      ), // ✅ ให้ดึงได้แม้ list เต็มหน้าจอ
+                      itemCount: filteredAssets.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                            childAspectRatio: 0.6,
                           ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: _buildImage(asset.image),
-                              ),
-                              const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final asset = filteredAssets[index];
+                        return GestureDetector(
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) =>
+                                  ShowAssetDialogLender(asset: asset.toMap()),
+                            );
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.15),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: _buildImage(asset.image),
+                                ),
+                                const SizedBox(height: 8),
 
-                              // 🔹 ชื่ออุปกรณ์
-                              Text(
-                                asset.name,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                                // 🔹 ชื่ออุปกรณ์
+                                Text(
+                                  asset.name,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 4),
+                                const SizedBox(height: 4),
 
-                              // 🔹 สถานะ
-                              Text(
-                                asset.status,
-                                style: TextStyle(
-                                  color: asset.statusColor,
-                                  fontWeight: FontWeight.w600,
+                                // 🔹 สถานะ
+                                Text(
+                                  asset.status,
+                                  style: TextStyle(
+                                    color: asset.statusColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 6),
-                              Container(
-                                margin: const EdgeInsets.only(top: 6),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFF6B45FF,
-                                  ), // พื้นหลังม่วง
-                                  borderRadius: BorderRadius.circular(
-                                    12,
-                                  ), // มุมโค้งมน
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: const [
-                                    SizedBox(width: 4),
-                                    Text(
-                                      "See item",
-                                      style: TextStyle(
-                                        color: Colors.white, // ตัวอักษรสีขาว
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                const SizedBox(height: 6),
+
+                                // 🔹 ปุ่ม See Item
+                                Container(
+                                  margin: const EdgeInsets.only(top: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF6B45FF),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Text(
+                                    "See item",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
                                     ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   );
                 },
               ),
