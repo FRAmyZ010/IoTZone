@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iot_zone/Page/Dashboard/borrow_requests_page.dart';
 import 'package:iot_zone/Page/homepagelender.dart';
 import 'package:iot_zone/Page/Dashboard/Dashboard.dart';
 import 'package:iot_zone/Page/Asset_page/assetlender.dart';
@@ -29,7 +30,7 @@ class _LenderMainState extends State<LenderMain> {
     _pages = [
       Homepagelender(userData: widget.userData), // 0
       HistoryLenderPage(), // 1
-      Center(child: Text('⚙️ Settings')), // 2
+      BorrowRequestsPage(), // 2
       Dashboard(), // 3
       Assetlender(), // 4
     ];
@@ -50,9 +51,7 @@ class _LenderMainState extends State<LenderMain> {
             _pages[1] = HistoryLenderPage(key: UniqueKey());
             break;
           case 2:
-            _pages[2] = const Center(
-              // child: Text('⚙️ Settings', key: UniqueKey()),
-            );
+            _pages[2] = BorrowRequestsPage(key: UniqueKey());
             break;
           case 3:
             _pages[3] = Dashboard(key: UniqueKey());
