@@ -3,6 +3,7 @@ import 'package:iot_zone/Page/homepagestaff.dart';
 import 'package:iot_zone/Page/Dashboard/Dashboard.dart';
 import 'package:iot_zone/Page/Asset_page/assetstaff.dart';
 import 'package:iot_zone/Page/History_page/history_staff.dart';
+import 'package:iot_zone/Page/Return_asset/return_asset_page.dart';
 
 class StaffMain extends StatefulWidget {
   final Map<String, dynamic>? userData;
@@ -27,7 +28,7 @@ class _StaffMainState extends State<StaffMain> {
       Homepagestaff(userData: widget.userData), // 0
       HistoryStaffPage(), // 1
       Dashboard(), // 2
-      Center(child: Text('⚙️ Settings')), // 3
+      ReturnAssetsPage(), // 3
       AssetStaff(), // 4
     ];
   }
@@ -50,7 +51,7 @@ class _StaffMainState extends State<StaffMain> {
             _pages[2] = Dashboard(key: UniqueKey());
             break;
           case 3:
-            _pages[3] = Center(key: UniqueKey());
+            _pages[3] = ReturnAssetsPage(key: UniqueKey());
             break;
           case 4:
             _pages[4] = AssetStaff(key: UniqueKey());

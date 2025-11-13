@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'borrow_request_card.dart';
 import 'package:iot_zone/Page/AppConfig.dart';
 
-// รายการคำขอยืมหนังสือ
+// 🔹 หน้ารายการคำขอยืมหนังสือ
 class BorrowRequestsPage extends StatefulWidget {
   const BorrowRequestsPage({super.key});
 
@@ -17,13 +18,26 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
   bool loading = true;
   String url = AppConfig.baseUrl;
 
-  // ❗ สมมติ ID ผู้ดูแล (Approver ID) ชั่วคราว
-  final int approverId = 3;
+  int? approverId; // ✅ ดึงจาก session
+  String? approverName;
 
   @override
   void initState() {
     super.initState();
+    _loadApproverFromSession();
     fetchRequests();
+  }
+
+  // ✅ โหลดข้อมูล approver จาก SharedPreferences
+  Future<void> _loadApproverFromSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final id = prefs.getInt('user_id');
+    final name = prefs.getString('name');
+    setState(() {
+      approverId = id;
+      approverName = name;
+    });
+    debugPrint('🟢 Approver ID Loaded: $approverId ($approverName)');
   }
 
   // 🔹 ดึงข้อมูลคำขอยืมหนังสือจาก backend
@@ -45,8 +59,18 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
     }
   }
 
-  // 🔸 ระบบ “อนุมัติ” (ไม่มีการเปลี่ยนแปลง)
+  // 🔸 ระบบ “อนุมัติ” พร้อมตรวจ session
   Future<void> approveRequest(int id) async {
+    if (approverId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ No session found. Please log in again.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     try {
       final response = await http.post(
         Uri.parse('$url/borrow_requests/$id/approve'),
@@ -73,13 +97,22 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
     }
   }
 
-  // 🔸 ระบบ “ปฏิเสธ” (ยืนยันว่าส่ง reason ไป Backend)
+  // 🔸 ระบบ “ปฏิเสธ” พร้อมตรวจ session
   Future<void> rejectRequest(int id, {String reason = ''}) async {
+    if (approverId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ No session found. Please log in again.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     try {
       final response = await http.post(
         Uri.parse('$url/borrow_requests/$id/reject'),
         headers: {'Content-Type': 'application/json'},
-        // ✅ บรรทัดนี้ยืนยันว่า reason ถูกส่งไปใน Body ของ Request
         body: json.encode({'approverId': approverId, 'reason': reason}),
       );
 
@@ -105,7 +138,7 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
     }
   }
 
-  // 📝 ฟังก์ชันแสดง Dialog เพื่อใส่เหตุผลในการปฏิเสธ (UI ตามดีไซน์ที่ต้องการ)
+  // 📝 Dialog สำหรับใส่เหตุผลปฏิเสธ
   Future<void> rejectRequestWithReason(int id, String borrowerName) async {
     final TextEditingController reasonController = TextEditingController();
 
@@ -113,15 +146,12 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          // 1. หัวข้อ Dialog (แสดงชื่อผู้ยืม)
           title: Text(
             'Borrower: $borrowerName',
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             textAlign: TextAlign.center,
           ),
-          contentPadding: const EdgeInsets.fromLTRB(24.0, 10.0, 24.0, 0.0),
-
-          // 2. เนื้อหา Dialog (Label Reject reason + TextField)
+          contentPadding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,21 +182,17 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
               ),
             ],
           ),
-
-          // 3. ปรับปุ่ม Action (จัดเรียงและเปลี่ยนสีตามภาพ)
           actions: [
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // ปุ่ม Send (Reject/ยืนยัน) - สีเขียว
                 ElevatedButton(
                   onPressed: () {
                     Navigator.of(context).pop();
-                    // เรียก rejectRequest พร้อมส่งเหตุผลที่ผู้ใช้กรอก
                     rejectRequest(id, reason: reasonController.text.trim());
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green, // 🎨 สีเขียว
+                    backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -183,11 +209,10 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
                   ),
                 ),
                 const SizedBox(width: 20),
-                // ปุ่ม Cancel - สีแดง
                 ElevatedButton(
                   onPressed: () => Navigator.of(context).pop(),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red, // 🎨 สีแดง
+                    backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -220,7 +245,7 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
           'Borrow Requests',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Color.fromARGB(255, 130, 77, 255),
+        backgroundColor: const Color.fromARGB(255, 130, 77, 255),
         foregroundColor: Colors.white,
       ),
       body: loading
@@ -235,7 +260,6 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
                 return BorrowRequestCard(
                   request: req,
                   onApprove: approveRequest,
-                  // ✅ ส่ง id และ borrowerName ไปยัง Dialog
                   onReject: (id) => rejectRequestWithReason(id, borrowerName),
                 );
               },
