@@ -36,13 +36,17 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
     setState(() => _isLoading = true);
 
     try {
-      // ✅ ดึง user_id จาก SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getInt('user_id');
+      final token = prefs.getString('accessToken');
+      final ip = AppConfig.serverIP;
 
-      // ✅ เรียก API โดยใช้ userId จาก session
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/request-status/$userId'),
+        Uri.parse('http://$ip:3000/api/request-status/$userId'),
+        headers: {
+          "Authorization": "Bearer $token", // ⭐ ส่ง token
+          "Content-Type": "application/json",
+        },
       );
 
       if (response.statusCode == 200) {
@@ -52,10 +56,20 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
           filteredList = requestList;
           _isLoading = false;
         });
-      } else {
-        throw Exception(
-          'Failed to load request status (status ${response.statusCode})',
+      }
+      // ❗ Token หมดอายุ / ผิด
+      else if (response.statusCode == 401 || response.statusCode == 403) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Session expired. Please login again.")),
         );
+
+        await prefs.clear();
+
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, "/login");
+        }
+      } else {
+        throw Exception('Request failed (status ${response.statusCode})');
       }
     } catch (e) {
       print('⚠️ Error fetching request status: $e');

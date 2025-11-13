@@ -83,45 +83,56 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
     setState(() => _isBorrowing = true);
 
     try {
-      // ✅ ดึง id จาก SharedPreferences
       final prefs = await SharedPreferences.getInstance();
-      final id = prefs.getInt('user_id'); // ← ดึงค่า id ของผู้ใช้
+      final id = prefs.getInt('user_id');
+      final token = prefs.getString('accessToken');
+      final ip = AppConfig.serverIP;
 
-      if (id == null) {
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('⚠ Session Expired'),
-            content: const Text('ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
-        setState(() => _isBorrowing = false);
+      if (id == null || token == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Session expired, please login again."),
+            ),
+          );
+        }
+        await prefs.clear();
+        if (mounted) Navigator.pushReplacementNamed(context, "/login");
         return;
       }
 
-      // ✅ ใช้ตัวแปร id แทน borrower_id: 1
       final response = await http.post(
         Uri.parse('http://$ip:3000/api/borrow'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'asset_id': widget.asset['id'],
-          'borrower_id': id, // ✅ ใช้ค่าจาก session
-        }),
+        headers: {
+          "Authorization": "Bearer $token", // ⭐ ส่ง token
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({'asset_id': widget.asset['id'], 'borrower_id': id}),
       );
 
       final body = jsonDecode(response.body);
 
+      // 🔥 borrow สำเร็จ
       if (response.statusCode == 200) {
         widget.onBorrowSuccess?.call();
         RequestStatusPage.refreshRequestPage?.call();
         Navigator.of(context).pop(true);
-      } else {
+      }
+      // 🔥 token หมดอายุ → ให้ logout
+      else if (response.statusCode == 401 || response.statusCode == 403) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Session expired, please login again."),
+            ),
+          );
+        }
+        await prefs.clear();
+        if (mounted) Navigator.pushReplacementNamed(context, "/login");
+        return;
+      }
+      // 🔥 Borrow failed (เช่น limit วันละครั้ง)
+      else {
         showDialog(
           context: context,
           builder: (_) => AlertDialog(

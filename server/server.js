@@ -1,18 +1,22 @@
-// วิธีรันเซิร์ฟ: nodemon --watch server.js
+// วิธีรันเซิร์ฟ: nodemon server.js
 
-require('dotenv').config(); // 🔐 โหลดค่า .env
-
-const express = require('express');
-const db = require('./db.js');
-const bcrypt = require('bcrypt');
-const cors = require('cors');
-const multer = require('multer');
-const path = require('path');
-const argon2 = require('@node-rs/argon2');
-const jwt = require('jsonwebtoken'); // 🔐 JWT
+require("dotenv").config();
+const express = require("express");
+const db = require("./db.js");
+const bcrypt = require("bcrypt");
+const cors = require("cors");
+const multer = require("multer");
+const path = require("path");
+const argon2 = require("@node-rs/argon2");
+const jwt = require("jsonwebtoken");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
+
+// 🔥 ENV KEY
+const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET;
+const ACCESS_EXPIRES = process.env.ACCESS_EXPIRES || "7d";
+
 
 // ✅ Middleware
 app.use(cors());
@@ -49,6 +53,7 @@ function generateAccessToken(user) {
   );
 }
 
+
 // สร้าง Refresh Token (อายุยาวกว่า ไว้ขอ Access Token ใหม่)
 function generateRefreshToken(user) {
   return jwt.sign(
@@ -58,8 +63,21 @@ function generateRefreshToken(user) {
       role: user.role,
     },
     process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: '7d' } // 7 วัน
+    { expiresIn: '7d' } 
   );
+}
+
+// 🔐 ตรวจสอบ Role
+function authorizeRoles(...roles) {
+  return (req, res, next) => {
+    const userRole = req.user?.role;
+    if (!userRole || !roles.includes(userRole)) {
+      return res.status(403).json({
+        message: "Forbidden: You do not have permission to access this resource"
+      });
+    }
+    next();
+  };
 }
 
 // Middleware ตรวจสอบ Access Token
@@ -409,7 +427,10 @@ app.get('/assets', authenticateToken, (req, res) => {
 });
 
 // =================== API Staff History ===================
-app.get('/api/staff-history/:staffId', authenticateToken, (req, res) => {
+app.get(
+  '/api/staff-history/:staffId',
+  authenticateToken,
+  authorizeRoles("staff"), (req, res) => {
   const staffId = req.params.staffId;
   console.log('📩 API called: /api/staff-history/' + staffId);
 
@@ -450,7 +471,10 @@ app.get('/api/staff-history/:staffId', authenticateToken, (req, res) => {
 });
 
 // =================== API Lender History ===================
-app.get('/api/lender-history/:lenderId', authenticateToken, (req, res) => {
+app.get(
+  '/api/lender-history/:lenderId',
+  authenticateToken,
+  authorizeRoles("lender"), (req, res) => {
   const lenderId = req.params.lenderId;
   console.log('📩 API called: /api/lender-history/' + lenderId);
 
@@ -488,7 +512,10 @@ app.get('/api/lender-history/:lenderId', authenticateToken, (req, res) => {
 });
 
 // ==================== API Student History ===================
-app.get('/api/history/:studentId', authenticateToken, (req, res) => {
+app.get(
+  '/api/history/:studentId',
+  authenticateToken,
+  authorizeRoles("student"), (req, res) => {
   const studentId = req.params.studentId;
   console.log('📩 API called: /api/history/' + studentId);
 
@@ -525,7 +552,10 @@ app.get('/api/history/:studentId', authenticateToken, (req, res) => {
 });
 
 // ================== API Request Status =================
-app.get('/api/request-status/:studentId', authenticateToken, (req, res) => {
+app.get(
+  '/api/request-status/:studentId',
+  authenticateToken,
+  authorizeRoles("student"), (req, res) => {
   const studentId = req.params.studentId;
   console.log('📩 API called: /api/request-status/' + studentId);
 
@@ -595,7 +625,10 @@ function getColor(code) {
 // ------------------ CRUD: Asset ------------------
 
 // ➕ เพิ่มข้อมูลใหม่
-app.post('/assets', authenticateToken, (req, res) => {
+app.post(
+  '/assets',
+  authenticateToken,
+  authorizeRoles("staff", "lender"), (req, res) => {
   const { name, type, description, status, image } = req.body;
   const sql = `INSERT INTO asset (asset_name, type, description, status, img)
                VALUES (?, ?, ?, ?, ?)`;
@@ -609,7 +642,10 @@ app.post('/assets', authenticateToken, (req, res) => {
 });
 
 // ✏️ แก้ไขข้อมูล
-app.put('/assets/:id', authenticateToken, (req, res) => {
+app.put(
+  '/assets/:id',
+  authenticateToken,
+  authorizeRoles("staff", "lender"), (req, res) => {
   const { id } = req.params;
   const { name, type, description, status, image } = req.body;
   const sql = `UPDATE asset 
@@ -629,7 +665,10 @@ app.put('/assets/:id', authenticateToken, (req, res) => {
 });
 
 // 🗑️ ลบข้อมูล
-app.delete('/assets/:id', authenticateToken, (req, res) => {
+app.delete(
+  '/assets/:id',
+  authenticateToken,
+  authorizeRoles("staff", "lender"), (req, res) => {
   const { id } = req.params;
   db.query('DELETE FROM asset WHERE id=?', [id], (err) => {
     if (err)
@@ -641,7 +680,10 @@ app.delete('/assets/:id', authenticateToken, (req, res) => {
 });
 
 // 🔄 เปลี่ยนสถานะ
-app.patch('/assets/:id/status', authenticateToken, async (req, res) => {
+app.patch(
+  '/assets/:id/status',
+  authenticateToken,
+  authorizeRoles("staff", "lender"), async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   console.log(`🟢 Update status of ID ${id} → ${status}`);
@@ -681,7 +723,10 @@ app.patch('/assets/:id/status', authenticateToken, async (req, res) => {
 });
 
 // ------------------ Borrow Asset ------------------
-app.post('/api/borrow', authenticateToken, async (req, res) => {
+app.post(
+  '/api/borrow',
+  authenticateToken,
+  authorizeRoles("student"), async (req, res) => {
   const { asset_id, borrower_id } = req.body;
 
   try {
@@ -752,6 +797,7 @@ app.post('/api/borrow', authenticateToken, async (req, res) => {
 app.get(
   '/api/check-borrow-status/:userId',
   authenticateToken,
+  authorizeRoles("student"),
   async (req, res) => {
     const { userId } = req.params;
 
@@ -900,7 +946,10 @@ app.put(
 );
 
 // =================== API Get All Pending Borrow Requests ===================
-app.get('/borrow_requests', authenticateToken, (req, res) => {
+app.get(
+  '/borrow_requests',
+  authenticateToken,
+  authorizeRoles("lender"), (req, res) => {
   console.log('📩 API called: /borrow_requests (Pending)');
 
   const sql = `
@@ -937,6 +986,7 @@ ORDER BY h.id ASC;
 app.post(
   '/borrow_requests/:id/approve',
   authenticateToken,
+  authorizeRoles("lender"),
   async (req, res) => {
     const historyId = req.params.id;
     const approverId = req.user?.id || 3; // ใช้ id จาก token ถ้ามี
@@ -974,6 +1024,7 @@ app.post(
 app.post(
   '/borrow_requests/:id/reject',
   authenticateToken,
+  authorizeRoles("lender"),
   async (req, res) => {
     const historyId = req.params.id;
     const { reason } = req.body;
@@ -1038,7 +1089,10 @@ app.get('/api/dashboard-summary', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/show/return-asset', authenticateToken, (req, res) => {
+app.get(
+  '/show/return-asset',
+  authenticateToken,
+  authorizeRoles("staff"), (req, res) => {
   const sql = `
     SELECT
       h.*,
@@ -1073,6 +1127,7 @@ app.get('/show/return-asset', authenticateToken, (req, res) => {
 app.put(
   '/accept/return_asset/:id/:asset_id/:receiver_id',
   authenticateToken,
+  authorizeRoles("staff"),
   (req, res) => {
     const id = req.params.id;
     const asset_id = req.params.asset_id;

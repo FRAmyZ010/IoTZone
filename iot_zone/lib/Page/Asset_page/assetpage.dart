@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'showAssetDialog/showAssetDialog_student.dart';
 import 'asset_listmap/asset_model.dart';
 import 'package:iot_zone/Page/AppConfig.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Assetpage extends StatefulWidget {
   const Assetpage({super.key});
@@ -39,12 +40,39 @@ class _AssetpageState extends State<Assetpage> {
 
   // ✅ ดึงข้อมูลจาก API
   Future<List<AssetModel>> fetchAssets() async {
-    final response = await http.get(Uri.parse('http://$ip:3000/assets'));
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('accessToken'); // ⭐ ดึง token มาใช้
+    final ip = AppConfig.serverIP;
+
+    final response = await http.get(
+      Uri.parse('http://$ip:3000/assets'),
+      headers: {
+        "Authorization": "Bearer $token", // ⭐ ส่ง token
+        "Content-Type": "application/json",
+      },
+    );
+
     if (response.statusCode == 200) {
       final List<dynamic> jsonData = json.decode(response.body);
       return jsonData.map((item) => AssetModel.fromMap(item)).toList();
+    }
+    // ❗ token หมดอายุ หรือไม่ได้ login → redirect หน้าล็อกอิน
+    else if (response.statusCode == 401 || response.statusCode == 403) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Session expired, please login again.")),
+        );
+      }
+
+      await prefs.clear();
+
+      if (context.mounted) {
+        Navigator.pushReplacementNamed(context, "/login");
+      }
+
+      return []; // ป้องกัน error
     } else {
-      throw Exception('Failed to load assets');
+      throw Exception('Failed to load assets: ${response.statusCode}');
     }
   }
 

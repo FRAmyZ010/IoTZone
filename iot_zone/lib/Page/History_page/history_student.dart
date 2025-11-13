@@ -28,46 +28,66 @@ class _HistoryStudentPageState extends State<HistoryStudentPage> {
 
   // ✅ ฟังก์ชันดึงข้อมูลจาก API จริง
   Future<void> _fetchHistory() async {
-  setState(() {
-    _isLoading = true;
-  });
+    setState(() {
+      _isLoading = true;
+    });
 
-  try {
-    // ✅ ดึง user_id จาก SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt('user_id'); // ถ้าไม่มีจะได้ null
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id');
+      final token = prefs.getString('accessToken'); // ⭐ ดึง token
+      final ip = AppConfig.serverIP;
 
-    final response = await http.get(
-      Uri.parse('${AppConfig.baseUrl}/api/history/$userId'),
-    );
+      final response = await http.get(
+        Uri.parse('http://$ip:3000/api/history/$userId'),
+        headers: {
+          "Authorization": "Bearer $token", // ⭐ แนบ token
+          "Content-Type": "application/json",
+        },
+      );
 
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        setState(() {
+          historyList = List<Map<String, dynamic>>.from(data);
+          filteredList = historyList;
+          _isLoading = false;
+        });
+      }
+      // -----------------------------
+      // 🔥 ถ้า token หมดอายุ ต้องให้ user login ใหม่
+      // -----------------------------
+      else if (response.statusCode == 401 || response.statusCode == 403) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Session expired, please login again.")),
+        );
+
+        await prefs.clear(); // clear session
+
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, "/login");
+        }
+      } else {
+        throw Exception('Failed to load history: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('⚠️ Error fetching history: $e');
       setState(() {
-        historyList = List<Map<String, dynamic>>.from(data);
-        filteredList = historyList;
         _isLoading = false;
       });
-    } else {
-      throw Exception('Failed to load history data (status ${response.statusCode})');
     }
-  } catch (e) {
-    print('⚠️ Error fetching history: $e');
-    setState(() {
-      _isLoading = false;
-    });
   }
-}
 
-  // ✅ ฟังก์ชันค้นหา
   void _searchItem(String query) {
-    final lowerQuery = query.toLowerCase();
+    final q = query.toLowerCase();
+
     setState(() {
       filteredList = historyList.where((item) {
         final name = (item["name"] ?? "").toString().toLowerCase();
-        return name.contains(lowerQuery);
+        return name.contains(q);
       }).toList();
 
+      // ถ้ากรองวันที่อยู่ → ให้ใช้ filter ซ้อนด้วย
       if (_selectedDate != null) {
         _filterByDate(_selectedDate);
       }
@@ -132,7 +152,7 @@ class _HistoryStudentPageState extends State<HistoryStudentPage> {
     const purple = Color(0xFFC368FF);
     const bg = Color(0xFFF9F9FF);
 
-      return Scaffold(
+    return Scaffold(
       backgroundColor: const Color(0xFFF6F2FB),
       appBar: AppBar(
         title: const Text(
