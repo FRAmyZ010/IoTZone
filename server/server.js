@@ -52,11 +52,10 @@ function generateAccessToken(user) {
       role: user.role,
     },
     process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: process.env.ACCESS_EXPIRES }  // <<<<<< ใช้ ENV
+    { expiresIn: process.env.ACCESS_EXPIRES }   // ← ใช้ .env
   );
 }
 
-// ⭐ สร้าง Refresh Token (ใช้อายุจาก ENV)
 function generateRefreshToken(user) {
   return jwt.sign(
     {
@@ -65,7 +64,7 @@ function generateRefreshToken(user) {
       role: user.role,
     },
     process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: process.env.REFRESH_EXPIRES } // <<<<<< ใช้ ENV
+    { expiresIn: process.env.REFRESH_EXPIRES }  // ← ใช้ .env
   );
 }
 
