@@ -41,6 +41,9 @@ const upload = multer({ storage });
 // ------------------ JWT Helper Functions ------------------
 
 // สร้าง Access Token (มีอายุสั้น ใช้กับทุก request ที่ต้อง auth)
+// ------------------ JWT Helper Functions ------------------
+
+// ⭐ สร้าง Access Token (ใช้อายุจาก ENV)
 function generateAccessToken(user) {
   return jwt.sign(
     {
@@ -49,12 +52,11 @@ function generateAccessToken(user) {
       role: user.role,
     },
     process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: '15m' } // ปรับเวลาได้ตามต้องการ
+    { expiresIn: process.env.ACCESS_EXPIRES }  // <<<<<< ใช้ ENV
   );
 }
 
-
-// สร้าง Refresh Token (อายุยาวกว่า ไว้ขอ Access Token ใหม่)
+// ⭐ สร้าง Refresh Token (ใช้อายุจาก ENV)
 function generateRefreshToken(user) {
   return jwt.sign(
     {
@@ -63,11 +65,11 @@ function generateRefreshToken(user) {
       role: user.role,
     },
     process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: '7d' } 
+    { expiresIn: process.env.REFRESH_EXPIRES } // <<<<<< ใช้ ENV
   );
 }
 
-// 🔐 ตรวจสอบ Role
+// ⭐ ตรวจสอบ Role ผู้ใช้
 function authorizeRoles(...roles) {
   return (req, res, next) => {
     const userRole = req.user?.role;
@@ -80,7 +82,7 @@ function authorizeRoles(...roles) {
   };
 }
 
-// Middleware ตรวจสอบ Access Token
+// ⭐ Middleware ตรวจสอบ Access Token
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization']; // "Bearer xxxxx"
   const token = authHeader && authHeader.split(' ')[1];
@@ -98,11 +100,12 @@ function authenticateToken(req, res, next) {
         .status(403)
         .json({ message: 'Invalid or expired token. Please login again.' });
     }
-    // ใส่ payload จาก token ลง req.user เผื่อ route อื่นใช้
-    req.user = user;
+
+    req.user = user; // payload จาก token
     next();
   });
 }
+
 
 // (ถ้าจะใช้ตรวจ role เพิ่มได้แบบนี้)
 // function authorizeRoles(...roles) {
@@ -119,7 +122,9 @@ app.post('/upload', upload.single('image'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ message: 'No file uploaded' });
   }
+
   console.log('📸 Uploaded:', req.file.filename);
+
   res.json({
     message: 'Upload successful',
     filename: req.file.filename,
@@ -127,8 +132,10 @@ app.post('/upload', upload.single('image'), (req, res) => {
   });
 });
 
+
 // ------------------ Register ------------------
 
+// ------------------ Register ------------------
 app.post('/register', async (req, res) => {
   const { username, password, name, phone, email, role = 'student' } = req.body;
 
@@ -158,7 +165,6 @@ app.post('/register', async (req, res) => {
         [username, hash, name, phone, email, role]
       );
 
-    // ดึง user ที่เพิ่งสร้าง
     const newUser = {
       id: insertResult.insertId,
       username,
@@ -168,7 +174,7 @@ app.post('/register', async (req, res) => {
       role,
     };
 
-    // สร้าง JWT ให้เลย (เผื่อจะ login auto หลังสมัคร)
+    // ⭐ generate token ตาม user ใหม่
     const accessToken = generateAccessToken(newUser);
     const refreshToken = generateRefreshToken(newUser);
 
@@ -185,6 +191,7 @@ app.post('/register', async (req, res) => {
 });
 
 // ------------------ Login ------------------
+// ------------------ Login ------------------
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
@@ -198,6 +205,7 @@ app.post('/login', async (req, res) => {
     const [rows] = await db
       .promise()
       .query('SELECT * FROM user WHERE username = ?', [username]);
+
     if (rows.length === 0)
       return res.status(404).json({ message: 'User not found' });
 
@@ -206,22 +214,19 @@ app.post('/login', async (req, res) => {
 
     let isMatch = false;
 
+    // ⭐ ตรวจ argon2
     try {
-      // ✅ ลองตรวจด้วย argon2 ก่อน
       isMatch = await argon2.verify(storedHash, password);
-    } catch (err) {
-      // ❗ ถ้าไม่ใช่ hash ของ argon2 → ลอง bcrypt อีกที
-      try {
-        isMatch = await bcrypt.compare(password, storedHash);
-      } catch (err2) {
-        console.error('⚠️ bcrypt error:', err2);
-      }
+    } catch {
+      // ⭐ ไม่ใช่ argon → ลอง bcrypt
+      isMatch = await bcrypt.compare(password, storedHash);
     }
 
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid password' });
     }
 
+    // ⭐ payload ให้ Flutter ใช้
     const payloadUser = {
       id: user.id,
       username: user.username,
@@ -232,12 +237,11 @@ app.post('/login', async (req, res) => {
       image: user.image,
     };
 
-    // 🔐 สร้าง JWT Tokens
-    const accessToken = generateAccessToken(user);
-    const refreshToken = generateRefreshToken(user);
+    // ⭐ สร้าง Token ตามอายุใน ENV
+    const accessToken = generateAccessToken(payloadUser);
+    const refreshToken = generateRefreshToken(payloadUser);
 
-    // ✅ ถ้า password ถูกต้อง
-    res.status(200).json({
+    return res.status(200).json({
       message: 'Login successful',
       user: payloadUser,
       accessToken,
@@ -245,9 +249,10 @@ app.post('/login', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ Login error:', err);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 // ------------------ Refresh Token ------------------
 // client ส่ง refreshToken มาเพื่อขอ accessToken ใหม่
