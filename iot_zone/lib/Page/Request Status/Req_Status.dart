@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:iot_zone/Page/AppConfig.dart';
 import 'package:iot_zone/Page/Asset_page/showAssetDialog/showAssetDialog_student.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:iot_zone/Page/api_helper.dart';
 
 class RequestStatusPage extends StatefulWidget {
   const RequestStatusPage({super.key});
@@ -38,16 +39,14 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getInt('user_id');
-      final token = prefs.getString('accessToken');
-      final ip = AppConfig.serverIP;
 
-      final response = await http.get(
-        Uri.parse('http://$ip:3000/api/request-status/$userId'),
-        headers: {
-          "Authorization": "Bearer $token", // ⭐ ส่ง token
-          "Content-Type": "application/json",
-        },
-      );
+      if (userId == null) {
+        await _forceLogout();
+        return;
+      }
+
+      // ⭐ ยิง API แบบ Auto Refresh Token
+      final response = await ApiHelper.callApi("/api/request-status/$userId");
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -57,24 +56,32 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
           _isLoading = false;
         });
       }
-      // ❗ Token หมดอายุ / ผิด
+      // ❗ Refresh Token หมดอายุ
       else if (response.statusCode == 401 || response.statusCode == 403) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Session expired. Please login again.")),
-        );
-
-        await prefs.clear();
-
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, "/login");
-        }
-      } else {
-        throw Exception('Request failed (status ${response.statusCode})');
+        await _forceLogout();
+      }
+      // ❗ Server error อื่น
+      else {
+        throw Exception('Request failed (code ${response.statusCode})');
       }
     } catch (e) {
       print('⚠️ Error fetching request status: $e');
       setState(() => _isLoading = false);
     }
+  }
+
+  // ✅ บังคับ logout
+  Future<void> _forceLogout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    if (!mounted) return;
+
+    Navigator.pushReplacementNamed(context, "/login");
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Session expired. Please login again.")),
+    );
   }
 
   // ✅ ฟังก์ชันค้นหา

@@ -4,7 +4,7 @@ import 'package:iot_zone/Page/Widgets/meatball_menu/meatball_menu.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:iot_zone/Page/api_helper.dart';
 // 🔧 import widget ย่อย
 import 'Widgets/buildBotttom_nav_bar/bottom_nav_bar.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_center.dart';
@@ -60,15 +60,10 @@ class _HomepageState extends State<Homepage> {
 
   // ⭐ ฟังก์ชันเช็ค borrow พร้อมส่ง token
   Future<void> _checkBorrowAndNavigate(BuildContext context, int userId) async {
-    final ip = AppConfig.serverIP;
-
     try {
-      final response = await http.get(
-        Uri.parse('http://$ip:3000/api/check-borrow-status/$userId'),
-        headers: {
-          "Authorization": "Bearer $accessToken", // ⭐ ใส่ token ตรงนี้
-          "Content-Type": "application/json",
-        },
+      final response = await ApiHelper.callApi(
+        "/api/check-borrow-status/$userId",
+        method: "GET",
       );
 
       if (response.statusCode == 200) {
@@ -79,8 +74,12 @@ class _HomepageState extends State<Homepage> {
         } else {
           StudentMain.of(context)?.changeTab(3);
         }
+      }
+      // ❌ refresh token ก็หมดอายุ → Logout อัตโนมัติ
+      else if (response.statusCode == 401 || response.statusCode == 403) {
+        _forceLogout(context);
       } else {
-        throw Exception('Server responded with ${response.statusCode}');
+        throw Exception("Error: ${response.statusCode}");
       }
     } catch (e) {
       showDialog(
@@ -97,6 +96,19 @@ class _HomepageState extends State<Homepage> {
         ),
       );
     }
+  }
+
+  Future<void> _forceLogout(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    if (!context.mounted) return;
+
+    Navigator.pushReplacementNamed(context, "/login");
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Session expired. Please login again.")),
+    );
   }
 
   // ------------------------------------------------------------

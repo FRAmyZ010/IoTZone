@@ -55,6 +55,8 @@ function generateAccessToken(user) {
     { expiresIn: process.env.ACCESS_EXPIRES }   // ← ใช้ .env
   );
 }
+console.log("ACCESS_EXPIRES =", process.env.ACCESS_EXPIRES);
+console.log("REFRESH_EXPIRES =", process.env.REFRESH_EXPIRES);
 
 function generateRefreshToken(user) {
   return jwt.sign(
@@ -92,17 +94,27 @@ function authenticateToken(req, res, next) {
       .json({ message: 'Access token missing. Please login again.' });
   }
 
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
-    if (err) {
-      console.error('❌ JWT verify error:', err);
-      return res
-        .status(403)
-        .json({ message: 'Invalid or expired token. Please login again.' });
+ jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+  if (err) {
+    console.error("❌ JWT verify error:", err);
+
+    // ถ้า token หมดอายุ
+    if (err.name === "TokenExpiredError") {
+      return res.status(401).json({
+        message: "access_token_expired"
+      });
     }
 
-    req.user = user; // payload จาก token
-    next();
-  });
+    // ถ้า token ไม่ถูกต้อง
+    return res.status(403).json({
+      message: "invalid_token"
+    });
+  }
+
+  req.user = user;
+  next();
+});
+
 }
 
 
@@ -255,23 +267,42 @@ app.post('/login', async (req, res) => {
 
 // ------------------ Refresh Token ------------------
 // client ส่ง refreshToken มาเพื่อขอ accessToken ใหม่
-app.post('/token', (req, res) => {
+app.post('/refresh-token', (req, res) => {
+  const refreshToken = req.body.refreshToken;
+
+  if (!refreshToken) {
+    return res.status(401).json({ message: 'Refresh token missing' });
+  }
+
+  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: 'Invalid refresh token' });
+    }
+
+    const newAccessToken = generateAccessToken(user);
+    res.json({ accessToken: newAccessToken });
+  });
+});
+// ================= REFRESH TOKEN (Flutter compatible) =================
+
+// Flutter เรียก /refresh → ต้องรองรับตรง ๆ
+app.post('/refresh', (req, res) => {
   const { refreshToken } = req.body;
-  if (!refreshToken)
-    return res.status(401).json({ message: 'Refresh token required' });
+
+  if (!refreshToken) {
+    return res.status(401).json({ message: "Refresh token missing" });
+  }
 
   jwt.verify(
     refreshToken,
     process.env.REFRESH_TOKEN_SECRET,
-    (err, decodedUser) => {
+    (err, user) => {
       if (err) {
-        console.error('❌ Refresh token verify error:', err);
-        return res.status(403).json({ message: 'Invalid refresh token' });
+        return res.status(403).json({ message: "invalid_refresh_token" });
       }
 
-      // ออก access token ใหม่จากข้อมูลใน refresh token
-      const accessToken = generateAccessToken(decodedUser);
-      res.json({ accessToken });
+      const newAccessToken = generateAccessToken(user);
+      return res.json({ accessToken: newAccessToken });
     }
   );
 });

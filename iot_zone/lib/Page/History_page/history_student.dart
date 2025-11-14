@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:iot_zone/Page/AppConfig.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:iot_zone/Page/api_helper.dart';
 
 class HistoryStudentPage extends StatefulWidget {
   const HistoryStudentPage({super.key});
@@ -35,43 +36,36 @@ class _HistoryStudentPageState extends State<HistoryStudentPage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getInt('user_id');
-      final token = prefs.getString('accessToken'); // ⭐ ดึง token
-      final ip = AppConfig.serverIP;
 
-      final response = await http.get(
-        Uri.parse('http://$ip:3000/api/history/$userId'),
-        headers: {
-          "Authorization": "Bearer $token", // ⭐ แนบ token
-          "Content-Type": "application/json",
-        },
-      );
+      // ⭐ ใช้ ApiHelper แทน http.get
+      final response = await ApiHelper.callApi('/api/history/$userId');
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final List<dynamic> data = jsonDecode(response.body);
+
         setState(() {
           historyList = List<Map<String, dynamic>>.from(data);
           filteredList = historyList;
           _isLoading = false;
         });
       }
-      // -----------------------------
-      // 🔥 ถ้า token หมดอายุ ต้องให้ user login ใหม่
-      // -----------------------------
+      // ถ้า refresh token หมดอายุ (rare case)
       else if (response.statusCode == 401 || response.statusCode == 403) {
+        // ⭐ แจ้งเตือนแบบสวย ๆ
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Session expired, please login again.")),
         );
 
-        await prefs.clear(); // clear session
+        await prefs.clear();
 
         if (mounted) {
           Navigator.pushReplacementNamed(context, "/login");
         }
       } else {
-        throw Exception('Failed to load history: ${response.statusCode}');
+        throw Exception("Failed to load history: ${response.statusCode}");
       }
     } catch (e) {
-      print('⚠️ Error fetching history: $e');
+      print("⚠️ Error fetching history: $e");
       setState(() {
         _isLoading = false;
       });
@@ -149,8 +143,6 @@ class _HistoryStudentPageState extends State<HistoryStudentPage> {
 
   @override
   Widget build(BuildContext context) {
-    const purple = Color(0xFFC368FF);
-    const bg = Color(0xFFF9F9FF);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F2FB),

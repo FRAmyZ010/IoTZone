@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:iot_zone/Page/Request Status/Req_Status.dart'; // ✅ แก้ path ให้ตรงไฟล์จริง
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:iot_zone/Page/api_helper.dart';
 
 class BorrowAssetDialog extends StatefulWidget {
   final Map<String, dynamic> asset;
@@ -78,81 +79,56 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
   }
 
   // ✅ ฟังก์ชันยืมอุปกรณ์
-  Future<void> _borrowToday() async {
-    if (_isBorrowing) return;
-    setState(() => _isBorrowing = true);
+Future<void> _borrowToday() async {
+  if (_isBorrowing) return;
+  setState(() => _isBorrowing = true);
 
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final id = prefs.getInt('user_id');
-      final token = prefs.getString('accessToken');
-      final ip = AppConfig.serverIP;
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final id = prefs.getInt('user_id');
 
-      if (id == null || token == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Session expired, please login again."),
-            ),
-          );
-        }
-        await prefs.clear();
-        if (mounted) Navigator.pushReplacementNamed(context, "/login");
-        return;
-      }
+    if (id == null) {
+      await _forceLogout();
+      return;
+    }
 
-      final response = await http.post(
-        Uri.parse('http://$ip:3000/api/borrow'),
-        headers: {
-          "Authorization": "Bearer $token", // ⭐ ส่ง token
-          "Content-Type": "application/json",
-        },
-        body: jsonEncode({'asset_id': widget.asset['id'], 'borrower_id': id}),
-      );
+    // ⭐ ใช้ ApiHelper (รองรับ refresh token อัตโนมัติ)
+    final response = await ApiHelper.callApi(
+      "/api/borrow",
+      method: "POST",
+      body: {
+        'asset_id': widget.asset['id'],
+        'borrower_id': id,
+      },
+    );
 
-      final body = jsonDecode(response.body);
+    final body = jsonDecode(response.body);
 
-      // 🔥 borrow สำเร็จ
-      if (response.statusCode == 200) {
-        widget.onBorrowSuccess?.call();
-        RequestStatusPage.refreshRequestPage?.call();
-        Navigator.of(context).pop(true);
-      }
-      // 🔥 token หมดอายุ → ให้ logout
-      else if (response.statusCode == 401 || response.statusCode == 403) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Session expired, please login again."),
-            ),
-          );
-        }
-        await prefs.clear();
-        if (mounted) Navigator.pushReplacementNamed(context, "/login");
-        return;
-      }
-      // 🔥 Borrow failed (เช่น limit วันละครั้ง)
-      else {
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('⚠ Cannot Borrow'),
-            content: Text(body['message'] ?? 'Borrow failed'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
-      }
-    } catch (e) {
+    // ------------------------
+    // ⭐ Borrow Success
+    // ------------------------
+    if (response.statusCode == 200) {
+      widget.onBorrowSuccess?.call();
+      RequestStatusPage.refreshRequestPage?.call();
+      Navigator.of(context).pop(true);
+    }
+
+    // ------------------------
+    // ❌ Refresh Token หมดอายุ → logout
+    // ------------------------
+    else if (response.statusCode == 401 || response.statusCode == 403) {
+      await _forceLogout();
+    }
+
+    // ------------------------
+    // ⚠ Borrow failed (วันละครั้ง ฯลฯ)
+    // ------------------------
+    else {
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
-          title: const Text('❌ Server Error'),
-          content: Text('Cannot connect to server: $e'),
+          title: const Text('⚠ Cannot Borrow'),
+          content: Text(body['message'] ?? 'Borrow failed'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -161,10 +137,41 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
           ],
         ),
       );
-    } finally {
-      setState(() => _isBorrowing = false);
     }
+  } catch (e) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('❌ Server Error'),
+        content: Text('Cannot connect to server:\n$e'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  } finally {
+    setState(() => _isBorrowing = false);
   }
+}
+
+Future<void> _forceLogout() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.clear();
+
+  if (!mounted) return;
+
+  Navigator.pushReplacementNamed(context, "/login");
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text("Session expired. Please login again."),
+    ),
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {

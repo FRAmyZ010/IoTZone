@@ -6,7 +6,7 @@ import 'showAssetDialog/showAssetDialog_student.dart';
 import 'asset_listmap/asset_model.dart';
 import 'package:iot_zone/Page/AppConfig.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:iot_zone/Page/api_helper.dart';
 class Assetpage extends StatefulWidget {
   const Assetpage({super.key});
 
@@ -38,43 +38,50 @@ class _AssetpageState extends State<Assetpage> {
     futureAssets = fetchAssets();
   }
 
-  // ✅ ดึงข้อมูลจาก API
-  Future<List<AssetModel>> fetchAssets() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('accessToken'); // ⭐ ดึง token มาใช้
-    final ip = AppConfig.serverIP;
-
-    final response = await http.get(
-      Uri.parse('http://$ip:3000/assets'),
-      headers: {
-        "Authorization": "Bearer $token", // ⭐ ส่ง token
-        "Content-Type": "application/json",
-      },
+// ✅ ดึงข้อมูลจาก API
+Future<List<AssetModel>> fetchAssets() async {
+  try {
+    final response = await ApiHelper.callApi(
+      "/assets",
+      method: "GET",
     );
 
     if (response.statusCode == 200) {
       final List<dynamic> jsonData = json.decode(response.body);
       return jsonData.map((item) => AssetModel.fromMap(item)).toList();
     }
-    // ❗ token หมดอายุ หรือไม่ได้ login → redirect หน้าล็อกอิน
+
+    // ❌ refresh token ก็หมดอายุ → ต้อง logout
     else if (response.statusCode == 401 || response.statusCode == 403) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Session expired, please login again.")),
-        );
-      }
-
-      await prefs.clear();
-
-      if (context.mounted) {
-        Navigator.pushReplacementNamed(context, "/login");
-      }
-
-      return []; // ป้องกัน error
-    } else {
-      throw Exception('Failed to load assets: ${response.statusCode}');
+      await _forceLogout(context);
+      return [];
     }
+
+    else {
+      throw Exception("Failed to load assets: ${response.statusCode}");
+    }
+  } catch (e) {
+    print("⚠️ Fetch assets error: $e");
+    return [];
   }
+}
+
+// ✅ บังคับ logout เมื่อ token หมดอายุทั้งคู่
+Future<void> _forceLogout(BuildContext context) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.clear();
+
+  if (!context.mounted) return;
+
+  Navigator.pushReplacementNamed(context, "/login");
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text("Session expired. Please login again."),
+    ),
+  );
+}
+
 
   // ✅ รีโหลดข้อมูลใหม่ (ใช้ทั้งตอน Borrow และ Pull-to-Refresh)
   Future<void> refreshAssets() async {

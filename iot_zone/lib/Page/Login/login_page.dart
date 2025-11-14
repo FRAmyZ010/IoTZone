@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:iot_zone/Page/AppConfig.dart';
 import 'dart:convert';
-
-// 🧭 import หน้าหลัง login
-import 'package:iot_zone/Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar.dart';
-import 'package:iot_zone/Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar_staff.dart';
-import 'package:iot_zone/Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar_lender.dart';
+import 'package:iot_zone/Page/Login/check_session_page.dart';
 
 import 'package:iot_zone/Page/Login/register_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -50,7 +46,7 @@ class _LoginPageState extends State<LoginPage> {
         Uri.parse('http://$ip:3000/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'username': username, 'password': password}),
-      );
+      );  
 
       final data = jsonDecode(response.body);
 
@@ -77,29 +73,25 @@ class _LoginPageState extends State<LoginPage> {
           case 'student':
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(
-                builder: (_) => StudentMain(userData: data['user']),
-              ),
+              MaterialPageRoute(builder: (_) => const CheckSessionPage()),
             );
+
             break;
 
           case 'staff':
-            Navigator.pushAndRemoveUntil(
+            Navigator.pushReplacement(
               context,
-              MaterialPageRoute(
-                builder: (_) => StaffMain(userData: data['user']),
-              ),
-              (route) => false,
+              MaterialPageRoute(builder: (_) => const CheckSessionPage()),
             );
+
             break;
 
           case 'lender':
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(
-                builder: (_) => LenderMain(userData: data['user']),
-              ),
+              MaterialPageRoute(builder: (_) => const CheckSessionPage()),
             );
+
             break;
 
           default:
