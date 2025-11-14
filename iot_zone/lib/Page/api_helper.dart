@@ -1,16 +1,17 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/material.dart';
-import 'package:iot_zone/Page/AppConfig.dart';
+import 'AppConfig.dart';
 
 class ApiHelper {
   static final String baseUrl = AppConfig.baseUrl;
+  static final ip = AppConfig.serverIP;
 
-  // ---------------------------
-  // ดึง token
-  // ---------------------------
+  // -----------------------------
+  // 📌 ดึง Token จาก storage
+  // -----------------------------
   static Future<Map<String, String?>> getTokens() async {
     final prefs = await SharedPreferences.getInstance();
     return {
@@ -19,33 +20,49 @@ class ApiHelper {
     };
   }
 
-  // ---------------------------
-  // save access token ใหม่
-  // ---------------------------
+  // -----------------------------
+  // 📌 เซฟ access ใหม่
+  // -----------------------------
   static Future<void> saveAccessToken(String newToken) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString("accessToken", newToken);
   }
 
+  // -----------------------------
+  // 📌 Logout ให้หมด
+  // -----------------------------
+  static Future<void> forceLogout(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    if (!context.mounted) return;
+
+    Navigator.pushNamedAndRemoveUntil(context, "/login", (route) => false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Session expired. Please login again.")),
+    );
+  }
+
   // ----------------------------------------------------------
-  // 📌 1) Multipart API + auto refresh token
+  // 📌 1) Multipart API (Upload + Token Refresh)
   // ----------------------------------------------------------
   static Future<http.Response> callMultipartApi(
     String endpoint, {
     required Map<String, String> fields,
+    String method = "POST", // ← เพิ่มตรงนี้ด้วย
     String? filePath,
-    String fileField = "file",
+    String fileField = "image",
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    final ip = AppConfig.serverIP;
+    String? access = prefs.getString("accessToken");
+    String? refresh = prefs.getString("refreshToken");
 
-    String? accessToken = prefs.getString("accessToken");
-    String? refreshToken = prefs.getString("refreshToken");
-
-    // ----------------- ฟังก์ชันยิง request -----------------
-    Future<http.Response> sendRequest(String token) async {
+    Future<http.Response> send(String accessToken) async {
       var uri = Uri.parse("http://$ip:3000$endpoint");
-      var request = http.MultipartRequest("PUT", uri);
+
+      var request = http.MultipartRequest(method, uri);
+      request.headers["Authorization"] = "Bearer $accessToken";
 
       fields.forEach((key, value) {
         request.fields[key] = value;
@@ -57,42 +74,29 @@ class ApiHelper {
         );
       }
 
-      request.headers["Authorization"] = "Bearer $token";
-
       final streamed = await request.send();
       return await http.Response.fromStream(streamed);
     }
 
-    // ---------- 1st request ----------
-    http.Response res = await sendRequest(accessToken ?? "");
+    // ยิงครั้งแรก
+    http.Response res = await send(access ?? "");
 
-    // ไม่ได้หมดอายุ → return
     if (res.statusCode != 401) return res;
 
-    // อ่าน error
-    final data = jsonDecode(res.body);
-    if (data["message"] != "access_token_expired") {
-      return res;
-    }
+    final msg = _readMessage(res);
+    if (msg != "access_token_expired") return res;
 
-    // ---------- refresh ----------
-    final refreshRes = await http.post(
-      Uri.parse("http://$ip:3000/refresh"),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"refreshToken": refreshToken}),
-    );
+    // refresh
+    final newToken = await refreshAccessToken(refresh);
+    if (newToken == null) return res;
 
-    if (refreshRes.statusCode != 200) return res;
+    await saveAccessToken(newToken);
 
-    final newAccess = jsonDecode(refreshRes.body)["accessToken"];
-    await prefs.setString("accessToken", newAccess);
-
-    // ยิงใหม่ด้วย token ใหม่
-    return await sendRequest(newAccess);
+    return await send(newToken);
   }
 
   // ----------------------------------------------------------
-  // 📌 2) Normal API + auto refresh
+  // 📌 2) Normal API (GET / POST / PUT / DELETE)
   // ----------------------------------------------------------
   static Future<http.Response> callApi(
     String endpoint, {
@@ -100,45 +104,37 @@ class ApiHelper {
     Map<String, dynamic>? body,
   }) async {
     final tokens = await getTokens();
-    String? accessToken = tokens["access"];
-    String? refreshToken = tokens["refresh"];
+    String? access = tokens["access"];
+    String? refresh = tokens["refresh"];
 
     Uri url = Uri.parse("$baseUrl$endpoint");
 
     Map<String, String> headers = {
       "Content-Type": "application/json",
-      if (accessToken != null) "Authorization": "Bearer $accessToken",
+      if (access != null) "Authorization": "Bearer $access",
     };
 
-    // ---------- ยิงครั้งแรก ----------
-    http.Response response = await _request(method, url, headers, body);
+    http.Response res = await _send(method, url, headers, body);
 
-    // ถ้าไม่ใช่ 401 → token valid
-    if (response.statusCode != 401) return response;
+    if (res.statusCode != 401) return res;
 
-    // อ่าน error message
-    final data = jsonDecode(response.body);
-    if (data["message"] != "access_token_expired") {
-      return response;
-    }
+    final msg = _readMessage(res);
+    if (msg != "access_token_expired") return res;
 
-    // ---------- refresh ----------
-    final newToken = await refreshAccessToken(refreshToken);
+    // refresh
+    final newToken = await refreshAccessToken(refresh);
+    if (newToken == null) return res;
 
-    if (newToken == null) return response;
-
-    // เก็บ token ใหม่
     await saveAccessToken(newToken);
 
-    // ยิงใหม่ด้วย token ใหม่
     headers["Authorization"] = "Bearer $newToken";
-    return await _request(method, url, headers, body);
+    return await _send(method, url, headers, body);
   }
 
-  // ----------------------------------------------------------
-  // 📌 3) base request
-  // ----------------------------------------------------------
-  static Future<http.Response> _request(
+  // -----------------------------
+  // 📌 Base request
+  // -----------------------------
+  static Future<http.Response> _send(
     String method,
     Uri url,
     Map<String, String> headers,
@@ -149,6 +145,8 @@ class ApiHelper {
         return await http.post(url, headers: headers, body: jsonEncode(body));
       case "PUT":
         return await http.put(url, headers: headers, body: jsonEncode(body));
+      case "PATCH":
+        return await http.patch(url, headers: headers, body: jsonEncode(body));
       case "DELETE":
         return await http.delete(url, headers: headers);
       default:
@@ -157,13 +155,13 @@ class ApiHelper {
   }
 
   // ----------------------------------------------------------
-  // 📌 4) Refresh Token
+  // 📌 3) Refresh Token (ตัวจริง)
   // ----------------------------------------------------------
   static Future<String?> refreshAccessToken(String? refreshToken) async {
     if (refreshToken == null) return null;
 
     final res = await http.post(
-      Uri.parse("$baseUrl/refresh"),
+      Uri.parse("$baseUrl/refresh-token"), // ← ถูกต้องตรงกับ server.js
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({"refreshToken": refreshToken}),
     );
@@ -172,4 +170,16 @@ class ApiHelper {
 
     return jsonDecode(res.body)["accessToken"];
   }
+
+  // ----------------------------------------------------------
+  // 📌 4) อ่านข้อความ error
+  // ----------------------------------------------------------
+  static String? _readMessage(http.Response res) {
+    try {
+      return jsonDecode(res.body)["message"];
+    } catch (e) {
+      return null;
+    }
+  }
+  
 }

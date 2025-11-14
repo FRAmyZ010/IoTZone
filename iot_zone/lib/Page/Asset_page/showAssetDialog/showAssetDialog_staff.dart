@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:convert';
 import '../asset_listmap/asset_model.dart';
 import 'package:iot_zone/Page/AppConfig.dart';
+import 'package:iot_zone/Page/api_helper.dart';
 
 class ShowAssetDialogStaff extends StatefulWidget {
   final AssetModel? asset;
@@ -44,27 +45,21 @@ class _ShowAssetDialogStaffState extends State<ShowAssetDialogStaff> {
 
   // ✅ ฟังก์ชันอัปโหลดรูปไป Server
   Future<String?> _uploadImage(File imageFile) async {
-    try {
-      final uri = Uri.parse('http://$ip:3000/upload');
-      final request = http.MultipartRequest('POST', uri);
-      request.files.add(
-        await http.MultipartFile.fromPath('image', imageFile.path),
-      );
+    final response = await ApiHelper.callMultipartApi(
+      "/upload",
+      fields: {}, // ไม่มี field เพิ่ม
+      filePath: imageFile.path,
+      fileField: "image", // ชื่อ field ต้องตรงกับ backend
+    );
 
-      final response = await request.send();
-      if (response.statusCode == 200) {
-        final res = await http.Response.fromStream(response);
-        final data = jsonDecode(res.body);
-        print('✅ Uploaded: ${data['filePath']}');
-        return data['filePath']; // เช่น /uploads/1730039123.png
-      } else {
-        print('❌ Upload failed: ${response.statusCode}');
-        return null;
-      }
-    } catch (e) {
-      print('⚠️ Upload error: $e');
-      return null;
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      print("✅ Uploaded: ${data['filePath']}");
+      return data["filePath"]; // เช่น /uploads/x.png
     }
+
+    print("❌ Upload failed: ${response.statusCode}");
+    return null;
   }
 
   // ✅ ตัวช่วยสร้าง ImageProvider ปลอดภัย
