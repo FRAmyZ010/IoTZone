@@ -9,9 +9,9 @@ class ApiHelper {
   static final String baseUrl = AppConfig.baseUrl;
   static final ip = AppConfig.serverIP;
 
-  // -----------------------------
+  // ----------------------------------------------------------
   // 📌 ดึง Token จาก storage
-  // -----------------------------
+  // ----------------------------------------------------------
   static Future<Map<String, String?>> getTokens() async {
     final prefs = await SharedPreferences.getInstance();
     return {
@@ -20,17 +20,23 @@ class ApiHelper {
     };
   }
 
+  // ----------------------------------------------------------
+  // 📌 เซฟ Access Token ใหม่
+  // ----------------------------------------------------------
   // -----------------------------
-  // 📌 เซฟ access ใหม่
+  // 📌 เซฟ access ใหม่ (Log ทุกครั้ง!)
   // -----------------------------
   static Future<void> saveAccessToken(String newToken) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString("accessToken", newToken);
+
+    debugPrint("🔐 [REAL-TIME] New Access Token Saved:");
+    debugPrint("➡️ $newToken");
   }
 
-  // -----------------------------
-  // 📌 Logout ให้หมด
-  // -----------------------------
+  // ----------------------------------------------------------
+  // 📌 Force Logout
+  // ----------------------------------------------------------
   static Future<void> forceLogout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
@@ -45,12 +51,67 @@ class ApiHelper {
   }
 
   // ----------------------------------------------------------
-  // 📌 1) Multipart API (Upload + Token Refresh)
+  // 📌 Normal API (GET / POST / PUT / DELETE) + Logging
+  // ----------------------------------------------------------
+  static Future<http.Response> callApi(
+    String endpoint, {
+    String method = "GET",
+    Map<String, dynamic>? body,
+  }) async {
+    final tokens = await getTokens();
+    String? access = tokens["access"];
+    String? refresh = tokens["refresh"];
+
+    debugPrint("🌐 API CALL → $method $endpoint");
+    debugPrint("🔑 Access Token (short) → ${access?.substring(0, 100)}...");
+
+    Uri url = Uri.parse("$baseUrl$endpoint");
+
+    Map<String, String> headers = {
+      "Content-Type": "application/json",
+      if (access != null) "Authorization": "Bearer $access",
+    };
+
+    // 🚀 ยิง API ครั้งแรก
+    http.Response res = await _send(method, url, headers, body);
+
+    debugPrint("📥 RESPONSE → ${res.statusCode}");
+    debugPrint("📄 BODY → ${res.body}");
+
+    // ❌ ไม่ใช่ 401 → return เลย
+    if (res.statusCode != 401) return res;
+
+    // 🔍 อ่าน error message
+    final msg = _readMessage(res);
+    if (msg != "access_token_expired") return res;
+
+    debugPrint("⏳ Access Token expired → Refreshing...");
+
+    // 🔁 Refresh Token
+    final newToken = await refreshAccessToken(refresh);
+    if (newToken == null) {
+      debugPrint("❌ Refresh Token FAILED");
+      return res;
+    }
+
+    debugPrint("✅ Refresh Token SUCCESS → Saving new token");
+
+    await saveAccessToken(newToken);
+
+    headers["Authorization"] = "Bearer $newToken";
+
+    debugPrint("🔄 Retrying API with new Access Token…");
+
+    return await _send(method, url, headers, body);
+  }
+
+  // ----------------------------------------------------------
+  // 📌 Multipart API (Upload files)
   // ----------------------------------------------------------
   static Future<http.Response> callMultipartApi(
     String endpoint, {
     required Map<String, String> fields,
-    String method = "POST", // ← เพิ่มตรงนี้ด้วย
+    String method = "POST",
     String? filePath,
     String fileField = "image",
   }) async {
@@ -58,8 +119,12 @@ class ApiHelper {
     String? access = prefs.getString("accessToken");
     String? refresh = prefs.getString("refreshToken");
 
+    debugPrint("📤 MULTIPART API → $method $endpoint");
+    debugPrint("📦 Fields: $fields");
+    debugPrint("🖼 File: $filePath");
+
     Future<http.Response> send(String accessToken) async {
-      var uri = Uri.parse("http://$ip:3000$endpoint");
+      var uri = Uri.parse("$baseUrl$endpoint");
 
       var request = http.MultipartRequest(method, uri);
       request.headers["Authorization"] = "Bearer $accessToken";
@@ -75,18 +140,18 @@ class ApiHelper {
       }
 
       final streamed = await request.send();
-      return await http.Response.fromStream(streamed);
+      return http.Response.fromStream(streamed);
     }
 
-    // ยิงครั้งแรก
     http.Response res = await send(access ?? "");
+
+    debugPrint("📥 MULTIPART RESPONSE → ${res.statusCode}");
 
     if (res.statusCode != 401) return res;
 
     final msg = _readMessage(res);
     if (msg != "access_token_expired") return res;
 
-    // refresh
     final newToken = await refreshAccessToken(refresh);
     if (newToken == null) return res;
 
@@ -96,44 +161,8 @@ class ApiHelper {
   }
 
   // ----------------------------------------------------------
-  // 📌 2) Normal API (GET / POST / PUT / DELETE)
+  // 📌 Base Request (ส่งจริง)
   // ----------------------------------------------------------
-  static Future<http.Response> callApi(
-    String endpoint, {
-    String method = "GET",
-    Map<String, dynamic>? body,
-  }) async {
-    final tokens = await getTokens();
-    String? access = tokens["access"];
-    String? refresh = tokens["refresh"];
-
-    Uri url = Uri.parse("$baseUrl$endpoint");
-
-    Map<String, String> headers = {
-      "Content-Type": "application/json",
-      if (access != null) "Authorization": "Bearer $access",
-    };
-
-    http.Response res = await _send(method, url, headers, body);
-
-    if (res.statusCode != 401) return res;
-
-    final msg = _readMessage(res);
-    if (msg != "access_token_expired") return res;
-
-    // refresh
-    final newToken = await refreshAccessToken(refresh);
-    if (newToken == null) return res;
-
-    await saveAccessToken(newToken);
-
-    headers["Authorization"] = "Bearer $newToken";
-    return await _send(method, url, headers, body);
-  }
-
-  // -----------------------------
-  // 📌 Base request
-  // -----------------------------
   static Future<http.Response> _send(
     String method,
     Uri url,
@@ -155,16 +184,20 @@ class ApiHelper {
   }
 
   // ----------------------------------------------------------
-  // 📌 3) Refresh Token (ตัวจริง)
+  // 📌 Refresh Token API
   // ----------------------------------------------------------
   static Future<String?> refreshAccessToken(String? refreshToken) async {
     if (refreshToken == null) return null;
 
+    debugPrint("🔁 Calling /refresh-token …");
+
     final res = await http.post(
-      Uri.parse("$baseUrl/refresh-token"), // ← ถูกต้องตรงกับ server.js
+      Uri.parse("$baseUrl/refresh-token"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({"refreshToken": refreshToken}),
     );
+
+    debugPrint("📥 Refresh Response → ${res.statusCode}");
 
     if (res.statusCode != 200) return null;
 
@@ -172,7 +205,7 @@ class ApiHelper {
   }
 
   // ----------------------------------------------------------
-  // 📌 4) อ่านข้อความ error
+  // 📌 อ่านข้อความ error
   // ----------------------------------------------------------
   static String? _readMessage(http.Response res) {
     try {
@@ -181,5 +214,4 @@ class ApiHelper {
       return null;
     }
   }
-  
 }

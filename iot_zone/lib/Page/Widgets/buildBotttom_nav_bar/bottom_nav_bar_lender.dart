@@ -4,6 +4,7 @@ import 'package:iot_zone/Page/homepagelender.dart';
 import 'package:iot_zone/Page/Dashboard/Dashboard.dart';
 import 'package:iot_zone/Page/Asset_page/assetlender.dart';
 import 'package:iot_zone/Page/History_page/history_lender.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LenderMain extends StatefulWidget {
   final Map<String, dynamic>?
@@ -25,8 +26,11 @@ class _LenderMainState extends State<LenderMain> {
   @override
   void initState() {
     super.initState();
+    _initPages(); // ⭐ โหลดหน้า
+  }
 
-    // ✅ ส่ง userData ไปหน้าที่ต้องใช้
+  // ✅ ส่ง userData ไปหน้าที่ต้องใช้
+  void _initPages() {
     _pages = [
       Homepagelender(userData: widget.userData), // 0
       HistoryLenderPage(), // 1
