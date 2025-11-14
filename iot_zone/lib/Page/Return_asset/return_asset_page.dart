@@ -154,7 +154,7 @@ class _ReturnAssetsPageState extends State<ReturnAssetsPage> {
           'Return Assets',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: const Color(0xFFC386FF),
+        backgroundColor: Colors.deepPurpleAccent,
         foregroundColor: Colors.white,
         actions: [
           IconButton(

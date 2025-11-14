@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:iot_zone/Page/AppConfig.dart';
+import 'package:iot_zone/Page/api_helper.dart';
 
 class HistoryLenderPage extends StatefulWidget {
   const HistoryLenderPage({super.key});
@@ -35,30 +36,39 @@ class _HistoryLenderPageState extends State<HistoryLenderPage> {
       final lenderId = prefs.getInt('user_id');
 
       if (lenderId == null) {
-        throw Exception("ไม่พบข้อมูลผู้ใช้ Lender");
+        throw Exception("User not found");
       }
 
-      final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/lender-history/$lenderId'),
+      // ⭐ ใช้ ApiHelper เพื่อรองรับ auto refresh token
+      final response = await ApiHelper.callApi(
+        "/api/lender-history/$lenderId",
+        method: "GET",
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
+
         setState(() {
           historyList = List<Map<String, dynamic>>.from(data);
           filteredList = historyList;
           _isLoading = false;
         });
+      } else if (response.statusCode == 401) {
+        // ⭐ ถ้า refresh token หมดอายุด้วย → logout อัตโนมัติ
+        await ApiHelper.forceLogout(context);
       } else {
-        throw Exception(
-            'Failed to load history data (status ${response.statusCode})');
+        throw Exception("HTTP ${response.statusCode}");
       }
     } catch (e) {
-      print('⚠️ Error fetching lender history: $e');
+      print("⚠️ Error fetching lender history: $e");
+
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("can not load history: $e")));
+      }
+
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('โหลดประวัติไม่สำเร็จ: $e')),
-      );
     }
   }
 
@@ -125,75 +135,69 @@ class _HistoryLenderPageState extends State<HistoryLenderPage> {
     }
   }
 
- // โหลดรูปภาพ (asset / uploads / ชื่อไฟล์เปล่า)
-Widget _buildImage(String? imagePath) {
-  if (imagePath == null || imagePath.isEmpty) {
-    return Container(
-      width: 64,
-      height: 64,
-      color: Colors.grey[200],
-      child: const Icon(Icons.image_not_supported),
-    );
-  }
+  // โหลดรูปภาพ (asset / uploads / ชื่อไฟล์เปล่า)
+  Widget _buildImage(String? imagePath) {
+    if (imagePath == null || imagePath.isEmpty) {
+      return Container(
+        width: 64,
+        height: 64,
+        color: Colors.grey[200],
+        child: const Icon(Icons.image_not_supported),
+      );
+    }
 
-  // กรณี path ใน asset ของ Flutter
-  if (imagePath.startsWith('asset/')) {
-    return Image.asset(
-      imagePath,
+    // กรณี path ใน asset ของ Flutter
+    if (imagePath.startsWith('asset/')) {
+      return Image.asset(
+        imagePath,
+        width: 64,
+        height: 64,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+            const Icon(Icons.broken_image, color: Colors.red),
+      );
+    }
+
+    // กรณีเป็นชื่อไฟล์เฉย ๆ (เช่น Multimeter.png)
+    if (!imagePath.contains('/') && !imagePath.contains('\\')) {
+      // ตรวจว่าแอปมีไฟล์ใน asset/img หรือไม่
+      return Image.asset(
+        'asset/img/$imagePath',
+        width: 64,
+        height: 64,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          // ถ้าไม่พบใน assets → ดึงจาก server
+          return Image.network(
+            '${AppConfig.baseUrl}/uploads/$imagePath',
+            width: 64,
+            height: 64,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) =>
+                const Icon(Icons.broken_image, color: Colors.red),
+          );
+        },
+      );
+    }
+
+    // กรณี path อยู่ใน uploads (server)
+    final file = imagePath.replaceAll('\\', '/');
+    return Image.network(
+      '${AppConfig.baseUrl}/uploads/$file',
       width: 64,
       height: 64,
       fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => const Icon(
-        Icons.broken_image,
-        color: Colors.red,
-      ),
+      errorBuilder: (context, error, stackTrace) =>
+          const Icon(Icons.broken_image, color: Colors.red),
     );
   }
-
-  // กรณีเป็นชื่อไฟล์เฉย ๆ (เช่น Multimeter.png)
-  if (!imagePath.contains('/') && !imagePath.contains('\\')) {
-    // ตรวจว่าแอปมีไฟล์ใน asset/img หรือไม่
-    return Image.asset(
-      'asset/img/$imagePath',
-      width: 64,
-      height: 64,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        // ถ้าไม่พบใน assets → ดึงจาก server
-        return Image.network(
-          '${AppConfig.baseUrl}/uploads/$imagePath',
-          width: 64,
-          height: 64,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => const Icon(
-            Icons.broken_image,
-            color: Colors.red,
-          ),
-        );
-      },
-    );
-  }
-
-  // กรณี path อยู่ใน uploads (server)
-  final file = imagePath.replaceAll('\\', '/');
-  return Image.network(
-    '${AppConfig.baseUrl}/uploads/$file',
-    width: 64,
-    height: 64,
-    fit: BoxFit.cover,
-    errorBuilder: (context, error, stackTrace) => const Icon(
-      Icons.broken_image,
-      color: Colors.red,
-    ),
-  );
-}
 
   @override
   Widget build(BuildContext context) {
     const purple = Color(0xFFC368FF);
     const bg = Color(0xFFF9F9FF);
 
-          return Scaffold(
+    return Scaffold(
       backgroundColor: const Color(0xFFF6F2FB),
       appBar: AppBar(
         title: const Text(
@@ -226,8 +230,11 @@ Widget _buildImage(String? imagePath) {
                           child: Row(
                             children: [
                               const SizedBox(width: 12),
-                              const Icon(Icons.search,
-                                  color: Colors.black54, size: 22),
+                              const Icon(
+                                Icons.search,
+                                color: Colors.black54,
+                                size: 22,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: TextField(
@@ -235,8 +242,7 @@ Widget _buildImage(String? imagePath) {
                                   decoration: const InputDecoration(
                                     hintText: 'Search',
                                     border: InputBorder.none,
-                                    hintStyle:
-                                        TextStyle(color: Colors.black54),
+                                    hintStyle: TextStyle(color: Colors.black54),
                                   ),
                                   onChanged: _searchItem,
                                 ),
@@ -256,8 +262,11 @@ Widget _buildImage(String? imagePath) {
                             color: Colors.yellow,
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Icon(Icons.calendar_month,
-                              color: Colors.black, size: 26),
+                          child: const Icon(
+                            Icons.calendar_month,
+                            color: Colors.black,
+                            size: 26,
+                          ),
                         ),
                       ),
                     ],
@@ -287,81 +296,78 @@ Widget _buildImage(String? imagePath) {
     );
   }
 
- // Card แต่ละรายการ 
-Widget _buildHistoryCard(Map<String, dynamic> item) {
-  const purple = Color(0xFFC368FF);
+  // Card แต่ละรายการ
+  Widget _buildHistoryCard(Map<String, dynamic> item) {
+    const purple = Color(0xFFC368FF);
 
-  String borrowedOn = '';
-  String returnedOn = '';
+    String borrowedOn = '';
+    String returnedOn = '';
 
-  try {
-    if (item['borrowDate'] != null) {
-      borrowedOn =
-          "Borrowed on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item['borrowDate']))}";
-    }
-    if (item['returnDate'] != null) {
-      returnedOn =
-          "Returned on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item['returnDate']))}";
-    }
-  } catch (_) {}
+    try {
+      if (item['borrowDate'] != null) {
+        borrowedOn =
+            "Borrowed on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item['borrowDate']))}";
+      }
+      if (item['returnDate'] != null) {
+        returnedOn =
+            "Returned on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item['returnDate']))}";
+      }
+    } catch (_) {}
 
-  return Container(
-    margin: const EdgeInsets.only(bottom: 16),
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: purple.withOpacity(0.2)),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 4,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-      
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: _buildImage(item["image"]),
-        ),
-        const SizedBox(width: 12),
-
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-            
-              Text(
-                item["name"] ?? "Unknown Item",
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-
-              const SizedBox(height: 4),
-
-              if (borrowedOn.isNotEmpty) Text(borrowedOn),
-              if (returnedOn.isNotEmpty) Text(returnedOn),
-
-              if ((item["borrowedBy"] ?? '').toString().isNotEmpty)
-                Text("Borrowed by ${item["borrowedBy"]}"),
-
-              if ((item["reason"] ?? '').toString().isNotEmpty)
-                Text(
-                  "Reason: ${item["reason"]}",
-                  style: const TextStyle(color: Colors.redAccent),
-                ),
-            ],
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: purple.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: _buildImage(item["image"]),
+          ),
+          const SizedBox(width: 12),
 
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item["name"] ?? "Unknown Item",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+
+                if (borrowedOn.isNotEmpty) Text(borrowedOn),
+                if (returnedOn.isNotEmpty) Text(returnedOn),
+
+                if ((item["borrowedBy"] ?? '').toString().isNotEmpty)
+                  Text("Borrowed by ${item["borrowedBy"]}"),
+
+                if ((item["reason"] ?? '').toString().isNotEmpty)
+                  Text(
+                    "Reason: ${item["reason"]}",
+                    style: const TextStyle(color: Colors.redAccent),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

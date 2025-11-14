@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'asset_listmap/asset_model.dart';
 import 'showAssetDialog/showAssetDialog_lender.dart';
 import 'package:iot_zone/Page/AppConfig.dart';
+import 'package:iot_zone/Page/api_helper.dart';
 
 class Assetlender extends StatefulWidget {
   const Assetlender({super.key});
@@ -38,20 +39,34 @@ class _AssetlenderState extends State<Assetlender> {
 
   // ✅ ดึงข้อมูลจาก API
   Future<List<AssetModel>> fetchAssets() async {
-    final response = await http.get(Uri.parse('http://$ip:3000/assets'));
-    if (response.statusCode == 200) {
-      final List<dynamic> jsonData = json.decode(response.body);
-      return jsonData.map((item) => AssetModel.fromMap(item)).toList();
-    } else {
-      throw Exception('Failed to load assets');
+    try {
+      // 🔐 ดึงข้อมูลผ่าน ApiHelper (มีเช็ค /refresh ให้แล้ว)
+      final response = await ApiHelper.callApi("/assets", method: "GET");
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonData = json.decode(response.body);
+        return jsonData.map((item) => AssetModel.fromMap(item)).toList();
+      }
+
+      // 🔴 ถ้า token หมดอายุ / ไม่ผ่าน auth
+      if (response.statusCode == 401) {
+        // ถ้าอยากให้เด้งออกหน้า login เลย
+        await ApiHelper.forceLogout(context);
+        return [];
+      }
+
+      throw Exception('Failed to load assets (HTTP ${response.statusCode})');
+    } catch (e) {
+      debugPrint('❌ fetchAssets error: $e');
+      throw Exception('Failed to load assets: $e');
     }
   }
 
   // ✅ โหลดภาพจาก Asset หรือ Server
   Widget _buildImage(String imagePath) {
-    final baseUrl = 'http://$ip:3000';
-    final isNetwork =
-        imagePath.startsWith('/uploads/') || imagePath.contains('http');
+    final String baseUrl = AppConfig.baseUrl; // เช่น http://IP:3000
+    final bool isNetwork =
+        imagePath.startsWith('/uploads/') || imagePath.startsWith('http');
 
     return Container(
       height: 120,
@@ -61,7 +76,9 @@ class _AssetlenderState extends State<Assetlender> {
         fit: BoxFit.contain,
         child: isNetwork
             ? Image.network(
-                imagePath.contains('http') ? imagePath : '$baseUrl$imagePath',
+                imagePath.startsWith('http')
+                    ? imagePath
+                    : '$baseUrl$imagePath', // ➜ http://ip:3000/uploads/xxx
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) => const Icon(
                   Icons.broken_image,
@@ -70,7 +87,7 @@ class _AssetlenderState extends State<Assetlender> {
                 ),
               )
             : Image.asset(
-                imagePath,
+                imagePath, // เช่น asset/img/Resistor.png
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) => const Icon(
                   Icons.image_not_supported_outlined,

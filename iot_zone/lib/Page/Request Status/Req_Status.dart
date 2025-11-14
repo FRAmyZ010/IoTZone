@@ -117,7 +117,7 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
 
   @override
   Widget build(BuildContext context) {
-    const purple = Color(0xFFC368FF);
+    const purple = Colors.deepPurpleAccent;
 
     return Scaffold(
       appBar: PreferredSize(
@@ -228,7 +228,9 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: purple.withOpacity(0.2)),
+        border: Border.all(
+          color: const Color.fromARGB(255, 144, 16, 229).withOpacity(0.2),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
