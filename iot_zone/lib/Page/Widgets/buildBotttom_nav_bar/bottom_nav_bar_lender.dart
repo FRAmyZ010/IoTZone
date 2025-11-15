@@ -91,7 +91,7 @@ class _LenderMainState extends State<LenderMain> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F2FB),
+      backgroundColor: Colors.white,
       body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: CustomBottomNavBarLender(
         currentIndex: _selectedIndex,

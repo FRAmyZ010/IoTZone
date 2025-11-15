@@ -8,6 +8,9 @@ import 'Widgets/buildTextContainer1/buildSlidehomepage_center.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_rigthtop.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_leftlow.dart';
 import 'Widgets/meatball_menu/meatball_menu.dart';
+import 'package:iot_zone/Page/Asset_page/asset_listmap/asset_model.dart';
+import 'package:iot_zone/Page/api_helper.dart';
+import 'dart:convert';
 
 class Homepagestaff extends StatefulWidget {
   final Map<String, dynamic>? userData;
@@ -27,12 +30,30 @@ class _HomepagestaffState extends State<Homepagestaff> {
   final ScrollController _scrollController = ScrollController();
   late Map<String, dynamic> _userData;
 
+  List<AssetModel> latestAssets = [];
+  bool isLoadingLatest = true;
+
+  String getFullImageUrl(String? imagePath) {
+    if (imagePath == null || imagePath.isEmpty || imagePath == "null") {
+      return "";
+    }
+
+    // 📌 ถ้าเป็นรูปใน asset/flutter (local)
+    if (imagePath.startsWith("asset/") || imagePath.startsWith("assets/")) {
+      return imagePath; // จะใช้ Image.asset แทน
+    }
+
+    // 📌 ถ้าเป็นรูปจาก upload (server)
+    return "http://${AppConfig.serverIP}:3000$imagePath";
+  }
+
   @override
   void initState() {
     super.initState();
-
-    // ✅ โหลด userData จาก CheckSessionPage ถ้ามี
     _userData = Map<String, dynamic>.from(widget.userData ?? {});
+
+    // ⭐ ดึง asset ที่นี่!
+    _loadLatestAssets();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollController.animateTo(
@@ -41,6 +62,62 @@ class _HomepagestaffState extends State<Homepagestaff> {
         curve: Curves.easeInOut,
       );
     });
+  }
+
+  Future<List<AssetModel>> fetchAssets() async {
+    try {
+      final response = await ApiHelper.callApi("/assets", method: "GET");
+
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        return data.map((e) => AssetModel.fromMap(e)).toList();
+      } else {
+        return [];
+      }
+    } catch (e) {
+      print("❌ Error loading assets: $e");
+      return [];
+    }
+  }
+
+  Future<void> _loadLatestAssets() async {
+    setState(() => isLoadingLatest = true);
+
+    final allAssets = await fetchAssets();
+
+    // เรียง id ใหม่สุด → เก่าสุด
+    allAssets.sort((a, b) => b.id.compareTo(a.id));
+
+    // เอาแค่ 5 รายการล่าสุด
+    final latest = allAssets.take(3).toList();
+
+    setState(() {
+      latestAssets = latest;
+      isLoadingLatest = false;
+    });
+  }
+
+  Widget buildAssetImage(String? imagePath) {
+    final fullPath = getFullImageUrl(imagePath);
+
+    // ถ้าเป็นรูป asset (local)
+    if (fullPath.startsWith("asset/") || fullPath.startsWith("assets/")) {
+      return Image.asset(fullPath, width: double.infinity, fit: BoxFit.cover);
+    }
+
+    // ถ้าเป็นรูปจาก server
+    return Image.network(
+      fullPath,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Image.asset(
+          "asset/img/no_image.png",
+          width: double.infinity,
+          fit: BoxFit.cover,
+        );
+      },
+    );
   }
 
   // ✅ อัปเดตข้อมูลหลังแก้ไขโปรไฟล์
@@ -182,7 +259,7 @@ class _HomepagestaffState extends State<Homepagestaff> {
 
             // 🔹 ส่วนล่าง
             Expanded(
-              flex: 72,
+              flex: 70,
               child: Container(
                 color: Colors.white,
                 alignment: Alignment.topCenter,
@@ -193,13 +270,14 @@ class _HomepagestaffState extends State<Homepagestaff> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Carousel 1
                         SizedBox(
                           height: 200,
                           child: CarouselSlider(
                             options: CarouselOptions(
-                              height: 200,
+                              height: 175,
                               autoPlay: true,
-                              autoPlayInterval: const Duration(seconds: 10),
+                              autoPlayInterval: const Duration(seconds: 5),
                               enlargeCenterPage: true,
                               viewportFraction: 0.78,
                               padEnds: true,
@@ -264,40 +342,115 @@ class _HomepagestaffState extends State<Homepagestaff> {
                         ),
 
                         const SizedBox(height: 20),
+                        const Text(
+                          'Recommended Equipment',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 10),
 
                         SizedBox(
                           height: 250,
-                          child: CarouselSlider(
-                            options: CarouselOptions(
-                              height: 200,
-                              enableInfiniteScroll: false,
-                              enlargeCenterPage: true,
-                              viewportFraction: 0.75,
-                              padEnds: true,
-                              autoPlay: false,
-                              initialPage: 1,
-                            ),
-                            items: [
-                              BuildTextContainerRightTop(
-                                text:
-                                    'Manage smarter. Live easier. All your tools, sensors, and modules — right at your fingertips.',
-                                color: Colors.deepPurple[100]!,
-                                imagePath: 'asset/img/LAB_ROOM.jpg',
-                              ),
-                              BuildTextContainerRightLow(
-                                text:
-                                    '“Think ahead. Work smarter. SAFEAREA — The next generation of asset management.”',
-                                color: Colors.deepPurple[100]!,
-                                imagePath: 'asset/img/LAB_ROOM2.jpg',
-                              ),
-                              BuildTextContainerRightTop(
-                                text:
-                                    '“Power up your lab. Manage smart. Borrow easy. Your tools, your control — anytime, anywhere.”',
-                                color: Colors.deepPurple[100]!,
-                                imagePath: 'asset/img/LAB_ROOM3.jpg',
-                              ),
-                            ],
-                          ),
+                          child: isLoadingLatest
+                              ? const Center(child: CircularProgressIndicator())
+                              : latestAssets.isEmpty
+                              ? const Center(
+                                  child: Text(
+                                    "There is no latest equipment information.",
+                                  ),
+                                )
+                              : CarouselSlider(
+                                  options: CarouselOptions(
+                                    height: 500,
+                                    enableInfiniteScroll: false,
+                                    enlargeCenterPage: true,
+                                    viewportFraction: 0.55,
+                                    padEnds: true,
+                                    autoPlay: false,
+                                    initialPage: 1,
+                                  ),
+                                  items: latestAssets.map((asset) {
+                                    return Builder(
+                                      builder: (context) {
+                                        return Container(
+                                          margin: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(
+                                                  0.05,
+                                                ),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 4),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              // 🔹 แสดงรูป (รองรับ asset + upload)
+                                              Expanded(
+                                                child: ClipRRect(
+                                                  borderRadius:
+                                                      const BorderRadius.vertical(
+                                                        top: Radius.circular(
+                                                          16,
+                                                        ),
+                                                      ),
+                                                  child: buildAssetImage(
+                                                    asset.image,
+                                                  ),
+                                                ),
+                                              ),
+
+                                              // 🔹 ชื่อ + ID
+                                              Padding(
+                                                padding: const EdgeInsets.all(
+                                                  20.0,
+                                                ),
+                                                child: Container(
+                                                  width: double
+                                                      .infinity, // ให้ container กว้างสุด
+                                                  alignment: Alignment
+                                                      .center, // 👈 บังคับให้ลูกอยู่ตรงกลาง
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      Text(
+                                                        asset.name,
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 14,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  }).toList(),
+                                ),
                         ),
                       ],
                     ),

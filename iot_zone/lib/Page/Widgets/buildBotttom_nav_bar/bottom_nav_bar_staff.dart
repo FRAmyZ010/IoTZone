@@ -5,6 +5,7 @@ import 'package:iot_zone/Page/Asset_page/assetstaff.dart';
 import 'package:iot_zone/Page/History_page/history_staff.dart';
 import 'package:iot_zone/Page/Return_asset/return_asset_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 class StaffMain extends StatefulWidget {
   final Map<String, dynamic>? userData;
 
@@ -24,7 +25,7 @@ class _StaffMainState extends State<StaffMain> {
   @override
   void initState() {
     super.initState();
-    _initPages(); 
+    _initPages();
   }
 
   // โหลดหน้า
@@ -90,7 +91,7 @@ class _StaffMainState extends State<StaffMain> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F2FB),
+      backgroundColor: Colors.white,
       body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: CustomBottomNavBarStaff(
         currentIndex: _selectedIndex,

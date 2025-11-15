@@ -51,8 +51,8 @@ class _StudentMainState extends State<StudentMain> {
     _pages = [
       Homepage(userData: widget.userData), // ส่ง userData เดิม
       const HistoryStudentPage(), // ทำแล้ว
-      const RequestStatusPage(), // 
-      const Assetpage(), // 
+      const RequestStatusPage(), //
+      const Assetpage(), //
     ];
   }
 
@@ -100,7 +100,7 @@ class _StudentMainState extends State<StudentMain> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F2FB),
+      backgroundColor: Colors.white,
       body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: CustomBottomNavBarStudent(
         currentIndex: _selectedIndex,
