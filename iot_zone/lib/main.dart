@@ -10,7 +10,6 @@ import 'Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar.dart';
 import 'Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar_staff.dart';
 import 'Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar_lender.dart';
 
-
 void main() {
   runApp(
     MaterialApp(
@@ -20,10 +19,13 @@ void main() {
         "/check": (context) => const CheckSessionPage(),
         "/login": (context) => const LoginPage(),
 
-        // เพิ่มหน้า Main ของแต่ละ role เผื่อใช้ navigator
+        // 🔹 Main ของแต่ละ role
         "/studentMain": (context) => const StudentMain(),
         "/staffMain": (context) => const StaffMain(),
         "/lenderMain": (context) => const LenderMain(),
+
+        // ⭐⭐ สำคัญมาก — เพิ่มหน้า asset ที่คุณลืมใส่ ⭐⭐
+        "/asset": (context) => const Assetpage(), // Student
       },
     ),
   );

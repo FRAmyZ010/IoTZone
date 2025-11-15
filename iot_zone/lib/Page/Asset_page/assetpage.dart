@@ -7,6 +7,7 @@ import 'asset_listmap/asset_model.dart';
 import 'package:iot_zone/Page/AppConfig.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:iot_zone/Page/api_helper.dart';
+
 class Assetpage extends StatefulWidget {
   const Assetpage({super.key});
 
@@ -16,7 +17,10 @@ class Assetpage extends StatefulWidget {
 
 class _AssetpageState extends State<Assetpage> {
   // --- Filter state ---
+  bool _dialogOpened = false;
   String searchQuery = '';
+  bool _dialogShown = false;
+
   final List<String> types = const [
     'Type',
     'Board',
@@ -33,55 +37,64 @@ class _AssetpageState extends State<Assetpage> {
   late Future<List<AssetModel>> futureAssets;
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     futureAssets = fetchAssets();
+
+    final args = ModalRoute.of(context)?.settings.arguments;
+
+    if (!_dialogShown && args is Map && args["openDialog"] == true) {
+      _dialogShown = true; // กันไม่ให้เปิดซ้ำ
+
+      final assetMap = args["asset"];
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showDialog(
+          context: context,
+          builder: (_) => BorrowAssetDialog(asset: assetMap),
+        ).then((_) {
+          // เมื่อปิด dialog กลับมา → ไม่เปิดใหม่อีก
+          _dialogShown = true;
+        });
+      });
+    }
   }
 
-// ✅ ดึงข้อมูลจาก API
-Future<List<AssetModel>> fetchAssets() async {
-  try {
-    final response = await ApiHelper.callApi(
-      "/assets",
-      method: "GET",
-    );
+  // ✅ ดึงข้อมูลจาก API
+  Future<List<AssetModel>> fetchAssets() async {
+    try {
+      final response = await ApiHelper.callApi("/assets", method: "GET");
 
-    if (response.statusCode == 200) {
-      final List<dynamic> jsonData = json.decode(response.body);
-      return jsonData.map((item) => AssetModel.fromMap(item)).toList();
-    }
-
-    // ❌ refresh token ก็หมดอายุ → ต้อง logout
-    else if (response.statusCode == 401 || response.statusCode == 403) {
-      await _forceLogout(context);
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonData = json.decode(response.body);
+        return jsonData.map((item) => AssetModel.fromMap(item)).toList();
+      }
+      // ❌ refresh token ก็หมดอายุ → ต้อง logout
+      else if (response.statusCode == 401 || response.statusCode == 403) {
+        await _forceLogout(context);
+        return [];
+      } else {
+        throw Exception("Failed to load assets: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("⚠️ Fetch assets error: $e");
       return [];
     }
-
-    else {
-      throw Exception("Failed to load assets: ${response.statusCode}");
-    }
-  } catch (e) {
-    print("⚠️ Fetch assets error: $e");
-    return [];
   }
-}
 
-// ✅ บังคับ logout เมื่อ token หมดอายุทั้งคู่
-Future<void> _forceLogout(BuildContext context) async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.clear();
+  // ✅ บังคับ logout เมื่อ token หมดอายุทั้งคู่
+  Future<void> _forceLogout(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
 
-  if (!context.mounted) return;
+    if (!context.mounted) return;
 
-  Navigator.pushReplacementNamed(context, "/login");
+    Navigator.pushReplacementNamed(context, "/login");
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text("Session expired. Please login again."),
-    ),
-  );
-}
-
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Session expired. Please login again.")),
+    );
+  }
 
   // ✅ รีโหลดข้อมูลใหม่ (ใช้ทั้งตอน Borrow และ Pull-to-Refresh)
   Future<void> refreshAssets() async {
@@ -130,6 +143,7 @@ Future<void> _forceLogout(BuildContext context) async {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false, // ⬅ ลบปุ่ม back
         title: const Text(
           'Asset',
           style: TextStyle(
@@ -141,6 +155,7 @@ Future<void> _forceLogout(BuildContext context) async {
         backgroundColor: Colors.deepPurpleAccent,
         elevation: 0,
       ),
+
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
