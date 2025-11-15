@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:iot_zone/Page/AppConfig.dart';
 import 'dart:convert';
-
-// 🧭 import หน้าหลัง login
-import 'package:iot_zone/Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar.dart'; // ✅ StudentMain อยู่ในไฟล์นี้
-import 'package:iot_zone/Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar_staff.dart';
-import 'package:iot_zone/Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar_lender.dart';
+import 'package:iot_zone/Page/Login/check_session_page.dart';
 
 import 'package:iot_zone/Page/Login/register_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,7 +24,9 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController tcUser = TextEditingController();
   final TextEditingController tcPass = TextEditingController();
 
-  // 🔹 ฟังก์ชันตรวจสอบ login
+  // ----------------------------------------------------------
+  // 🔥 ฟังก์ชัน Login (เพิ่ม token + refresh token ให้ครบ)
+  // ----------------------------------------------------------
   void _handleLogin() async {
     final username = tcUser.text.trim();
     final password = tcPass.text.trim();
@@ -48,47 +46,54 @@ class _LoginPageState extends State<LoginPage> {
         Uri.parse('http://$ip:3000/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'username': username, 'password': password}),
-      );
+      );  
 
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['user'] != null) {
         final role = data['user']['role'];
 
-        // ✅ Save session before navigation
-        await _saveSession(data['user']);
+        // ----------------------------------------------------------
+        // ✔ เก็บ session + accessToken + refreshToken
+        // ----------------------------------------------------------
+        await _saveSession(
+          data['user'],
+          data['accessToken'],
+          data['refreshToken'],
+        );
 
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('✅ Login successful!')));
 
+        // ----------------------------------------------------------
         // 🧭 Navigate by role
+        // ----------------------------------------------------------
         switch (role) {
           case 'student':
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(
-                builder: (_) => StudentMain(userData: data['user']),
-              ),
+              MaterialPageRoute(builder: (_) => const CheckSessionPage()),
             );
+
             break;
+
           case 'staff':
-            Navigator.pushAndRemoveUntil(
+            Navigator.pushReplacement(
               context,
-              MaterialPageRoute(
-                builder: (_) => StaffMain(userData: data['user']),
-              ),
-              (route) => false,
+              MaterialPageRoute(builder: (_) => const CheckSessionPage()),
             );
+
             break;
+
           case 'lender':
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(
-                builder: (_) => LenderMain(userData: data['user']),
-              ),
+              MaterialPageRoute(builder: (_) => const CheckSessionPage()),
             );
+
             break;
+
           default:
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('⚠️ User role not found')),
@@ -106,14 +111,22 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Connection error. Unable to reach the server.\n$e'),
+          content: Text('❌ Connection error. Unable to reach server.\n$e'),
         ),
       );
     }
   }
 
-  Future<void> _saveSession(Map<String, dynamic> user) async {
+  // ----------------------------------------------------------
+  // 📦 Save Session + Tokens
+  // ----------------------------------------------------------
+  Future<void> _saveSession(
+    Map<String, dynamic> user,
+    String accessToken,
+    String refreshToken,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
+
     await prefs.setBool('isLoggedIn', true);
     await prefs.setString('role', user['role']);
     await prefs.setString('username', user['username']);
@@ -122,8 +135,16 @@ class _LoginPageState extends State<LoginPage> {
     await prefs.setString('phone', user['phone']);
     await prefs.setString('email', user['email']);
     await prefs.setString('image', user['image'] ?? '');
+
+    // ✔ เก็บ token ต่างหาก
+    await prefs.setString('accessToken', accessToken);
+    await prefs.setString('refreshToken', refreshToken);
+
     await prefs.commit();
+
     print('✅ Session saved: ${user['username']} (${user['role']})');
+    print('🔐 AccessToken Saved');
+    print('🔁 RefreshToken Saved');
   }
 
   @override
@@ -142,7 +163,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
 
-          // 🔹 รูปพื้นหลังโปร่งใส
           Opacity(
             opacity: 0.5,
             child: Image.asset(
@@ -152,6 +172,7 @@ class _LoginPageState extends State<LoginPage> {
               width: double.infinity,
             ),
           ),
+
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -162,13 +183,11 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
 
-          // 🔹 เนื้อหา
           SafeArea(
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // โลโก้
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -186,7 +205,9 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 35),
 
-                  // กล่อง Login
+                  // ------------------------------------------------
+                  // 🔐 กล่อง Login (เหมือนเดิม ไม่แตะ UI)
+                  // ------------------------------------------------
                   Container(
                     width: 350,
                     height: 400,
@@ -208,7 +229,6 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 30),
 
-                        // Username
                         SizedBox(
                           width: 250,
                           child: TextField(
@@ -230,7 +250,6 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 15),
 
-                        // Password
                         SizedBox(
                           width: 250,
                           child: TextField(
@@ -253,7 +272,6 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 40),
 
-                        // ปุ่ม Login
                         FilledButton(
                           onPressed: _handleLogin,
                           style: FilledButton.styleFrom(
@@ -276,7 +294,6 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
 
-                        // ปุ่ม Register
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [

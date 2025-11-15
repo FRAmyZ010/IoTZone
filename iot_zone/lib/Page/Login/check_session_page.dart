@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ✅ import หน้าตาม role
@@ -6,6 +8,7 @@ import 'package:iot_zone/Page/Login/login_page.dart';
 import 'package:iot_zone/Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar.dart';
 import 'package:iot_zone/Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar_staff.dart';
 import 'package:iot_zone/Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar_lender.dart';
+import 'package:iot_zone/Page/AppConfig.dart';
 
 class CheckSessionPage extends StatefulWidget {
   const CheckSessionPage({super.key});
@@ -21,72 +24,158 @@ class _CheckSessionPageState extends State<CheckSessionPage> {
     _checkSession();
   }
 
-  // 🔹 ฟังก์ชันตรวจ session
+  // ---------------------------------------------------------
+  // 🔥 ฟังก์ชันตรวจ session + ตรวจ token + refresh token
+  // ---------------------------------------------------------
   Future<void> _checkSession() async {
     final prefs = await SharedPreferences.getInstance();
     final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
 
     debugPrint('🟢 Session Check → isLoggedIn = $isLoggedIn');
 
-    if (isLoggedIn) {
-      final role = prefs.getString('role');
-      final username = prefs.getString('username');
-      final userId = prefs.getInt('user_id');
-      final name = prefs.getString('name');
-      final image = prefs.getString('image');
-      final phone = prefs.getString('phone');
-      final email = prefs.getString('email');
+    // ดึง token ที่เก็บไว้
+    final accessToken = prefs.getString("accessToken");
+    final refreshToken = prefs.getString("refreshToken");
 
-      debugPrint('🔹 Restore session for $name ($role)');
+    // ❌ ไม่มี session + ไม่มี token → ไปหน้า Login
+    if (!isLoggedIn || accessToken == null || refreshToken == null) {
+      return _goToLogin();
+    }
 
-      // ✅ สร้าง userData map ส่งเข้าไปหน้า role
-      final userData = {
-        'id': userId,
-        'username': username,
-        'name': name,
-        'role': role,
-        'image': image,
-        'phone': phone,
-        'email': email,
-      };
+    // ---------------------------------------------------------
+    // 1) ตรวจว่า Access Token หมดอายุหรือยัง
+    // ---------------------------------------------------------
+    final isTokenValid = await _validateAccessToken(accessToken);
 
-      Widget nextPage;
-      switch (role) {
-        case 'student':
-          nextPage = StudentMain(userData: userData);
-          break;
-        case 'staff':
-          nextPage = StaffMain(userData: userData);
-          break;
-        case 'lender':
-          nextPage = LenderMain(userData: userData);
-          break;
-        default:
-          nextPage = const LoginPage();
+    if (!isTokenValid) {
+      debugPrint("⛔ Access Token หมดอายุ → กำลังขอใหม่ด้วย Refresh Token");
+
+      final newAccess = await _refreshAccessToken(refreshToken);
+
+      if (newAccess == null) {
+        debugPrint("❌ Refresh Token ใช้ไม่ได้ → Logout");
+        return _goToLogin();
       }
 
-      // ✅ หน่วงเวลาแสดง splash 1 วิ
-      await Future.delayed(const Duration(seconds: 1));
+      // ✔ token ใหม่ เก็บแทนของเก่า
+      await prefs.setString("accessToken", newAccess);
 
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => nextPage),
-        );
-      }
-    } else {
-      // ❌ ไม่มี session → ไปหน้า Login
-      await Future.delayed(const Duration(seconds: 1));
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginPage()),
-        );
-      }
+      debugPrint("✅ ได้ Access Token ใหม่เรียบร้อยแล้ว");
+    }
+
+    // ---------------------------------------------------------
+    // 2) session ยังดีอยู่ → restore userData (เหมือนโค้ดเดิม)
+    // ---------------------------------------------------------
+    final role = prefs.getString('role');
+    final username = prefs.getString('username');
+    final userId = prefs.getInt('user_id');
+    final name = prefs.getString('name');
+    final image = prefs.getString('image');
+    final phone = prefs.getString('phone');
+    final email = prefs.getString('email');
+
+    debugPrint('🔹 Restore session for $name ($role)');
+
+    final userData = {
+      'id': userId,
+      'username': username,
+      'name': name,
+      'role': role,
+      'image': image,
+      'phone': phone,
+      'email': email,
+    };
+
+    Widget nextPage;
+    switch (role) {
+      case 'student':
+        nextPage = StudentMain(userData: userData);
+        break;
+      case 'staff':
+        nextPage = StaffMain(userData: userData);
+        break;
+      case 'lender':
+        nextPage = LenderMain(userData: userData);
+        break;
+      default:
+        nextPage = const LoginPage();
+    }
+
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => nextPage),
+      );
     }
   }
 
-  // 🔹 ฟังก์ชัน logout (ถ้าอยากเรียกใช้ตอน refresh)
+  // ---------------------------------------------------------
+  // ⛽ ฟังก์ชันตรวจ Token ว่าหมดอายุไหม
+  // ---------------------------------------------------------
+  Future<bool> _validateAccessToken(String token) async {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return false;
+
+      final payload = utf8.decode(
+        base64Url.decode(base64Url.normalize(parts[1])),
+      );
+      final data = jsonDecode(payload);
+
+      final exp = data["exp"] * 1000;
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      return now < exp; // true = ยังไม่หมดอายุ
+    } catch (e) {
+      debugPrint("❌ Token decode error → $e");
+      return false;
+    }
+  }
+
+  // ---------------------------------------------------------
+  // 🔁 ฟังก์ชัน refresh Access Token จาก Refresh Token
+  // ---------------------------------------------------------
+  Future<String?> _refreshAccessToken(String refreshToken) async {
+    try {
+      final response = await http.post(
+        Uri.parse("${AppConfig.baseUrl}/token"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"refreshToken": refreshToken}),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body)["accessToken"];
+      }
+
+      return null;
+    } catch (e) {
+      debugPrint("❌ Refresh Token Error → $e");
+      return null;
+    }
+  }
+
+  // ---------------------------------------------------------
+  // 🛑 ฟังก์ชันไปหน้า Login (ใช้ตอน token fail)
+  // ---------------------------------------------------------
+  Future<void> _goToLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------
+  // 🔹 ฟังก์ชัน logout (ตามโค้ดเดิม)
+  // ---------------------------------------------------------
   Future<void> logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();

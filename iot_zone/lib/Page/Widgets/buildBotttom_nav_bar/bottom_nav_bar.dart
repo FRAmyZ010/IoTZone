@@ -9,11 +9,10 @@ import 'package:iot_zone/Page/Request Status/Req_Status.dart';
 import 'package:iot_zone/Page/Login/login_page.dart';
 
 class StudentMain extends StatefulWidget {
-  final Map<String, dynamic>? userData; // ✅ รับข้อมูล user จาก login
+  final Map<String, dynamic>? userData; // ✅ ข้อมูล user จาก login
 
   const StudentMain({super.key, this.userData});
 
-  // ✅ ใช้เพื่อให้หน้าอื่นเรียกเปลี่ยนแท็บได้ เช่น StudentMain.of(context)?.changeTab(3)
   static _StudentMainState? of(BuildContext context) =>
       context.findAncestorStateOfType<_StudentMainState>();
 
@@ -23,50 +22,75 @@ class StudentMain extends StatefulWidget {
 
 class _StudentMainState extends State<StudentMain> {
   int _selectedIndex = 0;
-  late final List<Widget> _pages;
+  late List<Widget> _pages;
+
+  // ⭐ ตัวแปรเก็บ token
+  String? accessToken;
 
   @override
   void initState() {
     super.initState();
+    _loadToken(); // ⭐ โหลด token ตอนเปิดแอป
+    _initPages(); // ⭐ โหลดหน้า
+  }
 
-    // ✅ ส่ง userData ไปหน้า Homepage
+  // ----------------------------------------------------------
+  // 🔥 โหลด token จาก SharedPreferences
+  // ----------------------------------------------------------
+  Future<void> _loadToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    accessToken = prefs.getString('accessToken');
+
+    debugPrint("🔐 Loaded AccessToken: $accessToken");
+  }
+
+  // ----------------------------------------------------------
+  // ⭐ โหลดหน้าต่าง ๆ
+  // ----------------------------------------------------------
+  void _initPages() {
     _pages = [
-      Homepage(userData: widget.userData), // ส่งข้อมูลผู้ใช้มาจาก login
-      const HistoryStudentPage(),
-      const RequestStatusPage(),
-      const Assetpage(),
+      Homepage(userData: widget.userData), // ส่ง userData เดิม
+      const HistoryStudentPage(), // ทำแล้ว
+      const RequestStatusPage(), // 
+      const Assetpage(), // 
     ];
   }
 
-  // ✅ ฟังก์ชันเปลี่ยนแท็บ
+  // ----------------------------------------------------------
+  // ⭐ เปลี่ยนแท็บ
+  // ----------------------------------------------------------
   void changeTab(int index) {
     if (_selectedIndex == index) return;
     setState(() => _selectedIndex = index);
   }
 
-  // ✅ เมื่อกด icon ด้านล่าง
+  // ----------------------------------------------------------
+  // ⭐ ปุ่มล่าง
+  // ----------------------------------------------------------
   void _handleBottomTap(int index) {
     switch (index) {
       case 0:
-        changeTab(0); // Home
+        changeTab(0);
         break;
       case 1:
-        changeTab(1); // History
+        changeTab(1);
         break;
       case 2:
-        changeTab(2); // Request Status
+        changeTab(2);
         break;
       case 3:
-        changeTab(3); // Asset
-        break;
-      default:
+        changeTab(3);
         break;
     }
   }
 
+  // ----------------------------------------------------------
+  // ⭐ Logout
+  // ----------------------------------------------------------
   Future<void> logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.clear(); // 🧹 ล้างทุกค่า
+    await prefs.clear();
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -126,7 +150,6 @@ class _CustomBottomNavBarStudentState extends State<CustomBottomNavBarStudent> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // 🔹 แถบ gradient ด้านหลัง
           AnimatedContainer(
             duration: const Duration(milliseconds: 400),
             height: 63,
@@ -137,8 +160,6 @@ class _CustomBottomNavBarStudentState extends State<CustomBottomNavBarStudent> {
               ),
             ),
           ),
-
-          // 🔹 แถบปุ่มจริง
           Container(
             height: 54,
             margin: const EdgeInsets.all(5),
@@ -159,9 +180,9 @@ class _CustomBottomNavBarStudentState extends State<CustomBottomNavBarStudent> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildNavItem(Icons.home, 0), // 🏠 Home
-                  _buildNavItem(Icons.hourglass_empty, 2), // ⏳ Request
-                  _buildNavItem(Icons.history, 1), // 📜 History
+                  _buildNavItem(Icons.home, 0),
+                  _buildNavItem(Icons.hourglass_empty, 2),
+                  _buildNavItem(Icons.history, 1),
                 ],
               ),
             ),
@@ -181,7 +202,7 @@ class _CustomBottomNavBarStudentState extends State<CustomBottomNavBarStudent> {
         splashRadius: 24,
         onPressed: () {
           setState(() => _selectedIndex = index);
-          widget.onTap(index); // ✅ แจ้งหน้าแม่เปลี่ยนแท็บ
+          widget.onTap(index);
         },
         icon: AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),

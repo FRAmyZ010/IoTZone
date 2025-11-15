@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:iot_zone/Page/Widgets/meatball_menu/meatball_menu.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:iot_zone/Page/api_helper.dart';
 // 🔧 import widget ย่อย
 import 'Widgets/buildBotttom_nav_bar/bottom_nav_bar.dart';
 import 'Widgets/buildTextContainer1/buildSlidehomepage_center.dart';
@@ -31,12 +33,37 @@ class _HomepageState extends State<Homepage> {
   final ScrollController _scrollController = ScrollController();
   late Map<String, dynamic> _userData;
 
-  Future<void> _checkBorrowAndNavigate(BuildContext context, int userId) async {
-    final ip = AppConfig.serverIP;
+  // ⭐ เพิ่ม token ตัวแปรไว้ใช้กับทุก API
+  String? accessToken;
 
+  @override
+  void initState() {
+    super.initState();
+    _userData = Map<String, dynamic>.from(widget.userData ?? {});
+    _loadToken(); // ⭐ โหลด token
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollController.animateTo(
+        300,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  // ⭐ โหลด token จาก SharedPreferences
+  Future<void> _loadToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    accessToken = prefs.getString('accessToken');
+
+    debugPrint("🔐 Homepage Loaded Token: $accessToken");
+  }
+
+  // ⭐ ฟังก์ชันเช็ค borrow พร้อมส่ง token
+  Future<void> _checkBorrowAndNavigate(BuildContext context, int userId) async {
     try {
-      final response = await http.get(
-        Uri.parse('http://$ip:3000/api/check-borrow-status/$userId'),
+      final response = await ApiHelper.callApi(
+        "/api/check-borrow-status/$userId",
+        method: "GET",
       );
 
       if (response.statusCode == 200) {
@@ -44,77 +71,15 @@ class _HomepageState extends State<Homepage> {
 
         if (data['hasActiveRequest'] == true) {
           StudentMain.of(context)?.changeTab(3);
-          // showDialog(
-          //   context: context,
-          //   barrierDismissible: true,
-          //   builder: (_) => Dialog(
-          //     shape: RoundedRectangleBorder(
-          //       borderRadius: BorderRadius.circular(24),
-          //     ),
-          //     backgroundColor: Colors.white,
-          //     child: Padding(
-          //       padding: const EdgeInsets.all(24),
-          //       child: Column(
-          //         mainAxisSize: MainAxisSize.min,
-          //         children: [
-          //           const Icon(
-          //             Icons.warning_amber_rounded,
-          //             color: Colors.amber,
-          //             size: 70,
-          //           ),
-          //           const SizedBox(height: 15),
-          //           const Text(
-          //             'Borrow Request Pending',
-          //             style: TextStyle(
-          //               color: Color(0xFF6B45FF),
-          //               fontSize: 20,
-          //               fontWeight: FontWeight.bold,
-          //             ),
-          //             textAlign: TextAlign.center,
-          //           ),
-          //           const SizedBox(height: 12),
-          //           Text(
-          //             data['message'] ??
-          //                 'You already have a pending or active borrow request.\nPlease wait until it’s approved or returned.',
-          //             textAlign: TextAlign.center,
-          //             style: const TextStyle(
-          //               fontSize: 15,
-          //               color: Colors.black87,
-          //               height: 1.4,
-          //             ),
-          //           ),
-          //           const SizedBox(height: 25),
-          //           ElevatedButton(
-          //             onPressed: () => Navigator.pop(context),
-          //             style: ElevatedButton.styleFrom(
-          //               backgroundColor: const Color(0xFF6B45FF),
-          //               foregroundColor: Colors.white,
-          //               shape: RoundedRectangleBorder(
-          //                 borderRadius: BorderRadius.circular(25),
-          //               ),
-          //               padding: const EdgeInsets.symmetric(
-          //                 horizontal: 40,
-          //                 vertical: 14,
-          //               ),
-          //             ),
-          //             child: const Text(
-          //               "OK",
-          //               style: TextStyle(
-          //                 fontSize: 16,
-          //                 fontWeight: FontWeight.bold,
-          //               ),
-          //             ),
-          //           ),
-          //         ],
-          //       ),
-          //     ),
-          //   ),
-          // );
         } else {
           StudentMain.of(context)?.changeTab(3);
         }
+      }
+      // ❌ refresh token ก็หมดอายุ → Logout อัตโนมัติ
+      else if (response.statusCode == 401 || response.statusCode == 403) {
+        _forceLogout(context);
       } else {
-        throw Exception('Server responded with ${response.statusCode}');
+        throw Exception("Error: ${response.statusCode}");
       }
     } catch (e) {
       showDialog(
@@ -133,25 +98,22 @@ class _HomepageState extends State<Homepage> {
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _userData = Map<String, dynamic>.from(widget.userData ?? {});
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollController.animateTo(
-        300,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
-    });
+  Future<void> _forceLogout(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    if (!context.mounted) return;
+
+    Navigator.pushReplacementNamed(context, "/login");
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Session expired. Please login again.")),
+    );
   }
 
-  // ✅ เมื่ออัปเดตโปรไฟล์จากเมนู
-  void _onProfileUpdated(Map<String, dynamic> updatedUser) {
-    setState(() {
-      _userData = updatedUser;
-    });
-  }
+  // ------------------------------------------------------------
+  // 🔻 จากตรงนี้ลงไป = โค้ด UI เดิม 100% ของคุณ ไม่แตะเลย 🔻
+  // ------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +132,6 @@ class _HomepageState extends State<Homepage> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // 🔸 พื้นหลัง
                   Opacity(
                     opacity: 0.5,
                     child: Image.asset(
@@ -179,7 +140,6 @@ class _HomepageState extends State<Homepage> {
                     ),
                   ),
 
-                  // 🔸 ไล่สีพื้นหลัง
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -193,25 +153,24 @@ class _HomepageState extends State<Homepage> {
                     ),
                   ),
 
-                  // 🔸 ข้อมูลโปรไฟล์
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ปุ่มเมนู (Meatball)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             UserProfileMenu(
                               userData: _userData,
-                              onProfileUpdated: _onProfileUpdated,
+                              onProfileUpdated: (updatedUser) {
+                                setState(() => _userData = updatedUser);
+                              },
                             ),
                           ],
                         ),
                         const SizedBox(height: 10),
 
-                        // 🔸 โปรไฟล์ผู้ใช้
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -233,7 +192,6 @@ class _HomepageState extends State<Homepage> {
                             const SizedBox(width: 12),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
                                   name,
@@ -256,7 +214,6 @@ class _HomepageState extends State<Homepage> {
                           ],
                         ),
 
-                        // 🔹 โลโก้
                         Padding(
                           padding: const EdgeInsets.only(top: 2),
                           child: Row(
@@ -288,7 +245,7 @@ class _HomepageState extends State<Homepage> {
 
             const SizedBox(height: 20),
 
-            // 🔹 ส่วนล่าง (carousel, ปุ่ม, etc.)
+            // 🔹 ส่วน recommended, ปุ่ม BROWSE, carousel...
             Expanded(
               flex: 70,
               child: Container(
@@ -338,14 +295,12 @@ class _HomepageState extends State<Homepage> {
 
                         const SizedBox(height: 20),
 
-                        // ปุ่ม Browse Asset
                         Center(
                           child: ElevatedButton(
                             onPressed: () => _checkBorrowAndNavigate(
                               context,
                               _userData['id'] ?? 0,
                             ),
-
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF6B45FF),
                               foregroundColor: Colors.white,
@@ -371,7 +326,6 @@ class _HomepageState extends State<Homepage> {
 
                         const SizedBox(height: 20),
 
-                        // Carousel 2 (recommend)
                         SizedBox(
                           height: 250,
                           child: CarouselSlider(

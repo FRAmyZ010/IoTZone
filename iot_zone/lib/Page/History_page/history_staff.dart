@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:iot_zone/Page/AppConfig.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:iot_zone/Page/api_helper.dart';
 
 class HistoryStaffPage extends StatefulWidget {
   const HistoryStaffPage({super.key});
@@ -25,34 +26,61 @@ class _HistoryStaffPageState extends State<HistoryStaffPage> {
     _fetchHistory();
   }
 
-  // ✅ ดึงข้อมูลจาก API จริง
+  // ✅ ดึงข้อมูลจาก API จริง + รองรับ Token Refresh + Force Logout
   Future<void> _fetchHistory() async {
     setState(() => _isLoading = true);
+
     try {
       final prefs = await SharedPreferences.getInstance();
-      final staffId = prefs.getInt('user_id') ?? 1;
+      final staffId = prefs.getInt("user_id");
 
-      final url = Uri.parse('${AppConfig.baseUrl}/api/staff-history/$staffId');
-      print('📡 Fetching staff history: $url');
-
-      final resp = await http.get(url);
-      if (resp.statusCode == 200) {
-        final List<dynamic> data = json.decode(resp.body);
-        setState(() {
-          historyList = List<Map<String, dynamic>>.from(data);
-          filteredList = historyList;
-          _isLoading = false;
-        });
-        print('✅ Loaded ${historyList.length} staff history records');
-      } else {
-        throw Exception('HTTP ${resp.statusCode}');
+      if (staffId == null) {
+        throw Exception("Missing staff user_id");
       }
-    } catch (e) {
-      print('⚠️ Fetch error: $e');
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('โหลดข้อมูล Staff History ไม่สำเร็จ\n$e')),
+
+      // 🔥 ใช้ ApiHelper เพื่อให้รองรับ token + refresh token
+      final resp = await ApiHelper.callApi(
+        "/api/staff-history/$staffId",
+        method: "GET",
       );
+
+      print("📡 staff-history status: ${resp.statusCode}");
+      print("📡 body: ${resp.body}");
+
+      // -------- HANDLE ERROR --------
+      if (resp.statusCode == 401) {
+        final msg = jsonDecode(resp.body)["message"];
+
+        if (msg == "invalid_token" || msg == "expired_refresh_token") {
+          // 🔥 ถ้า refresh token หมดอายุ → บังคับ Logout
+          if (context.mounted) ApiHelper.forceLogout(context);
+        }
+
+        throw Exception("Unauthorized: $msg");
+      }
+
+      if (resp.statusCode != 200) {
+        throw Exception("HTTP ${resp.statusCode}");
+      }
+
+      // -------- SUCCESS --------
+      final List<dynamic> data = jsonDecode(resp.body);
+
+      setState(() {
+        historyList = List<Map<String, dynamic>>.from(data);
+        filteredList = historyList;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print("⚠️ Staff history error: $e");
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("can't lond Staff History \n$e")),
+        );
+      }
+
+      setState(() => _isLoading = false);
     }
   }
 

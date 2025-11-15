@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'borrow_request_card.dart';
 import 'package:iot_zone/Page/AppConfig.dart';
+import 'package:iot_zone/Page/api_helper.dart';
 
 // 🔹 หน้ารายการคำขอยืมหนังสือ
 class BorrowRequestsPage extends StatefulWidget {
@@ -43,15 +44,20 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
   // 🔹 ดึงข้อมูลคำขอยืมหนังสือจาก backend
   Future<void> fetchRequests() async {
     try {
-      final response = await http.get(Uri.parse('$url/borrow_requests'));
+      final response = await ApiHelper.callApi(
+        "/borrow_requests",
+        method: "GET",
+      );
 
       if (response.statusCode == 200) {
         setState(() {
           requests = json.decode(response.body);
           loading = false;
         });
+      } else if (response.statusCode == 401) {
+        await ApiHelper.forceLogout(context);
       } else {
-        throw Exception('Failed to load requests');
+        throw Exception("HTTP ${response.statusCode}");
       }
     } catch (e) {
       debugPrint("Error: $e");
@@ -72,10 +78,10 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
     }
 
     try {
-      final response = await http.post(
-        Uri.parse('$url/borrow_requests/$id/approve'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'approverId': approverId}),
+      final response = await ApiHelper.callApi(
+        "/borrow_requests/$id/approve",
+        method: "POST",
+        body: {"approverId": approverId},
       );
 
       if (response.statusCode == 200) {
@@ -83,11 +89,14 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
           final index = requests.indexWhere((r) => r['id'] == id);
           if (index != -1) requests[index]['status'] = 2;
         });
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('✅ Approved successfully')),
         );
+      } else if (response.statusCode == 401) {
+        await ApiHelper.forceLogout(context);
       } else {
-        throw Exception('Failed to approve request');
+        throw Exception("HTTP ${response.statusCode}");
       }
     } catch (e) {
       debugPrint("Approve error: $e");
@@ -110,10 +119,10 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
     }
 
     try {
-      final response = await http.post(
-        Uri.parse('$url/borrow_requests/$id/reject'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'approverId': approverId, 'reason': reason}),
+      final response = await ApiHelper.callApi(
+        "/borrow_requests/$id/reject",
+        method: "POST",
+        body: {"approverId": approverId, "reason": reason},
       );
 
       if (response.statusCode == 200) {
@@ -124,11 +133,14 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
             requests[index]['reason'] = reason;
           }
         });
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('❌ Rejected successfully')),
         );
+      } else if (response.statusCode == 401) {
+        await ApiHelper.forceLogout(context);
       } else {
-        throw Exception('Failed to reject request');
+        throw Exception("HTTP ${response.statusCode}");
       }
     } catch (e) {
       debugPrint("Reject error: $e");

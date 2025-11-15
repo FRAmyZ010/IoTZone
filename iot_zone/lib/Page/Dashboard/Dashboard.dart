@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:iot_zone/Page/AppConfig.dart';
+import 'package:iot_zone/Page/api_helper.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -27,32 +28,60 @@ class _DashboardState extends State<Dashboard> {
 
   // ✅ ดึงข้อมูลจาก API
   Future<void> fetchAssetSummary() async {
-    try {
-      final response = await http.get(
-        Uri.parse('http://$ip:3000/api/dashboard-summary'),
-      );
-      print('📡 Response code: ${response.statusCode}');
-      print('📡 Response body: ${response.body}');
+    setState(() => isLoading = true);
 
+    try {
+      // 🔥 ใช้ ApiHelper เพื่อ auto-refresh token
+      final response = await ApiHelper.callApi(
+        "/api/dashboard-summary",
+        method: "GET",
+      );
+
+      print("📡 Dashboard → ${response.statusCode}");
+      print("📡 Body: ${response.body}");
+
+      // -----------------------------------
+      // 🔴 Token หมดอายุ + Refresh ไม่ได้ → Logout
+      // -----------------------------------
+      if (response.statusCode == 401) {
+        final msg = jsonDecode(response.body)["message"];
+        if (msg == "invalid_token" || msg == "expired_refresh_token") {
+          if (context.mounted) ApiHelper.forceLogout(context);
+        }
+        throw Exception("Unauthorized");
+      }
+
+      // -----------------------------------
+      // 🟢 Success
+      // -----------------------------------
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+
         setState(() {
-          availableCount = int.parse(data['available'].toString());
-          pendingCount = int.parse(data['pending'].toString());
-          disabledCount = int.parse(data['disabled'].toString());
-          borrowedCount = int.parse(data['borrowed'].toString());
+          availableCount = int.parse(data["available"].toString());
+          pendingCount = int.parse(data["pending"].toString());
+          disabledCount = int.parse(data["disabled"].toString());
+          borrowedCount = int.parse(data["borrowed"].toString());
           isLoading = false;
         });
 
-        print('✅ availableCount: $availableCount');
-        print('✅ pendingCount: $pendingCount');
-        print('✅ disabledCount: $disabledCount');
-        print('✅ borrowedCount: $borrowedCount');
-      } else {
-        throw Exception('Failed to load summary');
+        print("✅ Summary loaded successfully");
+        return;
       }
+
+      // -----------------------------------
+      // 🔴 Errors อื่น ๆ
+      // -----------------------------------
+      throw Exception("HTTP ${response.statusCode}");
     } catch (e) {
-      print('❌ Error: $e');
+      print("❌ Dashboard Error: $e");
+
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("โหลด Dashboard ไม่สำเร็จ\n$e")));
+      }
+
       setState(() => isLoading = false);
     }
   }

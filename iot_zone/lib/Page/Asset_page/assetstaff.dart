@@ -5,7 +5,7 @@ import 'dart:convert'; // ใช้แปลง JSON ↔ Object
 import 'asset_listmap/asset_model.dart'; // โมเดล AssetModel
 import 'showAssetDialog/showAssetDialog_staff.dart'; // หน้าต่างเพิ่ม/แก้ไขสินทรัพย์
 import 'package:iot_zone/Page/AppConfig.dart'; // ค่า config เช่น IP Server
-
+import 'package:iot_zone/Page/api_helper.dart';
 // 🔹 หน้าจอหลักสำหรับจัดการสินทรัพย์ (ของ Staff)
 class AssetStaff extends StatefulWidget {
   const AssetStaff({super.key});
@@ -36,153 +36,156 @@ class _AssetStaffState extends State<AssetStaff> {
   String? errorMessage; // เก็บข้อความ error (ถ้ามี)
 
   // 🔹 ฟังก์ชันเลือกแหล่งรูปภาพ (asset หรือ network)
-  ImageProvider _buildImageProvider(String imagePath) {
-    if (imagePath.isEmpty)
-      return const AssetImage(
-        'asset/img/no_image.png',
-      ); // ถ้าไม่มีรูป → รูป default
-    if (imagePath.startsWith('asset/'))
-      return AssetImage(imagePath); // ถ้าเป็น asset ในแอป
-    if (!imagePath.startsWith('/uploads/') && !imagePath.contains('http')) {
-      return AssetImage('asset/img/$imagePath'); // โหลดจากโฟลเดอร์ asset/img/
+    ImageProvider _buildImageProvider(String imagePath) {
+    if (imagePath.isEmpty) {
+      return const AssetImage('asset/img/no_image.png');
     }
+
     if (imagePath.startsWith('/uploads/')) {
-      return NetworkImage(
-        'http://$ip:3000$imagePath',
-      ); // โหลดจาก server (เช่น /uploads/)
+      return NetworkImage("http://${AppConfig.serverIP}:3000$imagePath");
     }
-    return const AssetImage('asset/img/no_image.png'); // กรณีไม่เข้าเงื่อนไขใด
+
+    if (imagePath.startsWith('asset/')) {
+      return AssetImage(imagePath);
+    }
+
+    return AssetImage("asset/img/$imagePath");
   }
 
-  // 🔹 ฟังก์ชันดึงข้อมูลสินทรัพย์จาก API
+  // ----------------------------------------------------------
+  // 🔹 โหลดรายการ Asset ด้วย ApiHelper + Token Refresh
+  // ----------------------------------------------------------
   Future<void> fetchAssets() async {
     try {
-      final response = await http.get(
-        Uri.parse('http://$ip:3000/assets'),
-      ); // GET /assets
+      final response = await ApiHelper.callApi("/assets");
+
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(
-          response.body,
-        ); // แปลง JSON → List
+        final data = jsonDecode(response.body) as List;
         setState(() {
-          assets = data
-              .map((e) => AssetModel.fromMap(e))
-              .toList(); // แปลงแต่ละ item → AssetModel
-          isLoading = false; // โหลดเสร็จ
+          assets = data.map((e) => AssetModel.fromMap(e)).toList();
+          isLoading = false;
         });
       } else {
-        // ❌ ถ้าสถานะ HTTP ไม่ใช่ 200
         setState(() {
           isLoading = false;
-          errorMessage = 'Failed to fetch data (${response.statusCode})';
+          errorMessage = "Error: ${response.statusCode}";
         });
       }
     } catch (e) {
-      // ❌ ถ้ามี error เช่น ไม่มีการเชื่อมต่อ
       setState(() {
         isLoading = false;
-        errorMessage = 'Connection error: $e';
+        errorMessage = "Connection failed: $e";
       });
     }
   }
 
-  // 🔹 ฟังก์ชันอัปเดตสถานะ (เช่น Available → Disabled)
+  // ----------------------------------------------------------
+  // 🔹 Add Asset (POST)
+  // ----------------------------------------------------------
+  Future<void> addAsset(AssetModel newAsset) async {
+    await ApiHelper.callApi(
+      "/assets",
+      method: "POST",
+      body: newAsset.toMap(),
+    );
+    fetchAssets();
+  }
+
+  // ----------------------------------------------------------
+  // 🔹 Update Asset (PUT)
+  // ----------------------------------------------------------
+  Future<void> updateAsset(AssetModel asset) async {
+    await ApiHelper.callApi(
+      "/assets/${asset.id}",
+      method: "PUT",
+      body: asset.toMap(),
+    );
+    fetchAssets();
+  }
+
+  // ----------------------------------------------------------
+  // 🔹 Delete Asset (DELETE)
+  // ----------------------------------------------------------
+  Future<void> deleteAsset(int id) async {
+    await ApiHelper.callApi(
+      "/assets/$id",
+      method: "DELETE",
+    );
+    fetchAssets();
+  }
+
+  // ----------------------------------------------------------
+  // 🔹 Check ใช้งานอยู่ไหม
+  // ----------------------------------------------------------
+  Future<bool> checkAssetInUse(int assetId) async {
+    final res =
+        await ApiHelper.callApi("/api/check-asset-usage/$assetId");
+
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body);
+      return data["inUse"] == true;
+    }
+    return false;
+  }
+
+  // ----------------------------------------------------------
+  // 🔹 Update Status Asset (PATCH)
+  // ----------------------------------------------------------
   Future<void> updateStatusInAPI(int id, String newStatus) async {
-    // แปลงสถานะจากชื่อ → รหัส (ตามหลังบ้าน)
-    int statusCode = switch (newStatus) {
+    final statusCode = switch (newStatus) {
       'Available' => 1,
       'Disabled' => 2,
       'Pending' => 3,
       'Borrowed' => 4,
       _ => 1,
     };
-    // เรียก API เพื่ออัปเดตสถานะ
-    await http.patch(
-      Uri.parse(
-        'http://$ip:3000/assets/$id/status',
-      ), // PATCH /assets/:id/status
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'status': statusCode}), // ส่งค่า status code ใหม่
+
+    await ApiHelper.callApi(
+      "/assets/$id/status",
+      method: "PATCH",
+      body: {"status": statusCode},
     );
   }
 
   @override
   void initState() {
     super.initState();
-    fetchAssets(); // โหลดข้อมูลสินทรัพย์ทันทีเมื่อเปิดหน้า
+    fetchAssets();
   }
 
-  // 🔹 เพิ่มสินทรัพย์ใหม่
-  Future<void> addAsset(AssetModel newAsset) async {
-    await http.post(
-      Uri.parse('http://$ip:3000/assets'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(newAsset.toMap()), // ส่งข้อมูลสินทรัพย์ในรูป JSON
-    );
-    fetchAssets(); // โหลดข้อมูลใหม่หลังเพิ่มเสร็จ
-  }
-
-  Future<bool> checkAssetInUse(int assetId) async {
-    final response = await http.get(
-      Uri.parse('http://$ip:3000/api/check-asset-usage/$assetId'),
-    );
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return data['inUse'] == true;
-    }
-    return false;
-  }
-
-  // 🔹 อัปเดตข้อมูลสินทรัพย์เดิม
-  Future<void> updateAsset(AssetModel asset) async {
-    await http.put(
-      Uri.parse('http://$ip:3000/assets/${asset.id}'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(asset.toMap()),
-    );
-    fetchAssets(); // โหลดข้อมูลใหม่
-  }
-
-  // 🔹 ลบสินทรัพย์
-  Future<void> deleteAsset(int id) async {
-    await http.delete(Uri.parse('http://$ip:3000/assets/$id'));
-    fetchAssets(); // โหลดข้อมูลใหม่
-  }
-
-  // 🔹 เปิดหน้าต่าง (Dialog) สำหรับเพิ่ม/แก้ไขข้อมูลสินทรัพย์
   void _openAssetDialog({AssetModel? asset}) async {
     final result = await showDialog(
       context: context,
-      builder: (context) => ShowAssetDialogStaff(asset: asset),
+      builder: (_) => ShowAssetDialogStaff(asset: asset),
     );
+
     if (result is AssetModel) {
       if (asset == null) {
-        addAsset(result); // ถ้าเป็นของใหม่ → เพิ่ม
+        addAsset(result);
       } else {
-        updateAsset(result); // ถ้ามีอยู่แล้ว → แก้ไข
+        updateAsset(result);
       }
     }
   }
 
-  // 🔹 เปลี่ยนสถานะของสินทรัพย์ (Enable / Disable)
   void _toggleStatus(AssetModel asset) async {
-    // 🛑 เช็คก่อน disable
-    if (asset.status != 'Disabled') {
+    if (asset.status != "Disabled") {
       bool inUse = await checkAssetInUse(asset.id);
+
       if (inUse) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
-              '⚠️ Cannot disable this asset because it is currently borrowed or pending approval.',
-            ),
-            backgroundColor: Colors.redAccent,
+            content: Text("⚠️ Cannot disable: asset is in use."),
+            backgroundColor: Colors.red,
           ),
         );
         return;
       }
     }
 
-    final newStatus = asset.status == 'Disabled' ? 'Available' : 'Disabled';
+    final newStatus =
+        asset.status == 'Disabled' ? 'Available' : 'Disabled';
+
     await updateStatusInAPI(asset.id, newStatus);
 
     setState(() {
@@ -192,13 +195,14 @@ class _AssetStaffState extends State<AssetStaff> {
             status: newStatus,
             statusColorValue: newStatus == 'Available'
                 ? Colors.green.value
-                : Colors.redAccent.value,
+                : Colors.red.value,
           );
         }
         return a;
       }).toList();
     });
   }
+
 
   @override
   Widget build(BuildContext context) {

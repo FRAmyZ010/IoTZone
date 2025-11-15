@@ -4,7 +4,7 @@ import 'package:iot_zone/Page/Dashboard/Dashboard.dart';
 import 'package:iot_zone/Page/Asset_page/assetstaff.dart';
 import 'package:iot_zone/Page/History_page/history_staff.dart';
 import 'package:iot_zone/Page/Return_asset/return_asset_page.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 class StaffMain extends StatefulWidget {
   final Map<String, dynamic>? userData;
 
@@ -19,11 +19,16 @@ class StaffMain extends StatefulWidget {
 
 class _StaffMainState extends State<StaffMain> {
   int _selectedIndex = 0;
-  late final List<Widget> _pages;
+  late List<Widget> _pages; // ❗ ไม่ใช้ final เพราะเราจะรีโหลดหน้า
 
   @override
   void initState() {
     super.initState();
+    _initPages(); 
+  }
+
+  // โหลดหน้า
+  void _initPages() {
     _pages = [
       Homepagestaff(userData: widget.userData), // 0
       HistoryStaffPage(), // 1

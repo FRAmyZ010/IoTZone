@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'return_asset_card.dart';
 import 'package:iot_zone/Page/AppConfig.dart';
+import 'package:iot_zone/Page/api_helper.dart';
 
 // 📚 หน้าสำหรับจัดการครุภัณฑ์ที่รอการรับคืน
 class ReturnAssetsPage extends StatefulWidget {
@@ -42,13 +43,38 @@ class _ReturnAssetsPageState extends State<ReturnAssetsPage> {
 
   // 🔹 ดึงข้อมูลครุภัณฑ์ที่รอรับคืนจาก backend
   Future<void> fetchRequests() async {
-    try {
-      final response = await http.get(Uri.parse('$url/show/return-asset'));
+    setState(() => loading = true);
 
+    try {
+      // 🔥 เรียก API พร้อม auto refresh token
+      final response = await ApiHelper.callApi(
+        "/show/return-asset",
+        method: "GET",
+      );
+
+      print("📡 Return Asset → ${response.statusCode}");
+      print("📡 Body: ${response.body}");
+
+      // ---------------------------------------
+      // 🔴 Token หมดอายุจริงๆ → Logout
+      // ---------------------------------------
+      if (response.statusCode == 401) {
+        final msg = jsonDecode(response.body)["message"];
+
+        if (msg == "invalid_token" || msg == "expired_refresh_token") {
+          if (context.mounted) ApiHelper.forceLogout(context);
+        }
+
+        throw Exception("Unauthorized");
+      }
+
+      // ---------------------------------------
+      // 🟢 โหลดข้อมูลสำเร็จ
+      // ---------------------------------------
       if (response.statusCode == 200) {
         final List fetchedData = json.decode(response.body);
 
-        // ✅ กรองเฉพาะสถานะที่ "รอรับคืน" (เช่น status == 2)
+        // กรองเฉพาะที่ status == 2 (รอรับคืน)
         final List pendingReturns = fetchedData.where((r) {
           final status = r['status'].toString();
           return status == '2';
@@ -58,19 +84,25 @@ class _ReturnAssetsPageState extends State<ReturnAssetsPage> {
           requests = pendingReturns;
           loading = false;
         });
-      } else {
-        throw Exception(
-          'Failed to load return requests. Status: ${response.statusCode}',
-        );
+
+        print('✅ Loaded ${pendingReturns.length} pending return requests');
+        return;
       }
+
+      // ---------------------------------------
+      // 🔴 Error อื่น ๆ
+      // ---------------------------------------
+      throw Exception("HTTP ${response.statusCode}");
     } catch (e) {
-      debugPrint("Error fetching return assets: $e");
-      setState(() => loading = false);
+      print("❌ Error fetching return assets: $e");
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('❌ Error loading return data.')),
+          SnackBar(content: Text("โหลดข้อมูลการคืนทรัพย์สินล้มเหลว\n$e")),
         );
       }
+
+      setState(() => loading = false);
     }
   }
 
@@ -122,7 +154,7 @@ class _ReturnAssetsPageState extends State<ReturnAssetsPage> {
           'Return Assets',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: const Color(0xFFC386FF),
+        backgroundColor: Colors.deepPurpleAccent,
         foregroundColor: Colors.white,
         actions: [
           IconButton(

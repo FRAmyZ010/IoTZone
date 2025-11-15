@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:iot_zone/Page/AppConfig.dart';
 import 'package:iot_zone/Page/Asset_page/showAssetDialog/showAssetDialog_student.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:iot_zone/Page/api_helper.dart';
 
 class RequestStatusPage extends StatefulWidget {
   const RequestStatusPage({super.key});
@@ -36,14 +37,16 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
     setState(() => _isLoading = true);
 
     try {
-      // ✅ ดึง user_id จาก SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getInt('user_id');
 
-      // ✅ เรียก API โดยใช้ userId จาก session
-      final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/request-status/$userId'),
-      );
+      if (userId == null) {
+        await _forceLogout();
+        return;
+      }
+
+      // ⭐ ยิง API แบบ Auto Refresh Token
+      final response = await ApiHelper.callApi("/api/request-status/$userId");
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
@@ -52,15 +55,33 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
           filteredList = requestList;
           _isLoading = false;
         });
-      } else {
-        throw Exception(
-          'Failed to load request status (status ${response.statusCode})',
-        );
+      }
+      // ❗ Refresh Token หมดอายุ
+      else if (response.statusCode == 401 || response.statusCode == 403) {
+        await _forceLogout();
+      }
+      // ❗ Server error อื่น
+      else {
+        throw Exception('Request failed (code ${response.statusCode})');
       }
     } catch (e) {
       print('⚠️ Error fetching request status: $e');
       setState(() => _isLoading = false);
     }
+  }
+
+  // ✅ บังคับ logout
+  Future<void> _forceLogout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    if (!mounted) return;
+
+    Navigator.pushReplacementNamed(context, "/login");
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Session expired. Please login again.")),
+    );
   }
 
   // ✅ ฟังก์ชันค้นหา
@@ -96,7 +117,7 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
 
   @override
   Widget build(BuildContext context) {
-    const purple = Color(0xFFC368FF);
+    const purple = Colors.deepPurpleAccent;
 
     return Scaffold(
       appBar: PreferredSize(
@@ -207,7 +228,9 @@ class _RequestStatusPageState extends State<RequestStatusPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: purple.withOpacity(0.2)),
+        border: Border.all(
+          color: const Color.fromARGB(255, 144, 16, 229).withOpacity(0.2),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
