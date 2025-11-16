@@ -85,37 +85,41 @@ function authorizeRoles(...roles) {
 
 // ⭐ Middleware ตรวจสอบ Access Token
 function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization']; // "Bearer xxxxx"
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res
-      .status(401)
-      .json({ message: 'Access token missing. Please login again.' });
-  }
-
- jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
-  if (err) {
-    console.error("❌ JWT verify error:", err);
-
-    // ถ้า token หมดอายุ
-    if (err.name === "TokenExpiredError") {
-      return res.status(401).json({
-        message: "access_token_expired"
-      });
-    }
-
-    // ถ้า token ไม่ถูกต้อง
-    return res.status(403).json({
-      message: "invalid_token"
+  const authHeader = req.headers["authorization"];
+  
+  if (!authHeader) {
+    console.log("❌ No Authorization Header Found");
+    return res.status(401).json({
+      message: "missing_token"
     });
   }
 
-  req.user = user;
-  next();
-});
+  const token = authHeader.split(" ")[1];
 
+  console.log("🔑 Incoming Token:", token?.substring(0, 30), "...");
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+    if (err) {
+      console.error("❌ JWT Verify Error:", err.name);
+
+      if (err.name === "TokenExpiredError") {
+        return res.status(401).json({
+          message: "access_token_expired"
+        });
+      }
+
+      return res.status(401).json({
+        message: "invalid_token"
+      });
+    }
+
+    console.log("🟢 JWT Verified → user:", user);
+
+    req.user = user; // เก็บ user role, id เพื่อใช้ต่อ
+    next();
+  });
 }
+
 
 
 // (ถ้าจะใช้ตรวจ role เพิ่มได้แบบนี้)
@@ -1161,6 +1165,7 @@ app.get(
 
 app.put(
   '/accept/return_asset/:id/:asset_id/:receiver_id',
+  express.raw({ type: "*/*" }),
   authenticateToken,
   authorizeRoles("staff"),
   (req, res) => {
