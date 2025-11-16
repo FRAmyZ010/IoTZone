@@ -184,27 +184,6 @@ class ApiHelper {
   }
 
   // ----------------------------------------------------------
-  // 📌 Refresh Token API
-  // ----------------------------------------------------------
-  static Future<String?> refreshAccessToken(String? refreshToken) async {
-    if (refreshToken == null) return null;
-
-    debugPrint("🔁 Calling /refresh-token …");
-
-    final res = await http.post(
-      Uri.parse("$baseUrl/refresh-token"),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"refreshToken": refreshToken}),
-    );
-
-    debugPrint("📥 Refresh Response → ${res.statusCode}");
-
-    if (res.statusCode != 200) return null;
-
-    return jsonDecode(res.body)["accessToken"];
-  }
-
-  // ----------------------------------------------------------
   // 📌 อ่านข้อความ error
   // ----------------------------------------------------------
   static String? _readMessage(http.Response res) {
@@ -213,5 +192,30 @@ class ApiHelper {
     } catch (e) {
       return null;
     }
+  }
+
+  // ----------------------------------------------------------
+  // 📌 Refresh Token API
+  // ----------------------------------------------------------
+
+  static Future<String?> refreshAccessToken(String? refreshToken) async {
+    if (refreshToken == null) return null;
+
+    debugPrint("🔁 Calling /refresh-token");
+
+    final res = await http.post(
+      Uri.parse("$baseUrl/refresh-token"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"refreshToken": refreshToken}),
+    );
+
+    debugPrint("📥 Refresh Response → ${res.statusCode} ${res.body}");
+
+    if (res.statusCode != 200) return null;
+
+    final newToken = jsonDecode(res.body)["accessToken"];
+    await saveAccessToken(newToken);
+
+    return newToken;
   }
 }
