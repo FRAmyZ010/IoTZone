@@ -263,6 +263,16 @@ class _HistoryStaffPageState extends State<HistoryStaffPage> {
   // ✅ การ์ดแสดงข้อมูลแต่ละรายการ
   Widget _buildHistoryCard(Map<String, dynamic> item) {
     const purple = Color(0xFFC368FF);
+
+    final String status = (item["status"] ?? "").toString();
+
+    Color statusColor = Colors.black87;
+    if (status.toLowerCase() == "rejected") {
+      statusColor = Colors.red;
+    } else if (status.toLowerCase() == "returned") {
+      statusColor = Colors.blue;
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(12),
@@ -298,37 +308,88 @@ class _HistoryStaffPageState extends State<HistoryStaffPage> {
               },
             ),
           ),
+
           const SizedBox(width: 12),
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item["name"] ?? "Unknown Item",
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item["name"] ?? "Unknown Item",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    RichText(
+                      text: TextSpan(
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        children: [
+                          const TextSpan(
+                            text: "status: ",
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextSpan(
+                            text: status,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
+
                 const SizedBox(height: 4),
+
                 if (item["borrowDate"] != null)
                   Text(
                     "Borrowed on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item["borrowDate"]))}",
                   ),
+
                 if (item["returnDate"] != null)
                   Text(
                     "Returned on ${DateFormat('MMM dd, yyyy').format(DateTime.parse(item["returnDate"]))}",
                   ),
+
                 if (item["borrowedBy"] != null)
                   Text("Borrowed by ${item["borrowedBy"]}"),
-                if (item["approvedBy"] != null)
-                  Text("Approved by ${item["approvedBy"]}"),
+
                 if (item["receivedBy"] != null)
                   Text("Received by ${item["receivedBy"]}"),
-                if (item["status"] == "Rejected" && item["reason"] != null)
-                  Text(
-                    "Reason: ${item["reason"]}",
-                    style: const TextStyle(color: Colors.redAccent),
+
+                if (item["approvedBy"] != null && status != "Rejected")
+                  Text("Approved by ${item["approvedBy"]}"),
+
+                if (status == "Rejected")
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (item["approvedBy"] != null)
+                        Text(
+                          "Rejected by ${item["approvedBy"]}",
+                        ),
+
+                      if (item["reason"] != null)
+                        Text(
+                          "Reason: ${item["reason"]}",
+                          style: const TextStyle(color: Colors.redAccent),
+                        ),
+                    ],
                   ),
               ],
             ),

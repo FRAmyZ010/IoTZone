@@ -297,9 +297,18 @@ class _HistoryLenderPageState extends State<HistoryLenderPage> {
   }
 
   // Card แต่ละรายการ
-  Widget _buildHistoryCard(Map<String, dynamic> item) {
+   Widget _buildHistoryCard(Map<String, dynamic> item) {
     const purple = Color(0xFFC368FF);
 
+    final String status = (item["status"] ?? "").toString();
+
+    // สีของ status
+    Color statusColor = Colors.green;
+    if (status.toLowerCase() == "rejected") {
+      statusColor = Colors.red;
+    }
+
+    // --- Format วันที่ ---
     String borrowedOn = '';
     String returnedOn = '';
 
@@ -332,22 +341,57 @@ class _HistoryLenderPageState extends State<HistoryLenderPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: _buildImage(item["image"]),
           ),
+
           const SizedBox(width: 12),
 
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item["name"] ?? "Unknown Item",
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item["name"] ?? "Unknown Item",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+
+                    RichText(
+                      text: TextSpan(
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        children: [
+                          const TextSpan(
+                            text: "status: ",
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextSpan(
+                            text: status,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 4),
@@ -358,7 +402,8 @@ class _HistoryLenderPageState extends State<HistoryLenderPage> {
                 if ((item["borrowedBy"] ?? '').toString().isNotEmpty)
                   Text("Borrowed by ${item["borrowedBy"]}"),
 
-                if ((item["reason"] ?? '').toString().isNotEmpty)
+                if (status.toLowerCase() == "rejected" &&
+                    (item["reason"] ?? "").toString().isNotEmpty)
                   Text(
                     "Reason: ${item["reason"]}",
                     style: const TextStyle(color: Colors.redAccent),
