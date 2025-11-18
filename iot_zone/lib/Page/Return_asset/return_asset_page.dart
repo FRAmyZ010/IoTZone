@@ -108,43 +108,37 @@ class _ReturnAssetsPageState extends State<ReturnAssetsPage> {
 
   // 🔸 ระบบ “รับคืนครุภัณฑ์”
   Future<void> acceptReturnAsset(int historyId, int assetId) async {
-    if (receiverId == null) {
+  try {
+    final response = await ApiHelper.callApi(
+      "/accept/return_asset/$historyId/$assetId/$receiverId",
+      method: "PUT",
+      body: {}, // ⬅️ อย่าปล่อยว่าง
+    );
+
+    debugPrint("📥 Accept Return Response → ${response.statusCode}");
+    debugPrint("📄 BODY → ${response.body}");
+
+    if (response.statusCode == 200) {
+      setState(() {
+        requests.removeWhere((r) => r['id'] == historyId);
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ No session found. Please log in again.'),
-          backgroundColor: Colors.orange,
-        ),
+        const SnackBar(content: Text("✅ Asset return accepted!")),
       );
-      return;
+    } else if (response.statusCode == 401) {
+      ApiHelper.forceLogout(context);
+    } else {
+      final msg = jsonDecode(response.body)["message"] ?? "Unknown Error";
+      throw Exception(msg);
     }
-
-    try {
-      // ✅ ส่ง receiverId จริงไปใน URL
-      final endpoint =
-          '$url/accept/return_asset/$historyId/$assetId/$receiverId';
-
-      final response = await http.put(Uri.parse(endpoint));
-
-      if (response.statusCode == 200) {
-        // 🔄 อัปเดตสถานะในหน้าจอทันที
-        setState(() {
-          requests.removeWhere((r) => r['id'] == historyId);
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Asset received successfully.')),
-        );
-      } else {
-        final errorBody = json.decode(response.body);
-        final errorMessage = errorBody['message'] ?? 'Failed to accept return.';
-        throw Exception(errorMessage);
-      }
-    } catch (e) {
-      debugPrint("Accept Return error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Failed to accept return: ${e.toString()}')),
-      );
-    }
+  } catch (e) {
+    debugPrint("❌ Accept Return error: $e");
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text("❌ Failed: $e")));
   }
+}
+
 
   @override
   Widget build(BuildContext context) {

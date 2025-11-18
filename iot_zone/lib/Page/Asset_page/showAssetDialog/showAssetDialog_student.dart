@@ -24,6 +24,13 @@ class BorrowAssetDialog extends StatefulWidget {
 class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
   final String ip = AppConfig.serverIP;
   bool _isBorrowing = false;
+  bool hasActiveBorrow = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkActiveBorrow();
+  }
 
   // ✅ โหลดรูปภาพสินทรัพย์
   Widget _buildImage(String imagePath) {
@@ -79,103 +86,80 @@ class _BorrowAssetDialogState extends State<BorrowAssetDialog> {
   }
 
   // ✅ ฟังก์ชันยืมอุปกรณ์
-Future<void> _borrowToday() async {
-  if (_isBorrowing) return;
-  setState(() => _isBorrowing = true);
+  Future<void> _borrowToday() async {
+    if (_isBorrowing) return;
 
-  try {
+    setState(() => _isBorrowing = true);
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final id = prefs.getInt('user_id');
+      if (id == null) return;
+
+      final response = await ApiHelper.callApi(
+        "/api/borrow",
+        method: "POST",
+        body: {'asset_id': widget.asset['id'], 'borrower_id': id},
+      );
+
+      if (response.statusCode == 200) {
+        widget.onBorrowSuccess?.call();
+        RequestStatusPage.refreshRequestPage?.call();
+        Navigator.of(context).pop(true);
+      } else {
+        final body = jsonDecode(response.body);
+        _showMessage(body['message'] ?? "Borrow failed");
+      }
+    } catch (e) {
+      _showMessage("Server error: $e");
+    } finally {
+      setState(() => _isBorrowing = false);
+    }
+  }
+
+  void _showMessage(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: Colors.deepOrange),
+    );
+  }
+
+  Future<void> _forceLogout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    if (!mounted) return;
+
+    Navigator.pushReplacementNamed(context, "/login");
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Session expired. Please login again.")),
+    );
+  }
+
+  Future<void> _checkActiveBorrow() async {
     final prefs = await SharedPreferences.getInstance();
     final id = prefs.getInt('user_id');
 
-    if (id == null) {
-      await _forceLogout();
-      return;
-    }
+    if (id == null) return;
 
-    // ⭐ ใช้ ApiHelper (รองรับ refresh token อัตโนมัติ)
     final response = await ApiHelper.callApi(
-      "/api/borrow",
-      method: "POST",
-      body: {
-        'asset_id': widget.asset['id'],
-        'borrower_id': id,
-      },
+      "/api/check-borrow-status/$id",
+      method: "GET",
     );
 
-    final body = jsonDecode(response.body);
-
-    // ------------------------
-    // ⭐ Borrow Success
-    // ------------------------
     if (response.statusCode == 200) {
-      widget.onBorrowSuccess?.call();
-      RequestStatusPage.refreshRequestPage?.call();
-      Navigator.of(context).pop(true);
+      final data = jsonDecode(response.body);
+      setState(() {
+        hasActiveBorrow = data['hasActiveRequest'] == true;
+      });
     }
-
-    // ------------------------
-    // ❌ Refresh Token หมดอายุ → logout
-    // ------------------------
-    else if (response.statusCode == 401 || response.statusCode == 403) {
-      await _forceLogout();
-    }
-
-    // ------------------------
-    // ⚠ Borrow failed (วันละครั้ง ฯลฯ)
-    // ------------------------
-    else {
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('⚠ Cannot Borrow'),
-          content: Text(body['message'] ?? 'Borrow failed'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-    }
-  } catch (e) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('❌ Server Error'),
-        content: Text('Cannot connect to server:\n$e'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  } finally {
-    setState(() => _isBorrowing = false);
   }
-}
-
-Future<void> _forceLogout() async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.clear();
-
-  if (!mounted) return;
-
-  Navigator.pushReplacementNamed(context, "/login");
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text("Session expired. Please login again."),
-    ),
-  );
-}
-
 
   @override
   Widget build(BuildContext context) {
     final asset = widget.asset;
+    final bool isAvailable =
+        (asset['status'] == 'Available' || asset['status'] == 'AVAILABLE');
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -232,11 +216,17 @@ Future<void> _forceLogout() async {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  // ปุ่ม Borrow
+                  // 🔹 Borrow button (เปลี่ยนเป็น Unavailable หากมี borrow ค้าง)
                   ElevatedButton(
-                    onPressed: _isBorrowing ? null : _borrowToday,
+                    onPressed: (!_isBorrowing && !hasActiveBorrow)
+                        ? _borrowToday
+                        : () => _showMessage(
+                            "You already have an active borrow request!",
+                          ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurpleAccent,
+                      backgroundColor: hasActiveBorrow
+                          ? Colors.grey
+                          : Colors.deepPurpleAccent,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 36,
                         vertical: 14,
@@ -255,9 +245,9 @@ Future<void> _forceLogout() async {
                               color: Colors.white,
                             ),
                           )
-                        : const Text(
-                            'Borrow',
-                            style: TextStyle(
+                        : Text(
+                            hasActiveBorrow ? "Unavailable" : "Borrow",
+                            style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
@@ -265,18 +255,9 @@ Future<void> _forceLogout() async {
                           ),
                   ),
 
-                  // ปุ่ม Cancel
-                  ElevatedButton.icon(
+                  // 🔹 Cancel button แยกอย่างถูกต้อง
+                  ElevatedButton(
                     onPressed: () => Navigator.pop(context, false),
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    label: const Text(
-                      'Cancel',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey.shade600,
                       padding: const EdgeInsets.symmetric(
@@ -287,6 +268,14 @@ Future<void> _forceLogout() async {
                         borderRadius: BorderRadius.circular(22),
                       ),
                       elevation: 3,
+                    ),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
                     ),
                   ),
                 ],

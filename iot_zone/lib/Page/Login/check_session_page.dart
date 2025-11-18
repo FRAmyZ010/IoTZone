@@ -1,13 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-// ✅ import หน้าตาม role
+// import หน้า role
 import 'package:iot_zone/Page/Login/login_page.dart';
 import 'package:iot_zone/Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar.dart';
 import 'package:iot_zone/Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar_staff.dart';
 import 'package:iot_zone/Page/Widgets/buildBotttom_nav_bar/bottom_nav_bar_lender.dart';
+import 'package:iot_zone/Page/api_helper.dart';
 import 'package:iot_zone/Page/AppConfig.dart';
 
 class CheckSessionPage extends StatefulWidget {
@@ -17,11 +19,44 @@ class CheckSessionPage extends StatefulWidget {
   State<CheckSessionPage> createState() => _CheckSessionPageState();
 }
 
+Timer? _refreshTimer;
+
 class _CheckSessionPageState extends State<CheckSessionPage> {
   @override
   void initState() {
     super.initState();
+    _startAutoRefresh();
     _checkSession();
+  }
+
+  void _startAutoRefresh() async {
+    _refreshTimer?.cancel();
+
+    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) async {
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString("accessToken");
+      final refreshToken = prefs.getString("refreshToken");
+
+      if (accessToken == null || refreshToken == null) return;
+
+      // Decode exp in JWT
+      final payload = accessToken.split('.')[1];
+      final decoded = jsonDecode(
+        utf8.decode(base64Url.decode(base64Url.normalize(payload))),
+      );
+
+      final exp = decoded["exp"] * 1000;
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      // ถ้าเหลือ < 90 วิ → refresh
+      if (exp - now < 30000) {
+        debugPrint("⏳ Token almost expired → refreshing...");
+        final newToken = await ApiHelper.refreshAccessToken(refreshToken);
+        if (newToken != null) {
+          debugPrint("🔄 Token refreshed silently ✔");
+        }
+      }
+    });
   }
 
   // ---------------------------------------------------------
@@ -140,13 +175,15 @@ class _CheckSessionPageState extends State<CheckSessionPage> {
   Future<String?> _refreshAccessToken(String refreshToken) async {
     try {
       final response = await http.post(
-        Uri.parse("${AppConfig.baseUrl}/token"),
+        Uri.parse("${AppConfig.baseUrl}/refresh-token"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"refreshToken": refreshToken}),
       );
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body)["accessToken"];
+        final newToken = jsonDecode(response.body)["accessToken"];
+        debugPrint("🔄 Refresh success → New Access Token saved");
+        return newToken;
       }
 
       return null;
@@ -190,6 +227,11 @@ class _CheckSessionPageState extends State<CheckSessionPage> {
   }
 
   @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
   Widget build(BuildContext context) {
     return const Scaffold(
       backgroundColor: Color(0xFF4D5DFF),
