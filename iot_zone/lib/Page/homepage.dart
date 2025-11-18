@@ -13,6 +13,8 @@ import 'Widgets/buildTextContainer1/buildSlidehomepage_rigthtop.dart';
 import 'Widgets/buildTextContainer2/buildTextContainar_rigthlow.dart';
 import 'Widgets/buildTextContainer2/buildTextContainer_rigthtop.dart';
 import 'AppConfig.dart';
+import 'package:iot_zone/Page/Asset_page/asset_listmap/asset_model.dart';
+import 'package:iot_zone/Page/Asset_page/showAssetDialog/showAssetDialog_student.dart';
 
 /// 🏠 Homepage แสดงข้อมูลโปรไฟล์ + แบนเนอร์
 class Homepage extends StatefulWidget {
@@ -33,19 +35,54 @@ class _HomepageState extends State<Homepage> {
   final ScrollController _scrollController = ScrollController();
   late Map<String, dynamic> _userData;
 
-  // ⭐ เพิ่ม token ตัวแปรไว้ใช้กับทุก API
+  List<AssetModel> latestAssets = [];
+  bool isLoadingLatest = true;
+
   String? accessToken;
+
+  String getFullImageUrl(String? imagePath) {
+    if (imagePath == null || imagePath.isEmpty || imagePath == "null") {
+      return "";
+    }
+
+    // 📌 ถ้าเป็นรูปใน asset/flutter (local)
+    if (imagePath.startsWith("asset/") || imagePath.startsWith("assets/")) {
+      return imagePath; // จะใช้ Image.asset แทน
+    }
+
+    // 📌 ถ้าเป็นรูปจาก upload (server)
+    return "http://${AppConfig.serverIP}:3000$imagePath";
+  }
 
   @override
   void initState() {
     super.initState();
     _userData = Map<String, dynamic>.from(widget.userData ?? {});
-    _loadToken(); // ⭐ โหลด token
+    _loadToken();
+
+    // ⭐ ดึง asset ที่นี่!
+    _loadLatestAssets();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollController.animateTo(
         300,
         duration: const Duration(milliseconds: 500),
         curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  void _openAssetAndDialog(BuildContext context, AssetModel asset) {
+    // ไปหน้า Asset ก่อน
+    StudentMain.of(context)?.changeTab(3);
+
+    // เปิด dialog หลัง UI เปลี่ยนแท็บเสร็จแล้ว
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (_) => BorrowAssetDialog(asset: asset.toMap()),
       );
     });
   }
@@ -96,6 +133,62 @@ class _HomepageState extends State<Homepage> {
         ),
       );
     }
+  }
+
+  Future<List<AssetModel>> fetchAssets() async {
+    try {
+      final response = await ApiHelper.callApi("/assets", method: "GET");
+
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        return data.map((e) => AssetModel.fromMap(e)).toList();
+      } else {
+        return [];
+      }
+    } catch (e) {
+      print("❌ Error loading assets: $e");
+      return [];
+    }
+  }
+
+  Future<void> _loadLatestAssets() async {
+    setState(() => isLoadingLatest = true);
+
+    final allAssets = await fetchAssets();
+
+    // เรียง id ใหม่สุด → เก่าสุด
+    allAssets.sort((a, b) => b.id.compareTo(a.id));
+
+    // เอาแค่ 5 รายการล่าสุด
+    final latest = allAssets.take(3).toList();
+
+    setState(() {
+      latestAssets = latest;
+      isLoadingLatest = false;
+    });
+  }
+
+  Widget buildAssetImage(String? imagePath) {
+    final fullPath = getFullImageUrl(imagePath);
+
+    // ถ้าเป็นรูป asset (local)
+    if (fullPath.startsWith("asset/") || fullPath.startsWith("assets/")) {
+      return Image.asset(fullPath, width: double.infinity, fit: BoxFit.cover);
+    }
+
+    // ถ้าเป็นรูปจาก server
+    return Image.network(
+      fullPath,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Image.asset(
+          "asset/img/no_image.png",
+          width: double.infinity,
+          fit: BoxFit.cover,
+        );
+      },
+    );
   }
 
   Future<void> _forceLogout(BuildContext context) async {
@@ -243,8 +336,6 @@ class _HomepageState extends State<Homepage> {
               ),
             ),
 
-            const SizedBox(height: 20),
-
             // 🔹 ส่วน recommended, ปุ่ม BROWSE, carousel...
             Expanded(
               flex: 70,
@@ -263,9 +354,9 @@ class _HomepageState extends State<Homepage> {
                           height: 200,
                           child: CarouselSlider(
                             options: CarouselOptions(
-                              height: 200,
+                              height: 175,
                               autoPlay: true,
-                              autoPlayInterval: const Duration(seconds: 10),
+                              autoPlayInterval: const Duration(seconds: 5),
                               enlargeCenterPage: true,
                               viewportFraction: 0.78,
                               padEnds: true,
@@ -292,8 +383,6 @@ class _HomepageState extends State<Homepage> {
                             ],
                           ),
                         ),
-
-                        const SizedBox(height: 20),
 
                         Center(
                           child: ElevatedButton(
@@ -325,40 +414,108 @@ class _HomepageState extends State<Homepage> {
                         ),
 
                         const SizedBox(height: 20),
+                        const Text(
+                          'Recommended Equipment',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 10),
 
                         SizedBox(
                           height: 250,
-                          child: CarouselSlider(
-                            options: CarouselOptions(
-                              height: 200,
-                              enableInfiniteScroll: false,
-                              enlargeCenterPage: true,
-                              viewportFraction: 0.75,
-                              padEnds: true,
-                              autoPlay: false,
-                              initialPage: 1,
-                            ),
-                            items: [
-                              BuildTextContainerRightTop(
-                                text:
-                                    'Manage smarter, live easier. All your tools, sensors, and modules — right at your fingertips.',
-                                color: Colors.deepPurple[100]!,
-                                imagePath: 'asset/img/LAB_ROOM.jpg',
-                              ),
-                              BuildTextContainerRightLow(
-                                text:
-                                    '“Think ahead. Work smarter. SAFEAREA — The next generation of asset management.”',
-                                color: Colors.deepPurple[100]!,
-                                imagePath: 'asset/img/LAB_ROOM2.jpg',
-                              ),
-                              BuildTextContainerRightTop(
-                                text:
-                                    '“Power up your lab. Manage smart. Borrow easy. Your tools, your control — anytime, anywhere.”',
-                                color: Colors.deepPurple[100]!,
-                                imagePath: 'asset/img/LAB_ROOM3.jpg',
-                              ),
-                            ],
-                          ),
+                          child: isLoadingLatest
+                              ? const Center(child: CircularProgressIndicator())
+                              : latestAssets.isEmpty
+                              ? const Center(
+                                  child: Text(
+                                    "There is no latest equipment information.",
+                                  ),
+                                )
+                              : CarouselSlider(
+                                  options: CarouselOptions(
+                                    height: 500,
+                                    enableInfiniteScroll: false,
+                                    enlargeCenterPage: true,
+                                    viewportFraction: 0.55,
+                                    padEnds: true,
+                                    autoPlay: false,
+                                    initialPage: 1,
+                                  ),
+                                  items: latestAssets.map((asset) {
+                                    return Builder(
+                                      builder: (context) {
+                                        return GestureDetector(
+                                          onTap: () => _openAssetAndDialog(
+                                            context,
+                                            asset,
+                                          ),
+                                          child: Container(
+                                            margin: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black
+                                                      .withOpacity(0.05),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 4),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                // รูป
+                                                Expanded(
+                                                  child: ClipRRect(
+                                                    borderRadius:
+                                                        const BorderRadius.vertical(
+                                                          top: Radius.circular(
+                                                            16,
+                                                          ),
+                                                        ),
+                                                    child: buildAssetImage(
+                                                      asset.image,
+                                                    ),
+                                                  ),
+                                                ),
+
+                                                // ชื่อ
+                                                Padding(
+                                                  padding: const EdgeInsets.all(
+                                                    20.0,
+                                                  ),
+                                                  child: Center(
+                                                    child: Text(
+                                                      asset.name,
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  }).toList(),
+                                ),
                         ),
                       ],
                     ),
