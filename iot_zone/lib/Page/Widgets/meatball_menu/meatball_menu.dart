@@ -194,6 +194,7 @@ class _UserProfileMenuState extends State<UserProfileMenu> {
 
                     final response = await ApiHelper.callMultipartApi(
                       "/api/update-profile/$userId",
+                      method: "PUT",
                       fields: {
                         "username": userC.text,
                         "name": nameC.text,

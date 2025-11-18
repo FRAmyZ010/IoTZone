@@ -200,8 +200,21 @@ class _BorrowRequestsPageState extends State<BorrowRequestsPage> {
               children: [
                 ElevatedButton(
                   onPressed: () {
+                    final reason = reasonController.text.trim();
+
+                    if (reason.isEmpty) {
+                      // โชว์ SnackBar หรือ Alert แจ้งเตือน
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Please enter the rejection reason."),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return; // ❌ ไม่ปิด dialog และไม่ส่งต่อ
+                    }
+
                     Navigator.of(context).pop();
-                    rejectRequest(id, reason: reasonController.text.trim());
+                    rejectRequest(id, reason: reason);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
