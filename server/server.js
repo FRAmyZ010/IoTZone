@@ -432,30 +432,36 @@ app.get('/assets', authenticateToken, (req, res) => {
     }
 
     try {
-      const formatted = results.map((row) => {
-        let imgPath = row.img || 'no_image.png';
+     const formatted = results.map((row) => {
+  let imgPath = row.img || "no_image.png";
 
-        // ✅ Normalize path ให้ตรงรูปแบบ
-        if (imgPath.startsWith('/uploads/') || imgPath.startsWith('uploads/')) {
-          imgPath = imgPath.startsWith('/') ? imgPath : '/' + imgPath;
-        } else if (imgPath.startsWith('asset/img/')) {
-          imgPath = imgPath;
-        } else if (!imgPath.includes('/')) {
-          imgPath = `asset/img/${imgPath}`;
-        } else {
-          imgPath = 'asset/img/no_image.png';
-        }
+  // 1) ถ้าเป็นไฟล์จาก uploads บน server
+  if (imgPath.includes("uploads")) {
+    // ทำให้เป็น /uploads/xxx.png เสมอ
+    imgPath = imgPath.startsWith("/") ? imgPath : "/" + imgPath;
+  }
 
-        return {
-          id: row.id,
-          name: row.asset_name || 'Unknown', // ✅ key ชื่อ name
-          description: row.description || '',
-          type: row.type || 'Unknown',
-          status: mapStatus(row.status ?? 0),
-          image: imgPath,
-          statusColorValue: getColor(row.status ?? 0),
-        };
-      });
+  // 2) ถ้าเป็นไฟล์ asset หรือ path เต็มที่มี /
+  else if (imgPath.startsWith("asset/") || imgPath.includes("/")) {
+    // ใช้ตามที่มีเลย
+  }
+
+  // 3) ถ้าให้แค่ชื่อไฟล์ เช่น resistor.png
+  else {
+    imgPath = `asset/img/${imgPath}`;
+  }
+
+  return {
+    id: row.id,
+    name: row.asset_name || "Unknown",
+    description: row.description || "",
+    type: row.type || "Unknown",
+    status: mapStatus(row.status ?? 0),
+    image: imgPath,
+    statusColorValue: getColor(row.status ?? 0),
+  };
+});
+
 
       res.json(formatted);
     } catch (err) {
