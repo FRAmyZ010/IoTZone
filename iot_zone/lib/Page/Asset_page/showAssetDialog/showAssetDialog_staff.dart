@@ -274,6 +274,22 @@ class _ShowAssetDialogStaffState extends State<ShowAssetDialogStaff> {
                   // ✅ ปุ่มยืนยัน (สีม่วง ข้อความขาว)
                   ElevatedButton.icon(
                     onPressed: () async {
+                      if (nameController.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Please filled Asset's name"),
+                          ),
+                        );
+                        return;
+                      }
+                      if (descController.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Please filled Asset's description"),
+                          ),
+                        );
+                        return;
+                      }
                       String imagePath =
                           widget.asset?.image ?? 'asset/img/default.png';
                       if (_imageFile != null) {
